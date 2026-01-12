@@ -1,0 +1,16 @@
+/**
+ * LOCAL API KEY CONFIGURATION
+ * 
+ * ⚠️ WARNING: This file is for LOCAL TESTING ONLY
+ * 
+ * Instructions:
+ * 1. Copy this file to apiKey.local.ts (without .example)
+ * 2. Add your API key below
+ * 3. DO NOT commit apiKey.local.ts to Git (it's in .gitignore)
+ * 4. This file will override environment variables for local testing
+ * 
+ * For production, always use environment variables in AWS Amplify Console
+ */
+
+export const LOCAL_API_KEY = 'your_api_key_here';
+export const LOCAL_API_PROVIDER = 'aviationstack';

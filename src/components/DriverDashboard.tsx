@@ -72,7 +72,11 @@ function DriverDashboard() {
     for (const trip of trips) {
       if (trip.flightNumber) {
         try {
-          const flightStatus = await fetchFlightStatus(trip.flightNumber);
+          // Pass the pickup date to get the correct flight for that day
+          const flightStatus = await fetchFlightStatus(
+            trip.flightNumber,
+            trip.pickupDate ? new Date(trip.pickupDate) : undefined
+          );
           statuses[trip.id] = flightStatus.status;
         } catch (error) {
           console.error(`Error fetching status for ${trip.flightNumber}:`, error);

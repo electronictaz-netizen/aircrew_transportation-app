@@ -32,3 +32,6 @@ amplify_outputs.json
 .env
 .env.local
 .env.production
+
+# Local API key configuration (for testing only)
+src/config/apiKey.local.ts

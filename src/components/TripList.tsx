@@ -29,7 +29,11 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
       for (const trip of displayedTrips) {
         if (trip.flightNumber) {
           try {
-            const flightStatus = await fetchFlightStatus(trip.flightNumber);
+            // Pass the pickup date to get the correct flight for that day
+            const flightStatus = await fetchFlightStatus(
+              trip.flightNumber,
+              trip.pickupDate ? new Date(trip.pickupDate) : undefined
+            );
             statuses[trip.id] = flightStatus.status;
           } catch (error) {
             console.error(`Error fetching status for ${trip.flightNumber}:`, error);

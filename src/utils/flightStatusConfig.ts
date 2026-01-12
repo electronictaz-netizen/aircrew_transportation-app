@@ -44,11 +44,12 @@ export async function testFlightAPI(): Promise<{ success: boolean; message: stri
     };
   }
 
-  try {
-    const testFlightNumber = 'AA100'; // Test with a common flight
-    const response = await fetch(
-      `https://api.aviationstack.com/v1/flights?access_key=${config.apiKey}&flight_iata=${testFlightNumber}&limit=1`
-    );
+    try {
+      const testFlightNumber = 'AA100'; // Test with a common flight
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const response = await fetch(
+        `https://api.aviationstack.com/v1/flights?access_key=${config.apiKey}&flight_iata=${testFlightNumber}&flight_date=${today}&limit=1`
+      );
 
     if (!response.ok) {
       return {
