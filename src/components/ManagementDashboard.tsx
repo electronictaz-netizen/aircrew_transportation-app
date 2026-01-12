@@ -86,17 +86,26 @@ function ManagementDashboard() {
 
       // If it's a recurring job, generate the recurring trips
       if (tripData.isRecurring && tripData.recurringPattern && tripData.recurringEndDate) {
-        console.log('Creating recurring trip');
+        console.log('Creating recurring trip with config:', {
+          isRecurring: tripData.isRecurring,
+          pattern: tripData.recurringPattern,
+          endDate: tripData.recurringEndDate,
+          tripData: tripWithStatus,
+        });
+        
         try {
-          await generateRecurringTrips({
+          const result = await generateRecurringTrips({
             tripData: tripWithStatus,
             isRecurring: true,
             recurringPattern: tripData.recurringPattern,
             recurringEndDate: tripData.recurringEndDate,
           });
+          console.log('Recurring trips generation completed');
         } catch (recurringError) {
-          console.error('Error creating recurring trips, falling back to single trip:', recurringError);
+          console.error('Error creating recurring trips:', recurringError);
+          console.error('Error details:', JSON.stringify(recurringError, null, 2));
           // Fallback: create as regular trip if recurring creation fails
+          console.log('Falling back to creating single trip');
           await client.models.Trip.create(tripWithStatus);
         }
       } else {
