@@ -54,6 +54,70 @@
   color: #2563eb;
 }
 
+.quick-date-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+.quick-filters-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.quick-filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.quick-filter-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-filter-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.quick-filter-btn.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.quick-filter-btn.active:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.custom-date-range {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.custom-date-range .filter-group {
+  flex: 1;
+  max-width: 200px;
+}
+
 .filters-panel {
   border-top: 1px solid #e5e7eb;
   padding-top: 1.5rem;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks, format } from 'date-fns';
 import './TripFilters.css';
 
 interface TripFiltersProps {
@@ -10,17 +11,52 @@ interface TripFiltersProps {
 
 type SortField = 'pickupDate' | 'flightNumber' | 'status' | 'driver' | 'none';
 type SortDirection = 'asc' | 'desc';
+type QuickDateFilter = 'all' | 'today' | 'thisWeek' | 'nextWeek' | 'custom';
 
 function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [driverFilter, setDriverFilter] = useState<string>('all');
   const [recurringFilter, setRecurringFilter] = useState<string>('all');
+  const [quickDateFilter, setQuickDateFilter] = useState<QuickDateFilter>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('pickupDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState<boolean>(false);
+
+  // Calculate date ranges for quick filters
+  const getDateRange = (filter: QuickDateFilter): { from: Date | null; to: Date | null } => {
+    const now = new Date();
+    
+    switch (filter) {
+      case 'today':
+        return {
+          from: startOfDay(now),
+          to: endOfDay(now),
+        };
+      case 'thisWeek':
+        return {
+          from: startOfWeek(now, { weekStartsOn: 1 }), // Monday
+          to: endOfWeek(now, { weekStartsOn: 1 }), // Sunday
+        };
+      case 'nextWeek':
+        const nextWeekStart = addWeeks(startOfWeek(now, { weekStartsOn: 1 }), 1);
+        const nextWeekEnd = addWeeks(endOfWeek(now, { weekStartsOn: 1 }), 1);
+        return {
+          from: nextWeekStart,
+          to: nextWeekEnd,
+        };
+      case 'custom':
+        return {
+          from: dateFrom ? new Date(dateFrom) : null,
+          to: dateTo ? new Date(dateTo) : null,
+        };
+      case 'all':
+      default:
+        return { from: null, to: null };
+    }
+  };
 
   const applyFiltersAndSort = () => {
     let filtered = [...trips];
@@ -39,7 +75,7 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
       }
     }
 
-    // Recurring filter
+    // Recurring filter - by default show all (including recurring)
     if (recurringFilter !== 'all') {
       if (recurringFilter === 'recurring') {
         filtered = filtered.filter((trip) => trip.isRecurring === true);
@@ -48,23 +84,36 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
       }
     }
 
-    // Date range filter
-    if (dateFrom) {
-      const fromDate = new Date(dateFrom);
-      filtered = filtered.filter((trip) => {
-        if (!trip.pickupDate) return false;
-        return new Date(trip.pickupDate) >= fromDate;
-      });
-    }
+    // Date filter - use quick filter or custom date range
+    if (quickDateFilter !== 'all' && quickDateFilter !== 'custom') {
+      const dateRange = getDateRange(quickDateFilter);
+      if (dateRange.from && dateRange.to) {
+        filtered = filtered.filter((trip) => {
+          if (!trip.pickupDate) return false;
+          const tripDate = new Date(trip.pickupDate);
+          return tripDate >= dateRange.from! && tripDate <= dateRange.to!;
+        });
+      }
+    } else if (quickDateFilter === 'custom') {
+      // Use custom date range
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        filtered = filtered.filter((trip) => {
+          if (!trip.pickupDate) return false;
+          return new Date(trip.pickupDate) >= fromDate;
+        });
+      }
 
-    if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999); // Include entire end date
-      filtered = filtered.filter((trip) => {
-        if (!trip.pickupDate) return false;
-        return new Date(trip.pickupDate) <= toDate;
-      });
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999); // Include entire end date
+        filtered = filtered.filter((trip) => {
+          if (!trip.pickupDate) return false;
+          return new Date(trip.pickupDate) <= toDate;
+        });
+      }
     }
+    // If quickDateFilter is 'all', show all trips (no date filtering)
 
     // Search filter (flight number, locations)
     if (searchTerm) {
@@ -126,7 +175,7 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
   useEffect(() => {
     applyFiltersAndSort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trips, statusFilter, driverFilter, recurringFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection]);
+  }, [trips, statusFilter, driverFilter, recurringFilter, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection]);
 
   const handleFilterChange = () => {
     applyFiltersAndSort();
@@ -136,6 +185,7 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
     setStatusFilter('all');
     setDriverFilter('all');
     setRecurringFilter('all');
+    setQuickDateFilter('all');
     setDateFrom('');
     setDateTo('');
     setSearchTerm('');
@@ -144,10 +194,19 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
     setTimeout(() => applyFiltersAndSort(), 0);
   };
 
+  const handleQuickDateFilter = (filter: QuickDateFilter) => {
+    setQuickDateFilter(filter);
+    if (filter !== 'custom') {
+      setDateFrom('');
+      setDateTo('');
+    }
+  };
+
   const hasActiveFilters =
     statusFilter !== 'all' ||
     driverFilter !== 'all' ||
     recurringFilter !== 'all' ||
+    quickDateFilter !== 'all' ||
     dateFrom !== '' ||
     dateTo !== '' ||
     searchTerm !== '';
@@ -172,7 +231,7 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
             className="btn btn-secondary"
             onClick={() => setShowFilters(!showFilters)}
           >
-            {showFilters ? 'Hide' : 'Show'} Filters
+            {showFilters ? 'Hide' : 'Show'} Advanced Filters
           </button>
           {hasActiveFilters && (
             <button className="btn btn-link" onClick={clearFilters}>
@@ -181,6 +240,73 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
           )}
         </div>
       </div>
+
+      {/* Quick Date Filters */}
+      <div className="quick-date-filters">
+        <label className="quick-filters-label">View:</label>
+        <div className="quick-filter-buttons">
+          <button
+            className={`quick-filter-btn ${quickDateFilter === 'all' ? 'active' : ''}`}
+            onClick={() => handleQuickDateFilter('all')}
+          >
+            All Trips
+          </button>
+          <button
+            className={`quick-filter-btn ${quickDateFilter === 'today' ? 'active' : ''}`}
+            onClick={() => handleQuickDateFilter('today')}
+          >
+            Today
+          </button>
+          <button
+            className={`quick-filter-btn ${quickDateFilter === 'thisWeek' ? 'active' : ''}`}
+            onClick={() => handleQuickDateFilter('thisWeek')}
+          >
+            This Week
+          </button>
+          <button
+            className={`quick-filter-btn ${quickDateFilter === 'nextWeek' ? 'active' : ''}`}
+            onClick={() => handleQuickDateFilter('nextWeek')}
+          >
+            Next Week
+          </button>
+          <button
+            className={`quick-filter-btn ${quickDateFilter === 'custom' ? 'active' : ''}`}
+            onClick={() => handleQuickDateFilter('custom')}
+          >
+            Custom Range
+          </button>
+        </div>
+      </div>
+
+      {/* Show custom date inputs when custom range is selected */}
+      {quickDateFilter === 'custom' && (
+        <div className="custom-date-range">
+          <div className="filter-group">
+            <label htmlFor="dateFrom">From Date</label>
+            <input
+              type="date"
+              id="dateFrom"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                handleFilterChange();
+              }}
+            />
+          </div>
+          <div className="filter-group">
+            <label htmlFor="dateTo">To Date</label>
+            <input
+              type="date"
+              id="dateTo"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                handleFilterChange();
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {showFilters && (
         <div className="filters-panel">
@@ -241,31 +367,6 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
               </select>
             </div>
 
-            <div className="filter-group">
-              <label htmlFor="dateFrom">From Date</label>
-              <input
-                type="date"
-                id="dateFrom"
-                value={dateFrom}
-                onChange={(e) => {
-                  setDateFrom(e.target.value);
-                  handleFilterChange();
-                }}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="dateTo">To Date</label>
-              <input
-                type="date"
-                id="dateTo"
-                value={dateTo}
-                onChange={(e) => {
-                  setDateTo(e.target.value);
-                  handleFilterChange();
-                }}
-              />
-            </div>
           </div>
 
           <div className="filters-row">
