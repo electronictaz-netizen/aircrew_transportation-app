@@ -5,8 +5,9 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import outputs from '../amplify_outputs.json';
-// Import debug utility (available in console as debugFlightAPI())
+// Import debug utilities (available in console)
 import './utils/flightStatusDebug';
+import './utils/recurringTripsDebug';
 
 Amplify.configure(outputs);
 

@@ -94,13 +94,18 @@ function ManagementDashboard() {
         });
         
         try {
-          await generateRecurringTrips({
+          const result = await generateRecurringTrips({
             tripData: tripWithStatus,
             isRecurring: true,
             recurringPattern: tripData.recurringPattern,
             recurringEndDate: tripData.recurringEndDate,
           });
-          console.log('Recurring trips generation completed');
+          if (result) {
+            console.log('Recurring trips generation completed:', result);
+            console.log(`Created ${result.childCount} child trips from parent ${result.parentId}`);
+          } else {
+            console.warn('Recurring trips generation returned no result');
+          }
         } catch (recurringError) {
           console.error('Error creating recurring trips:', recurringError);
           console.error('Error details:', JSON.stringify(recurringError, null, 2));
@@ -145,7 +150,10 @@ function ManagementDashboard() {
         }
       }
 
-      // Reload trips after creation
+      // Wait a moment for database to sync, then reload trips
+      console.log('Waiting for database sync...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      
       console.log('Reloading trips...');
       await loadTrips();
       console.log('Trips reloaded');
@@ -153,8 +161,10 @@ function ManagementDashboard() {
       setShowTripForm(false);
       setEditingTrip(null);
       
-      // Show success message
-      alert('Trip created successfully!');
+      // Show success message with count
+      const { data: allTrips } = await client.models.Trip.list();
+      const recurringCount = allTrips?.filter(t => t.isRecurring || t.parentTripId).length || 0;
+      alert(`Trip created successfully! ${recurringCount > 1 ? `Generated ${recurringCount} trips (including recurring).` : ''}`);
     } catch (error: any) {
       console.error('Error creating trip:', error);
       console.error('Error type:', typeof error);

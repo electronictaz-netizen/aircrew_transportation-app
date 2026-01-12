@@ -139,8 +139,10 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
               </td>
               <td>
                 {trip.flightNumber}
-                {trip.isRecurring && (
-                  <span className="recurring-badge" title="Recurring Job"> 🔄</span>
+                {(trip.isRecurring || trip.parentTripId) && (
+                  <span className="recurring-badge" title={trip.isRecurring ? "Recurring Job (Parent)" : "Recurring Job (Child)"}>
+                    {trip.isRecurring ? ' 🔄' : ' ↪️'}
+                  </span>
                 )}
               </td>
               <td>

@@ -14,16 +14,22 @@ interface RecurringJobConfig {
 /**
  * Generate recurring trips based on the pattern
  */
-export async function generateRecurringTrips(config: RecurringJobConfig): Promise<void> {
-  console.log('generateRecurringTrips called with:', config);
+export async function generateRecurringTrips(config: RecurringJobConfig): Promise<{ parentId: string; childCount: number } | void> {
+  console.log('=== generateRecurringTrips START ===');
+  console.log('Config received:', {
+    isRecurring: config.isRecurring,
+    recurringPattern: config.recurringPattern,
+    recurringEndDate: config.recurringEndDate,
+    tripDataKeys: Object.keys(config.tripData || {}),
+  });
   
   if (!config.isRecurring || !config.recurringPattern || !config.recurringEndDate) {
-    console.warn('Missing required recurring job parameters:', {
+    console.error('❌ Missing required recurring job parameters:', {
       isRecurring: config.isRecurring,
       recurringPattern: config.recurringPattern,
       recurringEndDate: config.recurringEndDate,
     });
-    return;
+    return; // Return void if parameters missing
   }
 
   const { tripData, recurringPattern, recurringEndDate } = config;
@@ -139,43 +145,78 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   let createdCount = 0;
   let errorCount = 0;
   
-  for (const trip of tripsToCreate) {
+  console.log(`Starting to create ${tripsToCreate.length} child trips...`);
+  
+  for (let i = 0; i < tripsToCreate.length; i++) {
+    const trip = tripsToCreate[i];
     try {
+      console.log(`Creating child trip ${i + 1}/${tripsToCreate.length} for ${trip.pickupDate}...`);
       const result = await client.models.Trip.create(trip);
+      
       if (result.data) {
         createdCount++;
-        console.log(`Created child trip for ${trip.pickupDate}`);
+        console.log(`✅ Created child trip ${i + 1}/${tripsToCreate.length} - ID: ${result.data.id}, Date: ${trip.pickupDate}`);
       } else {
         errorCount++;
-        console.error('Failed to create child trip:', result.errors);
+        console.error(`❌ Failed to create child trip ${i + 1}/${tripsToCreate.length}:`, result.errors);
+        console.error('Trip data:', trip);
       }
-    } catch (error) {
+    } catch (error: any) {
       errorCount++;
-      console.error('Error creating recurring trip:', error, trip);
+      console.error(`❌ Error creating child trip ${i + 1}/${tripsToCreate.length}:`, error);
+      console.error('Error details:', error?.message || error);
+      console.error('Trip data that failed:', trip);
+    }
+    
+    // Small delay between creates to avoid rate limiting
+    if (i < tripsToCreate.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 
-  console.log(`Recurring trips creation complete: ${createdCount} created, ${errorCount} errors`);
+  console.log(`\n=== Recurring trips creation summary ===`);
+  console.log(`Total to create: ${tripsToCreate.length}`);
+  console.log(`Successfully created: ${createdCount}`);
+  console.log(`Errors: ${errorCount}`);
+  console.log(`Parent trip ID: ${parentTripId}`);
   
   if (errorCount > 0) {
-    console.warn(`Some recurring trips failed to create. Check console for details.`);
+    console.warn(`⚠️ Some recurring trips failed to create. Check console for details.`);
   }
+  
+  if (createdCount === 0 && tripsToCreate.length > 0) {
+    console.error(`❌ CRITICAL: No child trips were created! Check errors above.`);
+    throw new Error(`Failed to create any child trips. ${errorCount} errors occurred.`);
+  }
+  
+  console.log('=== generateRecurringTrips COMPLETE ===');
+  
+  // Return result for tracking
+  return {
+    parentId: parentTripId,
+    childCount: createdCount,
+  };
 }
 
 /**
  * Check and generate upcoming recurring trips (call this periodically)
  */
 export async function generateUpcomingRecurringTrips(): Promise<void> {
+  console.log('=== generateUpcomingRecurringTrips START ===');
   try {
     // Get all active recurring trips
     const { data: recurringTrips } = await client.models.Trip.list({
       filter: { isRecurring: { eq: true } },
     });
 
+    console.log(`Found ${recurringTrips?.length || 0} parent recurring trips`);
+
     const now = new Date();
     const twoWeeksFromNow = addDays(now, 14);
+    console.log(`Generating trips from ${now.toISOString()} to ${twoWeeksFromNow.toISOString()}`);
 
     for (const trip of recurringTrips || []) {
+      console.log(`\nProcessing parent trip ${trip.id} (${trip.flightNumber})`);
       if (!trip.recurringEndDate || !trip.recurringPattern) continue;
 
       const endDate = parseISO(trip.recurringEndDate);
@@ -234,15 +275,31 @@ export async function generateUpcomingRecurringTrips(): Promise<void> {
       }
 
       // Create the trips
+      console.log(`Creating ${tripsToCreate.length} upcoming child trips for parent ${trip.id}`);
+      let created = 0;
+      let failed = 0;
+      
       for (const tripData of tripsToCreate) {
         try {
-          await client.models.Trip.create(tripData);
+          const result = await client.models.Trip.create(tripData);
+          if (result.data) {
+            created++;
+            console.log(`  ✅ Created trip for ${tripData.pickupDate}`);
+          } else {
+            failed++;
+            console.error(`  ❌ Failed to create trip for ${tripData.pickupDate}:`, result.errors);
+          }
         } catch (error) {
-          console.error('Error creating upcoming recurring trip:', error);
+          failed++;
+          console.error(`  ❌ Error creating upcoming recurring trip for ${tripData.pickupDate}:`, error);
         }
       }
+      
+      console.log(`  Summary: ${created} created, ${failed} failed`);
     }
+    
+    console.log('=== generateUpcomingRecurringTrips COMPLETE ===');
   } catch (error) {
-    console.error('Error generating upcoming recurring trips:', error);
+    console.error('❌ Error generating upcoming recurring trips:', error);
   }
 }
