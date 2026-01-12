@@ -94,7 +94,7 @@ function ManagementDashboard() {
         });
         
         try {
-          const result = await generateRecurringTrips({
+          await generateRecurringTrips({
             tripData: tripWithStatus,
             isRecurring: true,
             recurringPattern: tripData.recurringPattern,
