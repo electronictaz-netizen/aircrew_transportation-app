@@ -10,7 +10,7 @@ function App() {
     <Authenticator>
       {({ signOut, user }) => (
         <div className="app">
-          <Navigation signOut={signOut} user={user} />
+          <Navigation signOut={signOut || (() => {})} user={user} />
           <Routes>
             <Route path="/" element={<Navigate to="/management" replace />} />
             <Route path="/management" element={<ManagementDashboard />} />
