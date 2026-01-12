@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks, format } from 'date-fns';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
 import './TripFilters.css';
 
 interface TripFiltersProps {
