@@ -19,7 +19,7 @@ const schema = a.schema({
       pickupLocation: a.string().required(),
       dropoffLocation: a.string().required(),
       numberOfPassengers: a.integer().default(1),
-      status: a.enum(['Unassigned', 'Assigned', 'InProgress', 'Completed']).default('Unassigned'),
+      status: a.enum(['Unassigned', 'Assigned', 'InProgress', 'Completed']),
       driverId: a.id(),
       driver: a.belongsTo('Driver', 'driverId'),
       actualPickupTime: a.datetime(),

@@ -43,7 +43,12 @@ function ManagementDashboard() {
 
   const handleCreateTrip = async (tripData: any) => {
     try {
-      await client.models.Trip.create(tripData);
+      // Ensure status is set (default to 'Unassigned' if not provided)
+      const tripWithStatus = {
+        ...tripData,
+        status: tripData.status || 'Unassigned',
+      };
+      await client.models.Trip.create(tripWithStatus);
       await loadTrips();
       setShowTripForm(false);
       setEditingTrip(null);
