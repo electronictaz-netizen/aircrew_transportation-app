@@ -1,0 +1,128 @@
+.api-config-test {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.api-config-test h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.config-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-item .label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.status-item .value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.status-item .value.configured {
+  color: #059669;
+}
+
+.status-item .value.not-configured {
+  color: #dc2626;
+}
+
+.config-warning {
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #92400e;
+}
+
+.config-warning p {
+  margin: 0.5rem 0;
+}
+
+.config-warning ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.config-warning code {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  font-size: 0.875rem;
+}
+
+.config-warning a {
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+.test-result {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.test-result.success {
+  background-color: #d1fae5;
+  border: 1px solid #10b981;
+  color: #065f46;
+}
+
+.test-result.error {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #991b1b;
+}
+
+.test-result pre {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  overflow-x: auto;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.btn-primary:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
