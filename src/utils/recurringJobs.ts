@@ -127,7 +127,7 @@ export async function generateUpcomingRecurringTrips(): Promise<void> {
       const tripsToCreate: any[] = [];
 
       while (isBefore(currentDate, twoWeeksFromNow) && isBefore(currentDate, endDate)) {
-        let nextDate: Date;
+        let nextDate: Date | null = null;
         switch (trip.recurringPattern) {
           case 'daily':
             nextDate = addDays(currentDate, 1);
