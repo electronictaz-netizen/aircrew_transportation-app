@@ -28,18 +28,28 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
     return;
   }
 
-  // Create the parent trip first
-  const parentTrip = await client.models.Trip.create({
+  // Prepare parent trip data
+  const parentTripData = {
     ...tripData,
     isRecurring: true,
     recurringPattern,
     recurringEndDate,
     status: tripData.status || 'Unassigned',
+  };
+
+  // Remove undefined fields
+  Object.keys(parentTripData).forEach(key => {
+    if (parentTripData[key] === undefined) {
+      delete parentTripData[key];
+    }
   });
 
+  // Create the parent trip first
+  const parentTrip = await client.models.Trip.create(parentTripData);
+
   if (!parentTrip.data) {
-    console.error('Failed to create parent trip');
-    return;
+    console.error('Failed to create parent trip:', parentTrip.errors);
+    throw new Error('Failed to create parent recurring trip');
   }
 
   const parentTripId = parentTrip.data.id;
