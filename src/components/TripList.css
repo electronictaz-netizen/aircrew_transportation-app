@@ -115,6 +115,24 @@
   color: #6b7280;
 }
 
+.trip-list-header {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0;
+}
+
+.trip-count {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.no-results {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
 .recurring-badge {
   font-size: 0.875rem;
   margin-left: 0.25rem;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
+import TripFilters from './TripFilters';
 import './TripList.css';
 
 interface TripListProps {
@@ -14,12 +15,18 @@ interface TripListProps {
 
 function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
   const [flightStatuses, setFlightStatuses] = useState<Record<string, string>>({});
+  const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>(trips);
+
+  // Update displayed trips when trips prop changes
+  useEffect(() => {
+    setDisplayedTrips(trips);
+  }, [trips]);
 
   useEffect(() => {
-    // Fetch flight statuses for all trips
+    // Fetch flight statuses for displayed trips
     const loadFlightStatuses = async () => {
       const statuses: Record<string, string> = {};
-      for (const trip of trips) {
+      for (const trip of displayedTrips) {
         if (trip.flightNumber) {
           try {
             const flightStatus = await fetchFlightStatus(trip.flightNumber);
@@ -33,10 +40,10 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
       setFlightStatuses(statuses);
     };
 
-    if (trips.length > 0) {
+    if (displayedTrips.length > 0) {
       loadFlightStatuses();
     }
-  }, [trips]);
+  }, [displayedTrips]);
 
   const getDriverName = (driverId: string | null | undefined) => {
     if (!driverId) return 'Unassigned';
@@ -71,6 +78,10 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
     }
   };
 
+  const handleFilterChange = (filteredTrips: Array<Schema['Trip']['type']>) => {
+    setDisplayedTrips(filteredTrips);
+  };
+
   if (trips.length === 0) {
     return (
       <div className="empty-state">
@@ -81,6 +92,16 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
 
   return (
     <div className="trip-list">
+      <TripFilters
+        trips={trips}
+        drivers={drivers}
+        onFilterChange={handleFilterChange}
+      />
+      <div className="trip-list-header">
+        <p className="trip-count">
+          Showing {displayedTrips.length} of {trips.length} trips
+        </p>
+      </div>
       <table className="trips-table">
         <thead>
           <tr>
@@ -98,7 +119,14 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
           </tr>
         </thead>
         <tbody>
-          {trips.map((trip) => (
+          {displayedTrips.length === 0 ? (
+            <tr>
+              <td colSpan={11} className="no-results">
+                No trips match the current filters. Try adjusting your search criteria.
+              </td>
+            </tr>
+          ) : (
+            displayedTrips.map((trip) => (
             <tr key={trip.id}>
               <td>
                 {trip.pickupDate
@@ -158,7 +186,8 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
                 </div>
               </td>
             </tr>
-          ))}
+            ))
+          )}
         </tbody>
       </table>
     </div>

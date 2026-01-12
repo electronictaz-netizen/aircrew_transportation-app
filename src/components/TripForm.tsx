@@ -26,13 +26,45 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const submitData = {
-      ...formData,
-      pickupDate: new Date(formData.pickupDate).toISOString(),
-      driverId: formData.driverId || undefined,
-      status: formData.driverId ? 'Assigned' : 'Unassigned',
-    };
-    onSubmit(submitData);
+    
+    // Validate required fields
+    if (!formData.pickupDate || !formData.flightNumber || !formData.pickupLocation || !formData.dropoffLocation) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    // Validate recurring job fields if recurring is checked
+    if (formData.isRecurring && !formData.recurringEndDate) {
+      alert('Please provide an end date for recurring jobs.');
+      return;
+    }
+
+    try {
+      const submitData: any = {
+        pickupDate: new Date(formData.pickupDate).toISOString(),
+        flightNumber: formData.flightNumber.trim(),
+        pickupLocation: formData.pickupLocation.trim(),
+        dropoffLocation: formData.dropoffLocation.trim(),
+        numberOfPassengers: formData.numberOfPassengers || 1,
+        driverId: formData.driverId || undefined,
+        status: formData.driverId ? 'Assigned' : 'Unassigned',
+        isRecurring: formData.isRecurring || false,
+      };
+
+      // Only include recurring fields if it's a recurring job
+      if (formData.isRecurring) {
+        submitData.recurringPattern = formData.recurringPattern;
+        if (formData.recurringEndDate) {
+          submitData.recurringEndDate = new Date(formData.recurringEndDate).toISOString();
+        }
+      }
+
+      console.log('TripForm submitting data:', submitData);
+      onSubmit(submitData);
+    } catch (error) {
+      console.error('Error preparing trip data:', error);
+      alert('Error preparing trip data. Please check your input and try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

@@ -28,7 +28,14 @@ function ManagementDashboard() {
 
   const loadTrips = async () => {
     try {
-      const { data: tripsData } = await client.models.Trip.list();
+      console.log('Loading trips...');
+      const { data: tripsData, errors } = await client.models.Trip.list();
+      
+      if (errors && errors.length > 0) {
+        console.error('Errors loading trips:', errors);
+      }
+      
+      console.log('Loaded trips:', tripsData?.length || 0);
       setTrips(tripsData as Array<Schema['Trip']['type']>);
     } catch (error) {
       console.error('Error loading trips:', error);
@@ -48,31 +55,114 @@ function ManagementDashboard() {
 
   const handleCreateTrip = async (tripData: any) => {
     try {
+      console.log('Creating trip with data:', tripData);
+      
       // Ensure status is set (default to 'Unassigned' if not provided)
-      const tripWithStatus = {
-        ...tripData,
+      const tripWithStatus: any = {
+        pickupDate: tripData.pickupDate,
+        flightNumber: tripData.flightNumber,
+        pickupLocation: tripData.pickupLocation,
+        dropoffLocation: tripData.dropoffLocation,
+        numberOfPassengers: tripData.numberOfPassengers || 1,
         status: tripData.status || 'Unassigned',
       };
 
-      // If it's a recurring job, generate the recurring trips
-      if (tripData.isRecurring && tripData.recurringPattern && tripData.recurringEndDate) {
-        await generateRecurringTrips({
-          tripData: tripWithStatus,
-          isRecurring: true,
-          recurringPattern: tripData.recurringPattern,
-          recurringEndDate: tripData.recurringEndDate,
-        });
+      // Add optional fields only if they have values
+      if (tripData.driverId) {
+        tripWithStatus.driverId = tripData.driverId;
+      }
+      
+      if (tripData.isRecurring) {
+        tripWithStatus.isRecurring = true;
+        if (tripData.recurringPattern) {
+          tripWithStatus.recurringPattern = tripData.recurringPattern;
+        }
+        if (tripData.recurringEndDate) {
+          tripWithStatus.recurringEndDate = tripData.recurringEndDate;
+        }
       } else {
-        // Regular one-time trip
-        await client.models.Trip.create(tripWithStatus);
+        tripWithStatus.isRecurring = false;
       }
 
+      // If it's a recurring job, generate the recurring trips
+      if (tripData.isRecurring && tripData.recurringPattern && tripData.recurringEndDate) {
+        console.log('Creating recurring trip');
+        try {
+          await generateRecurringTrips({
+            tripData: tripWithStatus,
+            isRecurring: true,
+            recurringPattern: tripData.recurringPattern,
+            recurringEndDate: tripData.recurringEndDate,
+          });
+        } catch (recurringError) {
+          console.error('Error creating recurring trips, falling back to single trip:', recurringError);
+          // Fallback: create as regular trip if recurring creation fails
+          await client.models.Trip.create(tripWithStatus);
+        }
+      } else {
+        // Regular one-time trip
+        console.log('Creating one-time trip with data:', tripWithStatus);
+        
+        // Ensure isRecurring is explicitly false for non-recurring trips
+        const oneTimeTripData = {
+          ...tripWithStatus,
+          isRecurring: false,
+        };
+        
+        // Remove undefined recurring fields
+        delete oneTimeTripData.recurringPattern;
+        delete oneTimeTripData.recurringEndDate;
+        delete oneTimeTripData.parentTripId;
+        
+        console.log('Final trip data being sent:', oneTimeTripData);
+        
+        try {
+          const result = await client.models.Trip.create(oneTimeTripData);
+          console.log('Trip creation result:', result);
+          
+          if (result.errors && result.errors.length > 0) {
+            console.error('Trip creation errors:', result.errors);
+            throw new Error(result.errors.map(e => e.message || JSON.stringify(e)).join(', '));
+          }
+          
+          if (!result.data) {
+            throw new Error('No data returned from trip creation');
+          }
+          
+          console.log('Trip successfully created with ID:', result.data.id);
+        } catch (createError: any) {
+          console.error('Detailed create error:', createError);
+          throw createError;
+        }
+      }
+
+      // Reload trips after creation
+      console.log('Reloading trips...');
       await loadTrips();
+      console.log('Trips reloaded');
+      
       setShowTripForm(false);
       setEditingTrip(null);
-    } catch (error) {
+      
+      // Show success message
+      alert('Trip created successfully!');
+    } catch (error: any) {
       console.error('Error creating trip:', error);
-      alert('Failed to create trip. Please try again.');
+      console.error('Error type:', typeof error);
+      console.error('Error details:', error);
+      
+      let errorMessage = 'Failed to create trip. ';
+      if (error?.message) {
+        errorMessage += error.message;
+      } else if (error?.errors && Array.isArray(error.errors)) {
+        errorMessage += error.errors.map((e: any) => e.message || JSON.stringify(e)).join(', ');
+      } else if (typeof error === 'string') {
+        errorMessage += error;
+      } else {
+        errorMessage += 'Unknown error occurred. Please check the browser console for details.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
