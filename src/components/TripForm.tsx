@@ -19,6 +19,9 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
     numberOfPassengers: trip?.numberOfPassengers || 1,
     driverId: trip?.driverId || '',
     status: trip?.status || 'Unassigned',
+    isRecurring: trip?.isRecurring || false,
+    recurringPattern: trip?.recurringPattern || 'weekly',
+    recurringEndDate: trip?.recurringEndDate ? format(new Date(trip.recurringEndDate), "yyyy-MM-dd'T'HH:mm") : '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -126,6 +129,51 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
                 ))}
             </select>
           </div>
+
+          <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                name="isRecurring"
+                checked={formData.isRecurring}
+                onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+              />
+              Recurring Job
+            </label>
+          </div>
+
+          {formData.isRecurring && (
+            <>
+              <div className="form-group">
+                <label htmlFor="recurringPattern">Recurring Pattern</label>
+                <select
+                  id="recurringPattern"
+                  name="recurringPattern"
+                  value={formData.recurringPattern}
+                  onChange={handleChange}
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="recurringEndDate">Recurring End Date</label>
+                <input
+                  type="datetime-local"
+                  id="recurringEndDate"
+                  name="recurringEndDate"
+                  value={formData.recurringEndDate}
+                  onChange={handleChange}
+                  required={formData.isRecurring}
+                />
+                <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
+                  Jobs will be automatically created until this date
+                </small>
+              </div>
+            </>
+          )}
 
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onCancel}>

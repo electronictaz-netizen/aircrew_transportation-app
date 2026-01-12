@@ -105,7 +105,12 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
                   ? format(new Date(trip.pickupDate), 'MMM dd, yyyy HH:mm')
                   : 'N/A'}
               </td>
-              <td>{trip.flightNumber}</td>
+              <td>
+                {trip.flightNumber}
+                {trip.isRecurring && (
+                  <span className="recurring-badge" title="Recurring Job"> 🔄</span>
+                )}
+              </td>
               <td>
                 <span
                   className={`flight-status-badge ${getFlightStatusBadgeClass(

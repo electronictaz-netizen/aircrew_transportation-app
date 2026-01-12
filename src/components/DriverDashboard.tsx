@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
-import { format } from 'date-fns';
+import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
 import './DriverDashboard.css';
 
@@ -39,13 +39,26 @@ function DriverDashboard() {
         const { data: tripsData } = await client.models.Trip.list({
           filter: { driverId: { eq: driver.id } },
         });
-        setTrips(tripsData as Array<Schema['Trip']['type']>);
-      } else {
-        // If no driver found, show all unassigned trips
-        const { data: tripsData } = await client.models.Trip.list({
-          filter: { status: { eq: 'Unassigned' } },
+        
+        // Filter to only show trips scheduled for the next 2 days
+        const now = new Date();
+        const twoDaysFromNow = addDays(now, 2);
+        
+        const filteredTrips = (tripsData || []).filter((trip) => {
+          if (!trip.pickupDate) return false;
+          const pickupDate = parseISO(trip.pickupDate);
+          // Only show trips that are scheduled (not completed) and within the next 2 days
+          return (
+            trip.status !== 'Completed' &&
+            (isAfter(pickupDate, now) || pickupDate.getTime() === now.getTime()) &&
+            (isBefore(pickupDate, twoDaysFromNow) || pickupDate.getTime() === twoDaysFromNow.getTime())
+          );
         });
-        setTrips(tripsData as Array<Schema['Trip']['type']>);
+        
+        setTrips(filteredTrips as Array<Schema['Trip']['type']>);
+      } else {
+        // If no driver found, show empty state
+        setTrips([]);
       }
     } catch (error) {
       console.error('Error loading driver data:', error);
@@ -122,8 +135,18 @@ function DriverDashboard() {
     return (
       <div className="driver-dashboard">
         <h2>Driver Dashboard</h2>
+        {currentDriver && (
+          <div className="driver-info">
+            <p>
+              <strong>Driver:</strong> {currentDriver.name}
+            </p>
+          </div>
+        )}
         <div className="empty-state">
-          <p>No trips assigned to you at this time.</p>
+          <p>No trips assigned to you for the next 2 days.</p>
+          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+            Only scheduled and assigned jobs for the next 2 days are shown here.
+          </p>
         </div>
       </div>
     );

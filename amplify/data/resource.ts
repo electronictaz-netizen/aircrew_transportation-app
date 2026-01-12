@@ -26,6 +26,13 @@ const schema = a.schema({
       actualDropoffTime: a.datetime(),
       flightStatus: a.string(),
       flightStatusLastUpdated: a.datetime(),
+      // Recurring job fields
+      isRecurring: a.boolean().default(false),
+      recurringPattern: a.string(), // 'daily', 'weekly', 'monthly'
+      recurringEndDate: a.datetime(), // When to stop creating recurring jobs
+      parentTripId: a.id(), // Reference to the original recurring trip
+      childTrips: a.hasMany('Trip', 'parentTripId'),
+      parentTrip: a.belongsTo('Trip', 'parentTripId'),
     })
     .authorization((allow) => [allow.authenticated()]),
 });

@@ -4,6 +4,7 @@ import type { Schema } from '../../amplify/data/resource';
 import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
 import TripList from './TripList';
+import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -19,6 +20,10 @@ function ManagementDashboard() {
   useEffect(() => {
     loadTrips();
     loadDrivers();
+    // Generate upcoming recurring trips on load
+    generateUpcomingRecurringTrips().then(() => {
+      loadTrips(); // Reload trips after generating recurring ones
+    });
   }, []);
 
   const loadTrips = async () => {
@@ -48,7 +53,20 @@ function ManagementDashboard() {
         ...tripData,
         status: tripData.status || 'Unassigned',
       };
-      await client.models.Trip.create(tripWithStatus);
+
+      // If it's a recurring job, generate the recurring trips
+      if (tripData.isRecurring && tripData.recurringPattern && tripData.recurringEndDate) {
+        await generateRecurringTrips({
+          tripData: tripWithStatus,
+          isRecurring: true,
+          recurringPattern: tripData.recurringPattern,
+          recurringEndDate: tripData.recurringEndDate,
+        });
+      } else {
+        // Regular one-time trip
+        await client.models.Trip.create(tripWithStatus);
+      }
+
       await loadTrips();
       setShowTripForm(false);
       setEditingTrip(null);
