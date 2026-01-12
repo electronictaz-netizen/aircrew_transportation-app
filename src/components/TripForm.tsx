@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import './TripForm.css';

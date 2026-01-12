@@ -35,14 +35,12 @@ export async function fetchFlightStatus(flightNumber: string): Promise<FlightSta
   // Clean flight number (remove spaces, convert to uppercase)
   const cleanFlightNumber = flightNumber.trim().toUpperCase();
   
-  // Extract airline code and flight number
+  // Validate flight number format (2 letters followed by digits)
   const match = cleanFlightNumber.match(/^([A-Z]{2})(\d+)$/);
   if (!match) {
     console.warn(`Invalid flight number format: ${flightNumber}`);
     return { status: 'Unknown', flightNumber: cleanFlightNumber };
   }
-
-  const [, airlineCode, flightNum] = match;
   
   try {
     const response = await fetch(

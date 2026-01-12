@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
-import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
 import './TripList.css';
-
-const client = generateClient<Schema>();
 
 interface TripListProps {
   trips: Array<Schema['Trip']['type']>;
@@ -15,7 +12,7 @@ interface TripListProps {
   onUpdate: () => void;
 }
 
-function TripList({ trips, drivers, onEdit, onDelete, onUpdate }: TripListProps) {
+function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
   const [flightStatuses, setFlightStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
