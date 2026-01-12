@@ -3,7 +3,10 @@
  * Call this from the browser console to check recurring trips status
  */
 
-import { client } from '../main';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../amplify/data/resource';
+
+const client = generateClient<Schema>();
 
 export async function debugRecurringTrips() {
   console.log('=== RECURRING TRIPS DEBUG ===\n');
@@ -20,9 +23,9 @@ export async function debugRecurringTrips() {
     console.log(`Total trips in database: ${allTrips?.length || 0}\n`);
     
     // Find parent trips (isRecurring = true)
-    const parentTrips = allTrips?.filter(t => t.isRecurring === true) || [];
+    const parentTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.isRecurring === true) || [];
     console.log(`📋 Parent recurring trips: ${parentTrips.length}`);
-    parentTrips.forEach((trip, idx) => {
+    parentTrips.forEach((trip: Schema['Trip']['type'], idx: number) => {
       console.log(`  ${idx + 1}. ID: ${trip.id}`);
       console.log(`     Flight: ${trip.flightNumber}`);
       console.log(`     Date: ${trip.pickupDate}`);
@@ -32,13 +35,13 @@ export async function debugRecurringTrips() {
     });
     
     // Find child trips (has parentTripId)
-    const childTrips = allTrips?.filter(t => t.parentTripId) || [];
+    const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId) || [];
     console.log(`\n📋 Child recurring trips: ${childTrips.length}`);
     
     if (childTrips.length > 0) {
       // Group by parent
-      const byParent = new Map<string, typeof childTrips>();
-      childTrips.forEach(trip => {
+      const byParent = new Map<string, Array<Schema['Trip']['type']>>();
+      childTrips.forEach((trip: Schema['Trip']['type']) => {
         if (trip.parentTripId) {
           const existing = byParent.get(trip.parentTripId) || [];
           existing.push(trip);
@@ -46,10 +49,10 @@ export async function debugRecurringTrips() {
         }
       });
       
-      byParent.forEach((children, parentId) => {
+      byParent.forEach((children: Array<Schema['Trip']['type']>, parentId: string) => {
         console.log(`\n  Parent ID: ${parentId}`);
         console.log(`  Children: ${children.length}`);
-        children.slice(0, 5).forEach((trip, idx) => {
+        children.slice(0, 5).forEach((trip: Schema['Trip']['type'], idx: number) => {
           console.log(`    ${idx + 1}. Date: ${trip.pickupDate}, Flight: ${trip.flightNumber}`);
         });
         if (children.length > 5) {
@@ -61,14 +64,14 @@ export async function debugRecurringTrips() {
     }
     
     // Check for orphaned trips (parentTripId but parent doesn't exist)
-    const orphanedTrips = childTrips.filter(child => {
-      const parentExists = parentTrips.some(p => p.id === child.parentTripId);
+    const orphanedTrips = childTrips.filter((child: Schema['Trip']['type']) => {
+      const parentExists = parentTrips.some((p: Schema['Trip']['type']) => p.id === child.parentTripId);
       return !parentExists;
     });
     
     if (orphanedTrips.length > 0) {
       console.log(`\n⚠️ Orphaned child trips (parent missing): ${orphanedTrips.length}`);
-      orphanedTrips.forEach(trip => {
+      orphanedTrips.forEach((trip: Schema['Trip']['type']) => {
         console.log(`  - ID: ${trip.id}, Parent ID: ${trip.parentTripId}, Date: ${trip.pickupDate}`);
       });
     }
@@ -82,14 +85,14 @@ export async function debugRecurringTrips() {
     console.log(`Orphaned trips: ${orphanedTrips.length}`);
     
     // Check if any parent trips should have children but don't
-    const parentsWithoutChildren = parentTrips.filter(parent => {
-      const hasChildren = childTrips.some(child => child.parentTripId === parent.id);
+    const parentsWithoutChildren = parentTrips.filter((parent: Schema['Trip']['type']) => {
+      const hasChildren = childTrips.some((child: Schema['Trip']['type']) => child.parentTripId === parent.id);
       return !hasChildren;
     });
     
     if (parentsWithoutChildren.length > 0) {
       console.log(`\n⚠️ Parent trips without children: ${parentsWithoutChildren.length}`);
-      parentsWithoutChildren.forEach(trip => {
+      parentsWithoutChildren.forEach((trip: Schema['Trip']['type']) => {
         console.log(`  - ID: ${trip.id}, Flight: ${trip.flightNumber}, Date: ${trip.pickupDate}`);
         console.log(`    Pattern: ${trip.recurringPattern}, End: ${trip.recurringEndDate}`);
       });
