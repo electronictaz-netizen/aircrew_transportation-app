@@ -66,7 +66,6 @@ function ManagementDashboard() {
       if (tripData.pickupDate && tripData.flightNumber) {
         const newTripDate = new Date(tripData.pickupDate);
         const newTripDateStart = new Date(newTripDate.getFullYear(), newTripDate.getMonth(), newTripDate.getDate());
-        const newTripDateEnd = new Date(newTripDate.getFullYear(), newTripDate.getMonth(), newTripDate.getDate(), 23, 59, 59, 999);
         const flightNumber = tripData.flightNumber.trim().toUpperCase();
         
         // Get all existing trips
