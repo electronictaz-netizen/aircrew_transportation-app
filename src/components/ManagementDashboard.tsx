@@ -214,7 +214,22 @@ function ManagementDashboard() {
       const isParentRecurring = trip?.isRecurring === true;
       const isChildRecurring = !!trip?.parentTripId;
       const wasRecurring = isParentRecurring || isChildRecurring;
-      const isRemovingRecurrence = wasRecurring && tripData.isRecurring === false;
+      
+      // Check if recurrence is being removed - explicitly check for false or undefined when it was previously recurring
+      const isRemovingRecurrence = wasRecurring && (
+        tripData.isRecurring === false || 
+        tripData.isRecurring === undefined ||
+        (tripData.isRecurring !== true && wasRecurring)
+      );
+      
+      console.log('Update trip check:', {
+        tripId,
+        isParentRecurring,
+        isChildRecurring,
+        wasRecurring,
+        newIsRecurring: tripData.isRecurring,
+        isRemovingRecurrence
+      });
       
       // If removing recurrence from a parent trip, delete all child trips
       if (isParentRecurring && isRemovingRecurrence) {
@@ -270,18 +285,20 @@ function ManagementDashboard() {
         const currentTripDate = trip.pickupDate ? new Date(trip.pickupDate) : null;
         const now = new Date();
         
-        // Find ALL future child trips (after the current trip's date)
+        // Find ALL future child trips - delete everything that is today or in the future
         // Match by both date AND flight number
         const futureChildTrips = allChildTrips.filter(t => {
           if (!t.pickupDate || t.id === tripId) return false; // Don't delete the current trip being edited
           if (t.flightNumber !== currentFlightNumber) return false; // Must match flight number
           
           const childDate = new Date(t.pickupDate);
-          // Delete all trips that are after the current trip's date
-          // If current trip is in the future, delete everything after it
-          // If current trip is in the past, delete everything after now
-          const cutoffDate = currentTripDate && currentTripDate > now ? currentTripDate : now;
-          return childDate > cutoffDate;
+          // Delete ALL trips that are today or in the future (not in the past)
+          // Use start of today for comparison to include all trips today
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const childDateStart = new Date(childDate.getFullYear(), childDate.getMonth(), childDate.getDate());
+          
+          // Delete if the trip date is today or in the future
+          return childDateStart >= todayStart;
         });
         
         console.log(`Found ${futureChildTrips.length} future child trips to delete (Flight: ${currentFlightNumber}, current trip date: ${currentTripDate?.toISOString()}, now: ${now.toISOString()})`);
