@@ -289,7 +289,10 @@ function ManagementDashboard() {
         // Match by both date AND flight number
         const futureChildTrips = allChildTrips.filter(t => {
           if (!t.pickupDate || t.id === tripId) return false; // Don't delete the current trip being edited
-          if (t.flightNumber !== currentFlightNumber) return false; // Must match flight number
+          if (t.flightNumber !== currentFlightNumber) {
+            console.log(`Skipping trip ${t.id} - flight number mismatch: ${t.flightNumber} !== ${currentFlightNumber}`);
+            return false; // Must match flight number
+          }
           
           const childDate = new Date(t.pickupDate);
           // Delete ALL trips that are today or in the future (not in the past)
@@ -298,7 +301,11 @@ function ManagementDashboard() {
           const childDateStart = new Date(childDate.getFullYear(), childDate.getMonth(), childDate.getDate());
           
           // Delete if the trip date is today or in the future
-          return childDateStart >= todayStart;
+          const shouldDelete = childDateStart >= todayStart;
+          if (!shouldDelete) {
+            console.log(`Skipping trip ${t.id} - date is in the past: ${childDateStart.toISOString()} < ${todayStart.toISOString()}`);
+          }
+          return shouldDelete;
         });
         
         console.log(`Found ${futureChildTrips.length} future child trips to delete (Flight: ${currentFlightNumber}, current trip date: ${currentTripDate?.toISOString()}, now: ${now.toISOString()})`);
