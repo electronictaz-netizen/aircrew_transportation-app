@@ -475,6 +475,8 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
                 value={recurringFilter}
                 onChange={(e) => {
                   setRecurringFilter(e.target.value);
+                  setSortField('pickupDate');
+                  setSortDirection('asc');
                   handleFilterChange();
                 }}
               >
