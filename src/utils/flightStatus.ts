@@ -113,16 +113,26 @@ const getProviderConfig = (): {
 const PROVIDER_CONFIG = getProviderConfig();
 
 // API Configuration
-const API_CONFIG = {
+interface APIConfig {
+  url: string;
+  paramName: string;
+  flightParam: string;
+  useHeaders?: boolean; // If true, API key goes in headers instead of query params
+  dateParam?: string; // Optional date parameter name
+}
+
+const API_CONFIG: Record<FlightAPIProvider, APIConfig> = {
   aviationstack: {
     url: 'https://api.aviationstack.com/v1/flights',
     paramName: 'access_key',
     flightParam: 'flight_iata',
+    dateParam: 'flight_date',
   },
   flightaware: {
-    url: 'https://flightxml.flightaware.com/json/FlightXML2',
-    paramName: 'username', // FlightAware uses username/password
-    flightParam: 'ident',
+    url: 'https://aeroapi.flightaware.com/aeroapi',
+    paramName: 'x-apikey', // AeroAPI uses API key in header
+    flightParam: 'ident', // Flight identifier is in URL path
+    useHeaders: true, // AeroAPI requires header-based authentication
   },
   flightradar24: {
     url: 'https://api.flightradar24.com/common/v1',
@@ -271,8 +281,9 @@ async function fetchFromProvider(
       
       apiUrl = `${config.url}?${params.toString()}`;
     } else if (provider === 'flightaware') {
-      // FlightAware requires different authentication (username/password or token)
-      apiUrl = `${config.url}/FlightInfo?${config.paramName}=${encodeURIComponent(apiKey)}&${config.flightParam}=${encodeURIComponent(flightNumber)}`;
+      // FlightAware AeroAPI uses header-based authentication
+      // Endpoint: /flights/{ident} where ident is the flight number
+      apiUrl = `${config.url}/flights/${encodeURIComponent(flightNumber)}`;
     } else {
       // FlightRadar24 - Note: This API may require special access or different endpoint structure
       // The current implementation is a placeholder and may need adjustment based on actual API documentation
@@ -283,7 +294,21 @@ async function fetchFromProvider(
 
     console.log(`[${provider}] Fetching flight status for ${flightNumber}...`);
 
-    const response = await fetch(apiUrl);
+    // Build fetch options with headers if needed
+    const fetchOptions: RequestInit = {
+      method: 'GET',
+      headers: {},
+    };
+
+    // AeroAPI (FlightAware) requires API key in header
+    if (provider === 'flightaware' && config.useHeaders) {
+      fetchOptions.headers = {
+        'x-apikey': apiKey,
+        'Accept': 'application/json',
+      };
+    }
+
+    const response = await fetch(apiUrl, fetchOptions);
 
     if (!response.ok) {
       // Handle specific error codes

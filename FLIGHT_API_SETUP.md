@@ -50,40 +50,55 @@ This application supports multiple flight status API providers. Choose the one t
 
 ---
 
-## FlightAware API Setup
+## FlightAware AeroAPI Setup
+
+FlightAware's AeroAPI is their modern REST API that uses API key authentication via headers.
 
 ### Step 1: Create Account
 1. Go to [https://flightaware.com/](https://flightaware.com/)
 2. Click "Sign Up" or "Create Account"
-3. Complete registration (may require approval for API access)
+3. Complete registration
 
-### Step 2: Request API Access
-1. Go to [FlightAware FlightXML API](https://flightaware.com/commercial/flightxml/)
-2. Click "Request API Access" or "Get Started"
-3. Fill out the application form:
-   - Business/Organization name
-   - Use case description
-   - Expected request volume
-4. Wait for approval (can take 1-3 business days)
+### Step 2: Get AeroAPI Access
+1. Go to [FlightAware AeroAPI](https://www.flightaware.com/aeroapi/)
+2. Sign up for AeroAPI access
+3. You may need to:
+   - Verify your account
+   - Request API access (may require approval for some plans)
+   - Choose a plan (free tier available with limitations)
 
-### Step 3: Get API Credentials
-1. Once approved, log into your FlightAware account
-2. Go to "My Account" → "API Keys" or "FlightXML"
-3. You'll receive:
-   - **Username**: Your FlightAware username
-   - **API Key**: Your API key (different from password)
+### Step 3: Get API Key
+1. Log into your FlightAware account
+2. Navigate to **AeroAPI** section or **API Keys**
+3. Generate or copy your **AeroAPI Key**
+   - This is different from FlightXML credentials
+   - Format: Usually a long alphanumeric string
 
 ### Step 4: Configure in AWS Amplify
 1. Go to AWS Amplify Console
 2. Select your app
 3. Go to **Environment variables**
 4. Add the following variables:
+
+**For Multi-Provider Setup (Recommended):**
+   - **Key**: `VITE_FLIGHT_API_PROVIDERS`
+   - **Value**: `aviationstack,flightaware` (or include flightradar24 if you have access)
+   - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTAWARE`
+   - **Value**: `your_aeroapi_key_here` (paste your AeroAPI key)
+
+**For Single Provider Setup:**
    - **Key**: `VITE_FLIGHT_API_PROVIDER`
    - **Value**: `flightaware`
    - **Key**: `VITE_FLIGHT_API_KEY`
-   - **Value**: `your_api_key_here` (paste your actual API key)
+   - **Value**: `your_aeroapi_key_here` (paste your AeroAPI key)
 
-**Note:** FlightAware uses username/password authentication. The current implementation uses the API key as the username parameter. You may need to adjust the authentication method based on FlightAware's current API requirements.
+### Step 5: Verify Configuration
+1. Deploy your app
+2. Test flight status check
+3. Check browser console for `[flightaware]` logs
+4. Should see successful API calls or clear error messages
+
+**Note:** AeroAPI uses header-based authentication (`x-apikey` header). The current implementation handles this automatically.
 
 **Pricing:**
 - Free tier: Limited (check current offerings)
