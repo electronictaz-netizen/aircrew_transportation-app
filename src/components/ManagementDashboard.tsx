@@ -524,11 +524,14 @@ function ManagementDashboard() {
     
     try {
       await deleteAllTrips(true); // Skip the internal confirmation since we already asked
+      // Wait for database to sync
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await loadTrips(true); // Force refresh after deletion
       alert('All trips have been deleted successfully.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting all trips:', error);
-      alert('Failed to delete all trips. Check console for details.');
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to delete all trips: ${errorMessage}. Check console for details.`);
     }
   };
 
