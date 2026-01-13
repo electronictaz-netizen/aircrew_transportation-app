@@ -50,7 +50,7 @@ In AWS Amplify Console → Environment Variables:
 
 1. **Set provider list:**
    - **Key**: `VITE_FLIGHT_API_PROVIDERS`
-   - **Value**: `aviationstack,flightaware` (or add `flightradar24` if you have access)
+   - **Value**: `aviationstack,flightaware`
 
 2. **Set FlightAware API key:**
    - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTAWARE`

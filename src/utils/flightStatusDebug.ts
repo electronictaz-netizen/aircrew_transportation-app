@@ -21,7 +21,6 @@ export function debugFlightAPI() {
     const providers: Array<{ name: string; key: string | undefined; configured: boolean }> = [
       { name: 'aviationstack', key: import.meta.env.VITE_FLIGHT_API_KEY_AVIATIONSTACK, configured: false },
       { name: 'flightaware', key: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTAWARE, configured: false },
-      { name: 'flightradar24', key: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTRADAR24, configured: false },
     ];
     
     providers.forEach(provider => {
@@ -110,10 +109,9 @@ export function debugFlightAPI() {
   }
   
   console.log('\n💡 Tip: To use multiple providers, set:');
-  console.log('  VITE_FLIGHT_API_PROVIDERS=aviationstack,flightaware,flightradar24');
+  console.log('  VITE_FLIGHT_API_PROVIDERS=aviationstack,flightaware');
   console.log('  VITE_FLIGHT_API_KEY_AVIATIONSTACK=your_key_here');
   console.log('  VITE_FLIGHT_API_KEY_FLIGHTAWARE=your_key_here');
-  console.log('  VITE_FLIGHT_API_KEY_FLIGHTRADAR24=your_key_here');
   
   console.groupEnd();
 }

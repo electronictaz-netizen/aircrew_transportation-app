@@ -9,7 +9,7 @@ This application supports using **multiple flight status API providers** simulta
 In AWS Amplify Console → Environment Variables, add:
 
 **Key:** `VITE_FLIGHT_API_PROVIDERS`  
-**Value:** `aviationstack,flightaware,flightradar24`
+**Value:** `aviationstack,flightaware`
 
 (You can include any combination of the three supported providers, separated by commas)
 
@@ -25,9 +25,6 @@ Add the API key for each provider you want to use:
 - **Key:** `VITE_FLIGHT_API_KEY_FLIGHTAWARE`
 - **Value:** Your FlightAware API key
 
-**For FlightRadar24:**
-- **Key:** `VITE_FLIGHT_API_KEY_FLIGHTRADAR24`
-- **Value:** Your FlightRadar24 API key
 
 ### Step 3: Deploy
 
@@ -53,10 +50,9 @@ VITE_FLIGHT_API_KEY_FLIGHTAWARE=your_flightaware_key
 
 ### Example 2: All Three Providers
 ```
-VITE_FLIGHT_API_PROVIDERS=aviationstack,flightaware,flightradar24
+VITE_FLIGHT_API_PROVIDERS=aviationstack,flightaware
 VITE_FLIGHT_API_KEY_AVIATIONSTACK=your_aviationstack_key
 VITE_FLIGHT_API_KEY_FLIGHTAWARE=your_flightaware_key
-VITE_FLIGHT_API_KEY_FLIGHTRADAR24=your_flightradar24_key
 ```
 - Maximum redundancy
 - Tries all three in order until one succeeds
@@ -114,12 +110,10 @@ This will show:
 **For Cost-Conscious Users:**
 1. AviationStack (free tier: 1,000/month)
 2. FlightAware (if you have access)
-3. FlightRadar24 (if you have access)
 
 **For Maximum Reliability:**
 1. FlightAware (most comprehensive)
 2. AviationStack (good backup)
-3. FlightRadar24 (additional backup)
 
 **For Free Tier Users:**
 1. AviationStack (only free tier available)

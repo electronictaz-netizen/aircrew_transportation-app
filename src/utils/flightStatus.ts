@@ -7,26 +7,24 @@
  * Supported APIs:
  * - AviationStack (https://aviationstack.com/) - Default
  * - FlightAware (https://flightaware.com/commercial/flightxml/)
- * - FlightRadar24 (https://www.flightradar24.com/)
  * 
  * Configuration via environment variables:
  * 
  * SINGLE PROVIDER (legacy):
- * - VITE_FLIGHT_API_PROVIDER: 'aviationstack' | 'flightaware' | 'flightradar24'
+ * - VITE_FLIGHT_API_PROVIDER: 'aviationstack' | 'flightaware'
  * - VITE_FLIGHT_API_KEY: Your API key for the selected provider
  * 
  * MULTIPLE PROVIDERS (recommended):
- * - VITE_FLIGHT_API_PROVIDERS: Comma-separated list, e.g., 'aviationstack,flightaware,flightradar24'
+ * - VITE_FLIGHT_API_PROVIDERS: Comma-separated list, e.g., 'aviationstack,flightaware'
  * - VITE_FLIGHT_API_KEY_AVIATIONSTACK: API key for AviationStack
  * - VITE_FLIGHT_API_KEY_FLIGHTAWARE: API key for FlightAware
- * - VITE_FLIGHT_API_KEY_FLIGHTRADAR24: API key for FlightRadar24
  * 
  * The system will try providers in the order specified until one succeeds.
  * 
  * Debugging: Run debugFlightAPI() in browser console to diagnose API issues
  */
 
-type FlightAPIProvider = 'aviationstack' | 'flightaware' | 'flightradar24';
+type FlightAPIProvider = 'aviationstack' | 'flightaware';
 
 /**
  * Load API key from local config file (for testing) or environment variables
@@ -62,7 +60,7 @@ const getProviderConfig = (): {
     const providerList = providersEnv
       .split(',')
       .map(p => p.trim().toLowerCase())
-      .filter(p => ['aviationstack', 'flightaware', 'flightradar24'].includes(p)) as FlightAPIProvider[];
+      .filter(p => ['aviationstack', 'flightaware'].includes(p)) as FlightAPIProvider[];
     
     if (providerList.length === 0) {
       console.warn('VITE_FLIGHT_API_PROVIDERS is set but contains no valid providers. Falling back to single provider.');
@@ -70,7 +68,6 @@ const getProviderConfig = (): {
       const keys: Record<FlightAPIProvider, string | undefined> = {
         aviationstack: import.meta.env.VITE_FLIGHT_API_KEY_AVIATIONSTACK,
         flightaware: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTAWARE,
-        flightradar24: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTRADAR24,
       };
       
       // Filter out providers without API keys
@@ -90,10 +87,6 @@ const getProviderConfig = (): {
         // Warn about provider limitations
         if (validProviders.includes('flightaware')) {
           console.warn('⚠️ FlightAware (AeroAPI) has CORS restrictions and may not work from browser. Consider removing it or using a backend proxy.');
-        }
-        // FlightRadar24 requires a valid API subscription to work
-        if (validProviders.includes('flightradar24')) {
-          console.log('ℹ️ FlightRadar24 API configured. Ensure you have a valid API subscription.');
         }
         
         return { providers: validProviders, keys };
@@ -121,7 +114,6 @@ const getProviderConfig = (): {
   const keys: Record<FlightAPIProvider, string | undefined> = {
     aviationstack: singleProvider === 'aviationstack' ? singleKey : undefined,
     flightaware: singleProvider === 'flightaware' ? singleKey : undefined,
-    flightradar24: singleProvider === 'flightradar24' ? singleKey : undefined,
   };
   
   if (singleKey && singleKey !== 'YOUR_API_KEY' && singleKey.trim().length > 0) {
@@ -156,12 +148,6 @@ const API_CONFIG: Record<FlightAPIProvider, APIConfig> = {
     paramName: 'x-apikey', // AeroAPI uses API key in header
     flightParam: 'ident', // Flight identifier is in URL path
     useHeaders: true, // AeroAPI requires header-based authentication
-  },
-  flightradar24: {
-    url: 'https://api.flightradar24.com/common/v1',
-    paramName: 'x-api-key', // FlightRadar24 uses API key in header
-    flightParam: 'flight', // Flight identifier parameter
-    useHeaders: true, // FlightRadar24 requires header-based authentication
   },
 };
 
@@ -262,94 +248,6 @@ function parseFlightAwareResponse(data: any, flightNumber: string): FlightStatus
   };
 }
 
-/**
- * Parse FlightRadar24 API response
- * FlightRadar24 API response format varies, but typically includes flight data
- */
-function parseFlightRadar24Response(data: any, flightNumber: string): FlightStatus {
-  // FlightRadar24 response structure can vary
-  // Try different possible response formats
-  let flight: any = null;
-  
-  // Format 1: data.result.response.data array
-  if (data.result?.response?.data && Array.isArray(data.result.response.data) && data.result.response.data.length > 0) {
-    flight = data.result.response.data[0];
-  }
-  // Format 2: data.flights array
-  else if (data.flights && Array.isArray(data.flights) && data.flights.length > 0) {
-    flight = data.flights[0];
-  }
-  // Format 3: data.data array
-  else if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-    flight = data.data[0];
-  }
-  // Format 4: Direct flight object
-  else if (data.flight) {
-    flight = data.flight;
-  }
-  // Format 5: Single flight in response
-  else if (data.callsign || data.ident) {
-    flight = data;
-  }
-  
-  if (!flight) {
-    return { status: 'Unknown', flightNumber };
-  }
-
-  let status: FlightStatus['status'] = 'Unknown';
-
-  // Determine status based on flight state
-  // Check for status field
-  const statusText = (flight.status?.text || flight.status || flight.flight_status || '').toLowerCase();
-  
-  if (statusText.includes('landed') || statusText.includes('arrived')) {
-    status = 'Landed';
-  } else if (statusText.includes('cancelled') || statusText.includes('canceled')) {
-    status = 'Cancelled';
-  } else if (statusText.includes('delayed')) {
-    status = 'Delayed';
-  } else if (statusText.includes('on time') || statusText.includes('ontime')) {
-    status = 'On Time';
-  } else {
-    // Try to determine status from flight times
-    const scheduledDeparture = flight.time?.scheduled?.departure || flight.scheduled_departure;
-    const actualDeparture = flight.time?.actual?.departure || flight.actual_departure;
-    const actualArrival = flight.time?.actual?.arrival || flight.actual_arrival;
-    
-    if (actualArrival) {
-      status = 'Landed';
-    } else if (actualDeparture) {
-      // Flight has departed but not arrived
-      if (scheduledDeparture && actualDeparture) {
-        const depTime = new Date(actualDeparture * 1000); // FlightRadar24 often uses Unix timestamps
-        const schedTime = new Date(scheduledDeparture * 1000);
-        const delayMinutes = (depTime.getTime() - schedTime.getTime()) / (1000 * 60);
-        if (delayMinutes > 15) {
-          status = 'Delayed';
-        } else {
-          status = 'On Time';
-        }
-      } else {
-        status = 'On Time';
-      }
-    } else if (scheduledDeparture) {
-      // Flight is scheduled but hasn't departed
-      const schedTime = new Date(scheduledDeparture * 1000);
-      const now = new Date();
-      if (schedTime < now) {
-        status = 'Delayed';
-      } else {
-        status = 'On Time';
-      }
-    }
-  }
-
-  // Return minimal data - only status is needed
-  return {
-    status,
-    flightNumber,
-  };
-}
 
 /**
  * Format date for AviationStack API (YYYY-MM-DD)
@@ -455,13 +353,6 @@ async function fetchFromProvider(
       };
     }
     
-    // FlightRadar24 requires API key in header
-    if (provider === 'flightradar24' && config.useHeaders) {
-      fetchOptions.headers = {
-        'x-api-key': apiKey,
-        'Accept': 'application/json',
-      };
-    }
 
     const response = await fetch(apiUrl, fetchOptions);
 
@@ -472,12 +363,7 @@ async function fetchFromProvider(
         return null;
       }
       if (response.status === 400) {
-        if (provider === 'flightradar24') {
-          console.warn(`[${provider}] ❌ 400 Bad Request - Invalid API endpoint, parameters, or API key.`);
-          console.warn(`[${provider}] 💡 Please verify your FlightRadar24 API key and subscription are valid.`);
-        } else {
-          console.warn(`[${provider}] ❌ 400 Bad Request - Invalid API endpoint or parameters. This provider may not be available or requires different configuration.`);
-        }
+        console.warn(`[${provider}] ❌ 400 Bad Request - Invalid API endpoint or parameters. This provider may not be available or requires different configuration.`);
         return null; // Will trigger fallback to next provider
       }
       if (response.status === 429) {
@@ -516,8 +402,6 @@ async function fetchFromProvider(
         return parseAviationStackResponse(data, flightNumber);
       case 'flightaware':
         return parseFlightAwareResponse(data, flightNumber);
-      case 'flightradar24':
-        return parseFlightRadar24Response(data, flightNumber);
       default:
         return null;
     }
@@ -593,13 +477,7 @@ export async function fetchFlightStatus(
   console.warn(`All ${providers.length} provider(s) failed to retrieve flight status for ${cleanFlightNumber}`);
   
   // Provide helpful guidance based on which providers were tried
-  if (providers.length === 1 && providers[0] === 'flightradar24') {
-    console.error('💡 FlightRadar24 API failed. Please verify:');
-    console.error('   1. Your API key is correct in AWS Amplify environment variables');
-    console.error('   2. You have an active FlightRadar24 API subscription');
-    console.error('   3. Your API key has the necessary permissions');
-    console.error('   Alternatively, configure AviationStack: VITE_FLIGHT_API_PROVIDERS=aviationstack');
-  } else if (providers.length === 1 && providers[0] === 'flightaware') {
+  if (providers.length === 1 && providers[0] === 'flightaware') {
     console.error('💡 Recommendation: FlightAware has CORS restrictions and cannot be called from browser.');
     console.error('   Please configure AviationStack instead or set up a backend proxy for FlightAware.');
   } else if (providers.length === 0) {

@@ -5,8 +5,7 @@ This application supports multiple flight status API providers. Choose the one t
 ## Supported APIs
 
 1. **AviationStack** (Recommended) - Easy setup, good free tier
-2. **FlightAware** - Comprehensive data, requires account approval
-3. **FlightRadar24** - Real-time tracking, commercial API
+2. **FlightAware** - Comprehensive data, requires account approval (Note: Has CORS restrictions)
 
 ---
 
@@ -270,13 +269,11 @@ You can configure multiple providers with automatic fallback. The system will tr
 2. Navigate to **Environment variables**
 3. Add the following variables:
    - **Key**: `VITE_FLIGHT_API_PROVIDERS`
-   - **Value**: `aviationstack,flightaware,flightradar24` (comma-separated list of providers to try)
+   - **Value**: `aviationstack,flightaware` (comma-separated list of providers to try)
    - **Key**: `VITE_FLIGHT_API_KEY_AVIATIONSTACK`
    - **Value**: Your AviationStack API key
    - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTAWARE`
    - **Value**: Your FlightAware API key (optional)
-   - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTRADAR24`
-   - **Value**: Your FlightRadar24 API key (optional)
 
 4. Redeploy your app
 
@@ -368,7 +365,7 @@ To use a single provider (legacy method):
 - ⚠️ May need endpoint adjustments
 - ⚠️ Response parsing may need updates based on current API
 
-**Recommendation:** Start with AviationStack for easiest setup, then migrate to FlightAware or FlightRadar24 if you need more features or higher limits.
+**Recommendation:** Start with AviationStack for easiest setup, then add FlightAware if you need more features or higher limits (note: FlightAware requires a backend proxy due to CORS).
 
 ---
 
@@ -377,6 +374,5 @@ To use a single provider (legacy method):
 For API-specific issues:
 - **AviationStack:** [support@aviationstack.com](mailto:support@aviationstack.com)
 - **FlightAware:** [FlightAware Support](https://flightaware.com/about/contact/)
-- **FlightRadar24:** [FlightRadar24 Business Contact](https://www.flightradar24.com/business/contact)
 
 For application issues, check the browser console logs and use the debug functions.
