@@ -3,7 +3,6 @@ import { generateClient } from 'aws-amplify/data';
 import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
-import { fetchFlightStatus } from '../utils/flightStatus';
 import './DriverDashboard.css';
 
 const client = generateClient<Schema>();
@@ -12,31 +11,11 @@ function DriverDashboard() {
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [currentDriver, setCurrentDriver] = useState<Schema['Driver']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [flightStatuses, setFlightStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadDriverAndTrips();
   }, []);
 
-  useEffect(() => {
-    // Load flight statuses immediately for current day trips
-    if (trips.length > 0) {
-      loadFlightStatuses();
-    }
-    
-    // Set up interval to refresh flight statuses every 60 minutes
-    const intervalId = setInterval(() => {
-      console.log('[DriverDashboard] Refreshing flight statuses (60-minute interval)...');
-      if (trips.length > 0) {
-        loadFlightStatuses();
-      }
-    }, 60 * 60 * 1000); // 60 minutes in milliseconds
-    
-    // Cleanup interval on unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [trips]);
 
   const loadDriverAndTrips = async () => {
     try {
@@ -81,38 +60,6 @@ function DriverDashboard() {
     }
   };
 
-  const loadFlightStatuses = async () => {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    
-    // Filter to only current day trips
-    const todayTrips = trips.filter(trip => {
-      if (!trip.pickupDate) return false;
-      const tripDate = new Date(trip.pickupDate);
-      return tripDate >= todayStart && tripDate <= todayEnd;
-    });
-    
-    console.log(`[DriverDashboard] Fetching flight status for ${todayTrips.length} of ${trips.length} trips (current day only)`);
-    
-    const statuses: Record<string, string> = {};
-    for (const trip of todayTrips) {
-      if (trip.flightNumber) {
-        try {
-          // Pass the pickup date to get the correct flight for that day
-          const flightStatus = await fetchFlightStatus(
-            trip.flightNumber,
-            trip.pickupDate ? new Date(trip.pickupDate) : undefined
-          );
-          statuses[trip.id] = flightStatus.status;
-        } catch (error) {
-          console.error(`Error fetching status for ${trip.flightNumber}:`, error);
-          statuses[trip.id] = 'Unknown';
-        }
-      }
-    }
-    setFlightStatuses(statuses);
-  };
 
   const handlePickup = async (tripId: string) => {
     try {
@@ -144,19 +91,6 @@ function DriverDashboard() {
     }
   };
 
-  const getFlightStatusBadgeClass = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'on time':
-      case 'landed':
-        return 'flight-status-ontime';
-      case 'delayed':
-        return 'flight-status-delayed';
-      case 'cancelled':
-        return 'flight-status-cancelled';
-      default:
-        return 'flight-status-unknown';
-    }
-  };
 
   if (loading) {
     return <div className="loading">Loading your assignments...</div>;
@@ -199,13 +133,6 @@ function DriverDashboard() {
           <div key={trip.id} className="trip-card">
             <div className="trip-header">
               <h3>Flight {trip.flightNumber}</h3>
-              <span
-                className={`flight-status-badge ${getFlightStatusBadgeClass(
-                  flightStatuses[trip.id] || 'Unknown'
-                )}`}
-              >
-                {flightStatuses[trip.id] || 'Checking...'}
-              </span>
             </div>
 
             <div className="trip-details">

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
-import { fetchFlightStatus } from '../utils/flightStatus';
 import TripFilters from './TripFilters';
 import './TripList.css';
 
@@ -15,7 +14,6 @@ interface TripListProps {
 }
 
 function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate }: TripListProps) {
-  const [flightStatuses, setFlightStatuses] = useState<Record<string, string>>({});
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
 
@@ -35,59 +33,6 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
     // This ensures sorting is always applied
   }, [trips]);
 
-  useEffect(() => {
-    // Fetch flight statuses only for current day trips
-    const loadFlightStatuses = async () => {
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-      
-      // Filter to only current day trips
-      const todayTrips = displayedTrips.filter(trip => {
-        if (!trip.pickupDate) return false;
-        const tripDate = new Date(trip.pickupDate);
-        return tripDate >= todayStart && tripDate <= todayEnd;
-      });
-      
-      console.log(`Fetching flight status for ${todayTrips.length} of ${displayedTrips.length} trips (current day only)`);
-      
-      const statuses: Record<string, string> = {};
-      for (const trip of todayTrips) {
-        if (trip.flightNumber) {
-          try {
-            // Pass the pickup date to get the correct flight for that day
-            const flightStatus = await fetchFlightStatus(
-              trip.flightNumber,
-              trip.pickupDate ? new Date(trip.pickupDate) : undefined
-            );
-            statuses[trip.id] = flightStatus.status;
-          } catch (error) {
-            console.error(`Error fetching status for ${trip.flightNumber}:`, error);
-            statuses[trip.id] = 'Unknown';
-          }
-        }
-      }
-      setFlightStatuses(statuses);
-    };
-
-    // Load flight statuses immediately
-    if (displayedTrips.length > 0) {
-      loadFlightStatuses();
-    }
-    
-    // Set up interval to refresh flight statuses every 60 minutes
-    const intervalId = setInterval(() => {
-      console.log('Refreshing flight statuses (60-minute interval)...');
-      if (displayedTrips.length > 0) {
-        loadFlightStatuses();
-      }
-    }, 60 * 60 * 1000); // 60 minutes in milliseconds
-    
-    // Cleanup interval on unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [displayedTrips]);
 
   const getDriverName = (driverId: string | null | undefined) => {
     if (!driverId) return 'Unassigned';
@@ -108,19 +53,6 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
     }
   };
 
-  const getFlightStatusBadgeClass = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'on time':
-      case 'landed':
-        return 'flight-status-ontime';
-      case 'delayed':
-        return 'flight-status-delayed';
-      case 'cancelled':
-        return 'flight-status-cancelled';
-      default:
-        return 'flight-status-unknown';
-    }
-  };
 
   const handleFilterChange = (filteredTrips: Array<Schema['Trip']['type']>) => {
     setDisplayedTrips(filteredTrips);
@@ -212,7 +144,6 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
             <th>Pickup Date</th>
             <th>Pickup Time</th>
             <th>Flight Number</th>
-            <th>Flight Status</th>
             <th>Pickup Location</th>
             <th>Dropoff Location</th>
             <th>Passengers</th>
@@ -226,7 +157,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
         <tbody>
           {displayedTrips.length === 0 ? (
             <tr>
-              <td colSpan={onDeleteMultiple ? 13 : 12} className="no-results">
+              <td colSpan={onDeleteMultiple ? 12 : 11} className="no-results">
                 No trips match the current filters. Try adjusting your search criteria.
               </td>
             </tr>
@@ -259,15 +190,6 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
                     {trip.isRecurring ? ' 🔄' : ' ↪️'}
                   </span>
                 )}
-              </td>
-              <td>
-                <span
-                  className={`flight-status-badge ${getFlightStatusBadgeClass(
-                    flightStatuses[trip.id] || 'Unknown'
-                  )}`}
-                >
-                  {flightStatuses[trip.id] || 'Checking...'}
-                </span>
               </td>
               <td>{trip.pickupLocation}</td>
               <td>{trip.dropoffLocation}</td>
