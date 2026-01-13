@@ -328,6 +328,138 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
           )}
         </tbody>
       </table>
+      
+      {/* Mobile Card View */}
+      <div className="trips-table-mobile">
+        {displayedTrips.length === 0 ? (
+          <div className="no-results">
+            No trips match the current filters. Try adjusting your search criteria.
+          </div>
+        ) : (
+          displayedTrips.map((trip) => (
+            <div
+              key={trip.id}
+              className={`trip-card-mobile ${selectedTrips.has(trip.id) ? 'selected' : ''}`}
+            >
+              <div className="trip-card-header">
+                <div className="trip-card-title">
+                  {onDeleteMultiple && (
+                    <input
+                      type="checkbox"
+                      className="trip-card-checkbox"
+                      checked={selectedTrips.has(trip.id)}
+                      onChange={() => handleSelectTrip(trip.id)}
+                    />
+                  )}
+                  <span>
+                    {trip.flightNumber}
+                    {(trip.isRecurring || trip.parentTripId) && (
+                      <span className="recurring-badge" title={trip.isRecurring ? "Recurring Job (Parent)" : "Recurring Job (Child)"}>
+                        {trip.isRecurring ? ' 🔄' : ' ↪️'}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="action-buttons">
+                  <button
+                    className="btn-icon btn-edit"
+                    onClick={() => onEdit(trip)}
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="btn-icon btn-delete"
+                    onClick={() => onDelete(trip.id)}
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+              
+              <div className="trip-card-field">
+                <span className="trip-card-label">Pickup Date & Time</span>
+                <span className="trip-card-value">
+                  {trip.pickupDate
+                    ? `${format(new Date(trip.pickupDate), 'MMM dd, yyyy')} at ${format(new Date(trip.pickupDate), 'HH:mm')}`
+                    : 'N/A'}
+                </span>
+              </div>
+              
+              <div className="trip-card-field">
+                <span className="trip-card-label">Flight Status</span>
+                <span className="trip-card-value">
+                  {flightStatuses[trip.id] ? (
+                    <span
+                      className={`flight-status-badge ${getFlightStatusBadgeClass(
+                        flightStatuses[trip.id].status
+                      )}`}
+                    >
+                      {flightStatuses[trip.id].loading ? 'Checking...' : flightStatuses[trip.id].status}
+                    </span>
+                  ) : (
+                    <button
+                      className="btn btn-small btn-secondary"
+                      onClick={() => handleCheckFlightStatus(trip)}
+                      title="Check flight status (may incur API costs)"
+                    >
+                      Check Status
+                    </button>
+                  )}
+                </span>
+              </div>
+              
+              <div className="trip-card-field">
+                <span className="trip-card-label">Pickup Location</span>
+                <span className="trip-card-value">{trip.pickupLocation}</span>
+              </div>
+              
+              <div className="trip-card-field">
+                <span className="trip-card-label">Dropoff Location</span>
+                <span className="trip-card-value">{trip.dropoffLocation}</span>
+              </div>
+              
+              <div className="trip-card-field">
+                <span className="trip-card-label">Passengers</span>
+                <span className="trip-card-value">{trip.numberOfPassengers}</span>
+              </div>
+              
+              <div className="trip-card-field">
+                <span className="trip-card-label">Driver</span>
+                <span className="trip-card-value">{getDriverName(trip.driverId)}</span>
+              </div>
+              
+              <div className="trip-card-field">
+                <span className="trip-card-label">Status</span>
+                <span className="trip-card-value">
+                  <span className={`status-badge ${getStatusBadgeClass(trip.status || 'Unassigned')}`}>
+                    {trip.status || 'Unassigned'}
+                  </span>
+                </span>
+              </div>
+              
+              {trip.actualPickupTime && (
+                <div className="trip-card-field">
+                  <span className="trip-card-label">Actual Pickup</span>
+                  <span className="trip-card-value">
+                    {format(new Date(trip.actualPickupTime), 'MMM dd, yyyy HH:mm')}
+                  </span>
+                </div>
+              )}
+              
+              {trip.actualDropoffTime && (
+                <div className="trip-card-field">
+                  <span className="trip-card-label">Actual Dropoff</span>
+                  <span className="trip-card-value">
+                    {format(new Date(trip.actualDropoffTime), 'MMM dd, yyyy HH:mm')}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

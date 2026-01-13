@@ -8,6 +8,7 @@
 .trips-table {
   width: 100%;
   border-collapse: collapse;
+  display: table;
 }
 
 .trips-table th {
@@ -26,6 +27,82 @@
   padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
   color: #1f2937;
+}
+
+/* Mobile: Card view instead of table */
+.trips-table-mobile {
+  display: none;
+}
+
+.trip-card-mobile {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.trip-card-mobile.selected {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.trip-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.trip-card-title {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trip-card-checkbox {
+  margin-right: 0.5rem;
+}
+
+.trip-card-field {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.trip-card-field:last-child {
+  border-bottom: none;
+}
+
+.trip-card-label {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.875rem;
+  flex: 0 0 40%;
+}
+
+.trip-card-value {
+  color: #1f2937;
+  font-size: 0.875rem;
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+}
+
+.trip-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  justify-content: flex-end;
 }
 
 .trips-table tr:hover {
@@ -159,4 +236,85 @@
   font-size: 0.875rem;
   margin-left: 0.25rem;
   opacity: 0.7;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .trip-list {
+    padding: 1rem;
+  }
+
+  /* Hide table on mobile, show card view */
+  .trips-table {
+    display: none;
+  }
+
+  .trips-table-mobile {
+    display: block;
+  }
+
+  .trip-list-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .trip-count {
+    text-align: center;
+  }
+
+  .bulk-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .bulk-actions .btn {
+    width: 100%;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn-icon {
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .trip-list {
+    padding: 0.75rem;
+  }
+
+  .trip-card-mobile {
+    padding: 0.75rem;
+  }
+
+  .trip-card-field {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .trip-card-label {
+    flex: 1;
+  }
+
+  .trip-card-value {
+    text-align: left;
+  }
+
+  .trip-card-actions {
+    flex-direction: column;
+  }
+
+  .trip-card-actions .btn {
+    width: 100%;
+  }
 }

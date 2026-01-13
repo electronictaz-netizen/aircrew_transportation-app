@@ -165,3 +165,68 @@
   font-size: 1.25rem;
   color: #6b7280;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .driver-dashboard {
+    padding: 0 1rem;
+    margin: 1rem auto;
+  }
+
+  .driver-dashboard h2 {
+    font-size: 1.5rem;
+  }
+
+  .trips-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .trip-card {
+    padding: 1rem;
+  }
+
+  .trip-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .trip-header h3 {
+    font-size: 1.125rem;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .detail-row .value {
+    text-align: left;
+  }
+
+  .trip-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .driver-dashboard {
+    padding: 0 0.75rem;
+  }
+
+  .driver-dashboard h2 {
+    font-size: 1.25rem;
+  }
+
+  .trip-card {
+    padding: 0.75rem;
+  }
+}
