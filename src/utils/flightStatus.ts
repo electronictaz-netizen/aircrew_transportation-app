@@ -56,16 +56,36 @@ const getProviderConfig = (): {
   providers: FlightAPIProvider[];
   keys: Record<FlightAPIProvider, string | undefined>;
 } => {
-  // Check for multiple providers configuration (new method)
+  // Check for multiple providers configuration (recommended method)
   const providersEnv = import.meta.env.VITE_FLIGHT_API_PROVIDERS;
   if (providersEnv) {
-    const providerList = providersEnv.split(',').map(p => p.trim().toLowerCase()) as FlightAPIProvider[];
-    const keys: Record<FlightAPIProvider, string | undefined> = {
-      aviationstack: import.meta.env.VITE_FLIGHT_API_KEY_AVIATIONSTACK,
-      flightaware: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTAWARE,
-      flightradar24: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTRADAR24,
-    };
-    return { providers: providerList, keys };
+    const providerList = providersEnv
+      .split(',')
+      .map(p => p.trim().toLowerCase())
+      .filter(p => ['aviationstack', 'flightaware', 'flightradar24'].includes(p)) as FlightAPIProvider[];
+    
+    if (providerList.length === 0) {
+      console.warn('VITE_FLIGHT_API_PROVIDERS is set but contains no valid providers. Falling back to single provider.');
+    } else {
+      const keys: Record<FlightAPIProvider, string | undefined> = {
+        aviationstack: import.meta.env.VITE_FLIGHT_API_KEY_AVIATIONSTACK,
+        flightaware: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTAWARE,
+        flightradar24: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTRADAR24,
+      };
+      
+      // Filter out providers without API keys
+      const validProviders = providerList.filter(provider => {
+        const key = keys[provider];
+        return key && key !== 'YOUR_API_KEY' && key.trim().length > 0;
+      });
+      
+      if (validProviders.length > 0) {
+        console.log(`✅ Multi-provider mode: ${validProviders.length} provider(s) configured: ${validProviders.join(', ')}`);
+        return { providers: validProviders, keys };
+      } else {
+        console.warn('⚠️ VITE_FLIGHT_API_PROVIDERS is set but no providers have valid API keys. Falling back to single provider.');
+      }
+    }
   }
   
   // Fallback to single provider configuration (legacy)
@@ -80,6 +100,12 @@ const getProviderConfig = (): {
     flightaware: singleProvider === 'flightaware' ? singleKey : undefined,
     flightradar24: singleProvider === 'flightradar24' ? singleKey : undefined,
   };
+  
+  if (singleKey && singleKey !== 'YOUR_API_KEY' && singleKey.trim().length > 0) {
+    console.log(`✅ Single-provider mode: ${singleProvider}`);
+  } else {
+    console.warn(`⚠️ Single-provider mode: ${singleProvider} (API key not configured)`);
+  }
   
   return { providers: [singleProvider], keys };
 };
