@@ -178,23 +178,57 @@ function parseAviationStackResponse(data: any, flightNumber: string): FlightStat
 }
 
 /**
- * Parse FlightAware API response
+ * Parse FlightAware AeroAPI response
+ * AeroAPI response format: { ident, fa_flight_id, actual_off, actual_on, scheduled_off, scheduled_on, ... }
  */
 function parseFlightAwareResponse(data: any, flightNumber: string): FlightStatus {
-  // FlightAware response structure is different
-  // This is a placeholder - adjust based on actual FlightAware API response
-  if (!data.FlightInfoResult || !data.FlightInfoResult.flights) {
+  // AeroAPI returns flight data directly or in a flights array
+  let flight = data;
+  
+  // If response has a flights array, use the first flight
+  if (data.flights && Array.isArray(data.flights) && data.flights.length > 0) {
+    flight = data.flights[0];
+  }
+  
+  // If no flight data found
+  if (!flight || !flight.ident) {
     return { status: 'Unknown', flightNumber };
   }
 
-  const flight = data.FlightInfoResult.flights[0];
   let status: FlightStatus['status'] = 'Unknown';
 
-  // Map FlightAware status codes - only extract status
-  if (flight.status === 'On Time') status = 'On Time';
-  else if (flight.status === 'Delayed') status = 'Delayed';
-  else if (flight.status === 'Cancelled') status = 'Cancelled';
-  else if (flight.status === 'Arrived') status = 'Landed';
+  // AeroAPI status determination based on flight times
+  // Check if flight has actual departure/arrival times
+  const hasActualOff = !!flight.actual_off;
+  const hasActualOn = !!flight.actual_on;
+  const scheduledOff = flight.scheduled_off ? new Date(flight.scheduled_off) : null;
+  const actualOff = flight.actual_off ? new Date(flight.actual_off) : null;
+  
+  // Determine status based on flight state
+  if (hasActualOn) {
+    status = 'Landed';
+  } else if (hasActualOff) {
+    status = 'In Flight';
+  } else if (flight.cancelled) {
+    status = 'Cancelled';
+  } else if (scheduledOff && actualOff) {
+    // Check if delayed (actual departure is significantly later than scheduled)
+    const delayMinutes = (actualOff.getTime() - scheduledOff.getTime()) / (1000 * 60);
+    if (delayMinutes > 15) {
+      status = 'Delayed';
+    } else {
+      status = 'On Time';
+    }
+  } else if (scheduledOff) {
+    // Flight is scheduled but hasn't departed yet
+    const now = new Date();
+    if (scheduledOff < now) {
+      // Scheduled time has passed but no actual departure
+      status = 'Delayed';
+    } else {
+      status = 'On Time';
+    }
+  }
 
   // Return minimal data - only status is needed
   return {
@@ -283,7 +317,17 @@ async function fetchFromProvider(
     } else if (provider === 'flightaware') {
       // FlightAware AeroAPI uses header-based authentication
       // Endpoint: /flights/{ident} where ident is the flight number
-      apiUrl = `${config.url}/flights/${encodeURIComponent(flightNumber)}`;
+      // Optionally add date filter: /flights/{ident}?start={date}
+      let flightPath = `/flights/${encodeURIComponent(flightNumber)}`;
+      
+      // Add date filter if provided (AeroAPI uses 'start' parameter for date)
+      if (flightDate) {
+        const formattedDate = formatDateForAPI(flightDate);
+        const params = new URLSearchParams({ start: formattedDate });
+        flightPath += `?${params.toString()}`;
+      }
+      
+      apiUrl = `${config.url}${flightPath}`;
     } else {
       // FlightRadar24 - Note: This API may require special access or different endpoint structure
       // The current implementation is a placeholder and may need adjustment based on actual API documentation
