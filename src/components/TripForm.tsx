@@ -52,7 +52,7 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
           : (parseInt(String(formData.numberOfPassengers)) || 1),
         driverId: formData.driverId || undefined,
         status: formData.driverId ? 'Assigned' : 'Unassigned',
-        isRecurring: formData.isRecurring || false,
+        isRecurring: formData.isRecurring === true, // Explicitly set to true or false
       };
 
       // Only include recurring fields if it's a recurring job
@@ -61,6 +61,11 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
         if (formData.recurringEndDate) {
           submitData.recurringEndDate = new Date(formData.recurringEndDate).toISOString();
         }
+      } else {
+        // Explicitly clear recurring fields when not recurring
+        submitData.recurringPattern = undefined;
+        submitData.recurringEndDate = undefined;
+        submitData.parentTripId = undefined;
       }
 
       console.log('TripForm submitting data:', submitData);

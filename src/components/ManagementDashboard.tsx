@@ -252,14 +252,19 @@ function ManagementDashboard() {
         const currentTripDate = trip.pickupDate ? new Date(trip.pickupDate) : null;
         const now = new Date();
         
-        // Find future child trips (after the current trip's date)
+        // Find ALL future child trips (after the current trip's date, including the current trip if it's in the future)
+        // We want to delete all future occurrences, not just some
         const futureChildTrips = allChildTrips.filter(t => {
-          if (!t.pickupDate) return false;
+          if (!t.pickupDate || t.id === tripId) return false; // Don't delete the current trip being edited
           const childDate = new Date(t.pickupDate);
-          // Delete trips that are after the current trip's date, or after now if current trip is in the past
+          // Delete all trips that are after the current trip's date
+          // If current trip is in the future, delete everything after it
+          // If current trip is in the past, delete everything after now
           const cutoffDate = currentTripDate && currentTripDate > now ? currentTripDate : now;
           return childDate > cutoffDate;
         });
+        
+        console.log(`Found ${futureChildTrips.length} future child trips to delete (current trip date: ${currentTripDate?.toISOString()}, now: ${now.toISOString()})`);
         
         if (futureChildTrips.length > 0) {
           const confirmMessage = `Canceling recurrence will delete ${futureChildTrips.length} future trip${futureChildTrips.length > 1 ? 's' : ''}.\n\nAre you sure you want to continue?`;
@@ -267,15 +272,18 @@ function ManagementDashboard() {
             return; // User cancelled
           }
           
-          // Delete future child trips
+          // Delete ALL future child trips
+          let deletedCount = 0;
           for (const futureTrip of futureChildTrips) {
             try {
               await client.models.Trip.delete({ id: futureTrip.id });
-              console.log(`Deleted future child trip ${futureTrip.id}`);
+              deletedCount++;
+              console.log(`Deleted future child trip ${futureTrip.id} (${futureTrip.pickupDate})`);
             } catch (error) {
               console.error(`Error deleting future child trip ${futureTrip.id}:`, error);
             }
           }
+          console.log(`Successfully deleted ${deletedCount} of ${futureChildTrips.length} future child trips`);
         }
         
         // Also cancel recurrence on the parent trip
@@ -286,6 +294,7 @@ function ManagementDashboard() {
             recurringPattern: undefined,
             recurringEndDate: undefined,
           });
+          console.log(`Cancelled recurrence on parent trip ${parentTripId}`);
         } catch (error) {
           console.error('Error updating parent trip:', error);
         }
@@ -293,6 +302,8 @@ function ManagementDashboard() {
         // Remove recurring fields from current trip
         tripData.isRecurring = false;
         tripData.parentTripId = undefined;
+        tripData.recurringPattern = undefined;
+        tripData.recurringEndDate = undefined;
       }
       
       // If editing a parent recurring trip (and not removing recurrence), ask what to update

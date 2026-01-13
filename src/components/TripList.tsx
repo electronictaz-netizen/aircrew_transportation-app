@@ -14,7 +14,7 @@ interface TripListProps {
   onUpdate: () => void;
 }
 
-function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple }: TripListProps) {
+function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate }: TripListProps) {
   const [flightStatuses, setFlightStatuses] = useState<Record<string, string>>({});
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>(trips);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
