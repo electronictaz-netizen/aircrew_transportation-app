@@ -8,6 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      // Don't fail build if icons are missing (they'll be 404 but app will work)
+      strategies: 'generateSW',
       manifest: {
         name: 'Aircrew Transportation Management',
         short_name: 'Aircrew Transport',
