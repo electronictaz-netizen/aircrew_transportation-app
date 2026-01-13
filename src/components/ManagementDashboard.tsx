@@ -140,7 +140,7 @@ function ManagementDashboard() {
           
           if (result.errors && result.errors.length > 0) {
             console.error('Trip creation errors:', result.errors);
-            throw new Error(result.errors.map(e => e.message || JSON.stringify(e)).join(', '));
+            throw new Error(result.errors.map((e: any) => e.message || JSON.stringify(e)).join(', '));
           }
           
           if (!result.data) {
@@ -165,9 +165,9 @@ function ManagementDashboard() {
       // Verify trips were created
       const { data: allTrips } = await client.models.Trip.list();
       const totalTrips = allTrips?.length || 0;
-      const parentTrips = allTrips?.filter(t => t.isRecurring === true).length || 0;
-      const childTrips = allTrips?.filter(t => t.parentTripId).length || 0;
-      const todayTrips = allTrips?.filter(t => {
+      const parentTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.isRecurring === true).length || 0;
+      const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId).length || 0;
+      const todayTrips = allTrips?.filter((t: Schema['Trip']['type']) => {
         if (!t.pickupDate) return false;
         const tripDate = new Date(t.pickupDate);
         const today = new Date();
@@ -179,7 +179,7 @@ function ManagementDashboard() {
         parentTrips,
         childTrips,
         todayTrips,
-        allTripDates: allTrips?.map(t => ({ id: t.id, date: t.pickupDate, isRecurring: t.isRecurring, parentId: t.parentTripId }))
+        allTripDates: allTrips?.map((t: Schema['Trip']['type']) => ({ id: t.id, date: t.pickupDate, isRecurring: t.isRecurring, parentId: t.parentTripId }))
       });
       
       setShowTripForm(false);
@@ -210,7 +210,7 @@ function ManagementDashboard() {
 
   const handleUpdateTrip = async (tripId: string, tripData: any) => {
     try {
-      const trip = trips.find(t => t.id === tripId);
+      const trip = trips.find((t: Schema['Trip']['type']) => t.id === tripId);
       const isParentRecurring = trip?.isRecurring === true;
       const isChildRecurring = !!trip?.parentTripId;
       const wasRecurring = isParentRecurring || isChildRecurring;
@@ -238,14 +238,14 @@ function ManagementDashboard() {
         
         // Filter child trips by both parentTripId AND flight number to ensure we get the right ones
         // Get ALL child trips regardless of date
-        const childTrips = allTrips?.filter(t => 
+        const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => 
           t.parentTripId === tripId && 
           t.flightNumber === parentFlightNumber &&
           t.id !== tripId // Don't include the parent trip itself
         ) || [];
         
         console.log(`Found ${childTrips.length} child trips with parent ID ${tripId} and flight number ${parentFlightNumber}`);
-        console.log('Child trips:', childTrips.map(t => ({ id: t.id, date: t.pickupDate, flight: t.flightNumber })));
+        console.log('Child trips:', childTrips.map((t: Schema['Trip']['type']) => ({ id: t.id, date: t.pickupDate, flight: t.flightNumber })));
         
         if (childTrips.length > 0) {
           const confirmMessage = `Removing recurrence will delete ALL ${childTrips.length} child trip${childTrips.length > 1 ? 's' : ''} with flight number ${parentFlightNumber}.\n\nAre you sure you want to continue?`;
@@ -286,7 +286,7 @@ function ManagementDashboard() {
         const { data: allTrips } = await client.models.Trip.list();
         
         // Filter by both parentTripId AND flight number to ensure we get the right trips
-        const allChildTrips = allTrips?.filter(t => 
+        const allChildTrips = allTrips?.filter((t: Schema['Trip']['type']) => 
           t.parentTripId === parentTripId && 
           t.flightNumber === currentFlightNumber
         ) || [];
@@ -297,7 +297,7 @@ function ManagementDashboard() {
         // Find ALL future child trips - delete everything that is today or in the future
         // Match by both date AND flight number
         console.log(`Checking ${allChildTrips.length} child trips for deletion...`);
-        const futureChildTrips = allChildTrips.filter(t => {
+        const futureChildTrips = allChildTrips.filter((t: Schema['Trip']['type']) => {
           if (t.id === tripId) {
             console.log(`Skipping trip ${t.id} - this is the current trip being edited`);
             return false; // Don't delete the current trip being edited
@@ -358,12 +358,12 @@ function ManagementDashboard() {
           
           // Verify deletion by checking again
           const { data: verifyTrips } = await client.models.Trip.list();
-          const remainingTrips = verifyTrips?.filter(t => 
+          const remainingTrips = verifyTrips?.filter((t: Schema['Trip']['type']) => 
             t.parentTripId === parentTripId && 
             t.flightNumber === currentFlightNumber &&
             t.id !== tripId
           ) || [];
-          const remainingFuture = remainingTrips.filter(t => {
+          const remainingFuture = remainingTrips.filter((t: Schema['Trip']['type']) => {
             if (!t.pickupDate) return false;
             const childDate = new Date(t.pickupDate);
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -373,7 +373,7 @@ function ManagementDashboard() {
           
           if (remainingFuture.length > 0) {
             console.warn(`⚠️ WARNING: ${remainingFuture.length} future trips still remain after deletion!`);
-            console.warn('Remaining trips:', remainingFuture.map(t => ({ id: t.id, date: t.pickupDate, flight: t.flightNumber })));
+            console.warn('Remaining trips:', remainingFuture.map((t: Schema['Trip']['type']) => ({ id: t.id, date: t.pickupDate, flight: t.flightNumber })));
           } else {
             console.log(`✅ Verified: All future trips deleted successfully`);
           }
@@ -431,7 +431,7 @@ function ManagementDashboard() {
         
         if (isParentRecurring) {
           // If parent is no longer recurring, delete all child trips with matching flight number
-          tripsToDelete = allTrips?.filter(t => 
+          tripsToDelete = allTrips?.filter((t: Schema['Trip']['type']) => 
             t.parentTripId === tripId && 
             t.flightNumber === flightNumber
           ) || [];
@@ -439,12 +439,12 @@ function ManagementDashboard() {
         } else if (isChildRecurring) {
           // If child trip is being updated and is no longer recurring, delete all future child trips
           const parentTripId = trip.parentTripId!;
-          const allChildTrips = allTrips?.filter(t => 
+          const allChildTrips = allTrips?.filter((t: Schema['Trip']['type']) => 
             t.parentTripId === parentTripId && 
             t.flightNumber === flightNumber
           ) || [];
           
-          tripsToDelete = allChildTrips.filter(t => {
+          tripsToDelete = allChildTrips.filter((t: Schema['Trip']['type']) => {
             if (!t.pickupDate || t.id === tripId) return false; // Don't delete the current trip
             const childDate = new Date(t.pickupDate);
             const childDateStart = new Date(childDate.getFullYear(), childDate.getMonth(), childDate.getDate());
@@ -474,7 +474,7 @@ function ManagementDashboard() {
       // BUT only if the trip is still recurring
       if (isParentRecurring && !isRemovingRecurrence && tripData.isRecurring !== false && tripData.updateScope && ['2', '3'].includes(tripData.updateScope)) {
         const { data: allTrips } = await client.models.Trip.list();
-        const childTrips = allTrips?.filter(t => t.parentTripId === tripId) || [];
+        const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId === tripId) || [];
         const now = new Date();
         
         for (const childTrip of childTrips) {
@@ -555,8 +555,8 @@ function ManagementDashboard() {
     
     if (isParentRecurring) {
       const { data: allTrips } = await client.models.Trip.list();
-      const childTrips = allTrips?.filter(t => t.parentTripId === tripId) || [];
-      const futureChildTrips = childTrips.filter(t => {
+      const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId === tripId) || [];
+      const futureChildTrips = childTrips.filter((t: Schema['Trip']['type']) => {
         if (!t.pickupDate) return false;
         return new Date(t.pickupDate) > new Date();
       });
@@ -584,7 +584,7 @@ function ManagementDashboard() {
     try {
       if (isParentRecurring && deleteScope !== 'single') {
         const { data: allTrips } = await client.models.Trip.list();
-        const childTrips = allTrips?.filter(t => t.parentTripId === tripId) || [];
+        const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId === tripId) || [];
         const now = new Date();
         
         // Delete child trips based on scope

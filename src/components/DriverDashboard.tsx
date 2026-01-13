@@ -45,7 +45,7 @@ function DriverDashboard() {
 
       // Find driver by email
       const { data: drivers } = await client.models.Driver.list();
-      const driver = drivers.find((d) => d.email === email);
+      const driver = drivers?.find((d: Schema['Driver']['type']) => d.email === email);
 
       if (driver) {
         setCurrentDriver(driver);
@@ -58,7 +58,7 @@ function DriverDashboard() {
         const now = new Date();
         const twoDaysFromNow = addDays(now, 2);
         
-        const filteredTrips = (tripsData || []).filter((trip) => {
+        const filteredTrips = (tripsData || []).filter((trip: Schema['Trip']['type']) => {
           if (!trip.pickupDate) return false;
           const pickupDate = parseISO(trip.pickupDate);
           // Only show trips that are scheduled (not completed) and within the next 2 days

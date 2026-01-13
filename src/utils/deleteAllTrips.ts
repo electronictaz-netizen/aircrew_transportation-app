@@ -35,8 +35,8 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
     }
     
     // Show summary
-    const parentTrips = allTrips?.filter(t => t.isRecurring === true).length || 0;
-    const childTrips = allTrips?.filter(t => t.parentTripId).length || 0;
+    const parentTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.isRecurring === true).length || 0;
+    const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId).length || 0;
     const regularTrips = tripCount - parentTrips - childTrips;
     
     console.log('\nTrip breakdown:');
