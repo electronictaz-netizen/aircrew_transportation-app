@@ -208,7 +208,8 @@ function parseFlightAwareResponse(data: any, flightNumber: string): FlightStatus
   if (hasActualOn) {
     status = 'Landed';
   } else if (hasActualOff) {
-    status = 'In Flight';
+    // Flight has departed but not arrived - consider it "On Time" or "Delayed" based on departure time
+    status = 'On Time'; // Will be updated below if delayed
   } else if (flight.cancelled) {
     status = 'Cancelled';
   } else if (scheduledOff && actualOff) {
