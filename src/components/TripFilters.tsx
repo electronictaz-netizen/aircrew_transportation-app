@@ -7,13 +7,14 @@ interface TripFiltersProps {
   trips: Array<Schema['Trip']['type']>;
   drivers: Array<Schema['Driver']['type']>;
   onFilterChange: (filteredTrips: Array<Schema['Trip']['type']>) => void;
+  onRefresh?: () => void;
 }
 
 type SortField = 'pickupDate' | 'flightNumber' | 'status' | 'driver' | 'none';
 type SortDirection = 'asc' | 'desc';
 type QuickDateFilter = 'all' | 'today' | 'thisWeek' | 'nextWeek' | 'custom';
 
-function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
+function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [driverFilter, setDriverFilter] = useState<string>('all');
   const [recurringFilter, setRecurringFilter] = useState<string>('all');
@@ -238,9 +239,23 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
     onFilterChange(finalTrips);
   };
 
+  // Track previous quickDateFilter to detect filter changes
+  const prevQuickDateFilterRef = useRef<QuickDateFilter>(quickDateFilter);
+  
   // Apply filters on mount and when any filter or trips change
   useEffect(() => {
-    applyFiltersAndSort();
+    // If quick date filter changed, refresh trips to ensure we have latest data
+    if (prevQuickDateFilterRef.current !== quickDateFilter && onRefresh) {
+      console.log('Quick date filter changed, refreshing trips...');
+      onRefresh();
+      prevQuickDateFilterRef.current = quickDateFilter;
+      // Wait a bit for refresh to complete, then apply filters
+      setTimeout(() => {
+        applyFiltersAndSort();
+      }, 300);
+    } else {
+      applyFiltersAndSort();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trips, statusFilter, driverFilter, recurringFilter, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection]);
 

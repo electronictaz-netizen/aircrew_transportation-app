@@ -147,6 +147,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple }: TripLi
         trips={trips}
         drivers={drivers}
         onFilterChange={handleFilterChange}
+        onRefresh={onUpdate}
       />
       <div className="trip-list-header">
         <p className="trip-count">
