@@ -56,7 +56,7 @@ This application supports multiple flight status API providers. Choose the one t
 **Options:**
 1. **Remove FlightAware** from your provider list (recommended for browser-only apps)
 2. **Use a backend proxy** - Create an AWS Lambda function or API Gateway endpoint to proxy requests to AeroAPI
-3. **Use AviationStack or FlightRadar24** instead, which support browser requests
+3. **Use AviationStack** instead, which supports browser requests
 
 If you still want to configure FlightAware (for future backend implementation), here's how:
 
@@ -120,89 +120,6 @@ FlightAware's AeroAPI is their modern REST API that uses API key authentication 
 
 ## FlightRadar24 API Setup
 
-⚠️ **IMPORTANT NOTE:** FlightRadar24 API is not publicly available and requires special business access. The current implementation is a placeholder and may return 400 errors. If you see 400 Bad Request errors, FlightRadar24 is likely not configured correctly or not available for your use case.
-
-### Current Status
-- FlightRadar24 API endpoint structure in this code is a placeholder
-- The API may require different authentication or endpoint format
-- 400 Bad Request errors indicate the API call format is incorrect
-## FlightRadar24 API Setup
-
-FlightRadar24 provides a REST API that requires a valid API subscription and API key. The API uses header-based authentication.
-
-### Step 1: Create Account and Subscribe
-1. Go to [FlightRadar24 Business API](https://www.flightradar24.com/business/api)
-2. Sign up for a business/enterprise account
-3. Subscribe to an API plan that suits your needs
-4. You can also use the Sandbox environment for free testing
-
-### Step 2: Generate API Token
-1. Log into your FlightRadar24 account
-2. Navigate to **Key Management** page
-3. Generate your API token
-4. Copy the API token (keep it secure)
-
-### Step 3: Configure in AWS Amplify
-
-**For Multi-Provider Setup (Recommended):**
-1. Go to AWS Amplify Console
-2. Select your app
-3. Go to **Environment variables**
-4. Add the following variables:
-   - **Key**: `VITE_FLIGHT_API_PROVIDERS`
-   - **Value**: `flightradar24` (or `aviationstack,flightradar24` for multiple providers)
-   - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTRADAR24`
-   - **Value**: `your_api_token_here` (paste your actual API token)
-
-**For Single Provider Setup:**
-1. **Key**: `VITE_FLIGHT_API_PROVIDER`
-   - **Value**: `flightradar24`
-2. **Key**: `VITE_FLIGHT_API_KEY`
-   - **Value**: `your_api_token_here`
-
-### Step 4: Verify Configuration
-1. Deploy your app
-2. Test flight status check
-3. Check browser console for `[flightradar24]` logs
-4. Should see successful API calls or clear error messages
-
-### How It Works
-
-The implementation uses:
-- **Endpoint**: `https://api.flightradar24.com/common/v1/flight/list.json`
-- **Authentication**: API token in `x-api-key` header
-- **Parameters**: Flight number in query string
-- **Date Filtering**: Optional date parameter for historical flights
-
-### Error Handling
-
-The code handles:
-- **400 Bad Request**: Invalid API endpoint, parameters, or API key
-- **401 Unauthorized**: Invalid API token
-- **403 Forbidden**: Access denied or quota exceeded
-- **429 Too Many Requests**: Rate limit exceeded
-
-All errors trigger automatic fallback to the next provider in your list.
-
-### Pricing
-
-- **Sandbox**: Free for testing (limited)
-- **Commercial**: Contact FlightRadar24 for pricing
-- **Enterprise**: Custom pricing based on request volume
-
-### API Documentation
-
-For detailed API documentation:
-- [FlightRadar24 API Documentation](https://www.flightradar24.com/business/api)
-- [FlightRadar24 Support](https://support.fr24.com/)
-
-### Notes
-
-- FlightRadar24 API requires a valid subscription
-- API token must be kept secure
-- Rate limits apply based on your plan
-- The code automatically handles authentication headers
-- Date filtering is supported for historical flights
 
 ---
 
@@ -297,7 +214,6 @@ To use a single provider (legacy method):
 3. Update `VITE_FLIGHT_API_PROVIDER` to:
    - `aviationstack` for AviationStack
    - `flightaware` for FlightAware
-   - `flightradar24` for FlightRadar24
 4. Update `VITE_FLIGHT_API_KEY` with the appropriate key
 5. Redeploy your app
 
@@ -305,14 +221,15 @@ To use a single provider (legacy method):
 
 ## API Comparison
 
-| Feature | AviationStack | FlightAware | FlightRadar24 |
-|---------|--------------|-------------|---------------|
-| **Setup Difficulty** | Easy | Moderate | Complex |
-| **Free Tier** | Yes (1,000/month) | Limited | No |
-| **Approval Required** | No | Yes | Yes |
-| **Real-time Updates** | Good | Excellent | Excellent |
-| **Data Coverage** | Good | Excellent | Excellent |
-| **Best For** | Small/Medium ops | Large operations | Enterprise |
+| Feature | AviationStack | FlightAware |
+|---------|--------------|-------------|
+| **Setup Difficulty** | Easy | Moderate |
+| **Free Tier** | Yes (1,000/month) | Limited |
+| **Approval Required** | No | Yes |
+| **Real-time Updates** | Good | Excellent |
+| **Data Coverage** | Good | Excellent |
+| **Best For** | Small/Medium ops | Large operations |
+| **CORS Support** | Yes | No (requires proxy) |
 
 ---
 
@@ -358,11 +275,6 @@ To use a single provider (legacy method):
 ### FlightAware
 - ⚠️ Partial implementation
 - ⚠️ May need authentication adjustments
-- ⚠️ Response parsing may need updates based on current API
-
-### FlightRadar24
-- ⚠️ Partial implementation
-- ⚠️ May need endpoint adjustments
 - ⚠️ Response parsing may need updates based on current API
 
 **Recommendation:** Start with AviationStack for easiest setup, then add FlightAware if you need more features or higher limits (note: FlightAware requires a backend proxy due to CORS).
