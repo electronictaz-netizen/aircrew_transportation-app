@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+        .instructions {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .icon-preview {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .icon-box {
+            text-align: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 6px;
+            border: 2px dashed #d1d5db;
+        }
+        canvas {
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            background: white;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .download-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .download-link:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 PWA Icon Generator</h1>
+        <p>This tool creates placeholder icons for your PWA. Open this file in a browser and download the icons.</p>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Click "Generate Icons" below</li>
+                <li>Right-click each icon and "Save image as..."</li>
+                <li>Save them in the <code>public/</code> folder with these names:
+                    <ul>
+                        <li><code>icon-192x192.png</code></li>
+                        <li><code>icon-512x512.png</code></li>
+                        <li><code>apple-touch-icon.png</code> (save the 180x180 version)</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <button onclick="generateIcons()">Generate Icons</button>
+        <button onclick="downloadAll()">Download All Icons</button>
+
+        <div class="icon-preview" id="iconPreview"></div>
+    </div>
+
+    <script>
+        function createIcon(size, filename) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#3b82f6');
+            gradient.addColorStop(1, '#2563eb');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Add border
+            ctx.strokeStyle = '#1e40af';
+            ctx.lineWidth = size * 0.02;
+            ctx.strokeRect(0, 0, size, size);
+            
+            // Add text "AT" for Aircrew Transportation
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.35}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('AT', size / 2, size / 2);
+            
+            return canvas;
+        }
+
+        function generateIcons() {
+            const preview = document.getElementById('iconPreview');
+            preview.innerHTML = '';
+            
+            const sizes = [
+                { size: 192, name: 'icon-192x192.png' },
+                { size: 512, name: 'icon-512x512.png' },
+                { size: 180, name: 'apple-touch-icon.png' }
+            ];
+            
+            sizes.forEach(({ size, name }) => {
+                const canvas = createIcon(size, name);
+                const box = document.createElement('div');
+                box.className = 'icon-box';
+                
+                const label = document.createElement('div');
+                label.textContent = `${name} (${size}x${size})`;
+                label.style.marginBottom = '10px';
+                label.style.fontWeight = 'bold';
+                
+                const displayCanvas = document.createElement('canvas');
+                displayCanvas.width = Math.min(size, 200);
+                displayCanvas.height = Math.min(size, 200);
+                const displayCtx = displayCanvas.getContext('2d');
+                displayCtx.drawImage(canvas, 0, 0, displayCanvas.width, displayCanvas.height);
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = canvas.toDataURL('image/png');
+                downloadLink.download = name;
+                downloadLink.className = 'download-link';
+                downloadLink.textContent = 'Download';
+                
+                box.appendChild(label);
+                box.appendChild(displayCanvas);
+                box.appendChild(document.createElement('br'));
+                box.appendChild(downloadLink);
+                
+                preview.appendChild(box);
+                
+                // Store canvas for downloadAll
+                canvas.dataset.filename = name;
+                canvas.style.display = 'none';
+                document.body.appendChild(canvas);
+            });
+        }
+
+        function downloadAll() {
+            const canvases = document.querySelectorAll('canvas[data-filename]');
+            canvases.forEach(canvas => {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = canvas.dataset.filename;
+                link.click();
+            });
+        }
+
+        // Auto-generate on load
+        window.addEventListener('load', () => {
+            setTimeout(generateIcons, 500);
+        });
+    </script>
+</body>
+</html>
