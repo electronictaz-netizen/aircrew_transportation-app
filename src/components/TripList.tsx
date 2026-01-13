@@ -194,6 +194,25 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
                   </span>
                 )}
               </td>
+              <td>
+                {flightStatuses[trip.id] ? (
+                  <span
+                    className={`flight-status-badge ${getFlightStatusBadgeClass(
+                      flightStatuses[trip.id].status
+                    )}`}
+                  >
+                    {flightStatuses[trip.id].loading ? 'Checking...' : flightStatuses[trip.id].status}
+                  </span>
+                ) : (
+                  <button
+                    className="btn btn-small btn-secondary"
+                    onClick={() => handleCheckFlightStatus(trip)}
+                    title="Check flight status (may incur API costs)"
+                  >
+                    Check Status
+                  </button>
+                )}
+              </td>
               <td>{trip.pickupLocation}</td>
               <td>{trip.dropoffLocation}</td>
               <td>{trip.numberOfPassengers}</td>
