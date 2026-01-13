@@ -87,9 +87,12 @@ const getProviderConfig = (): {
       if (validProviders.length > 0) {
         console.log(`✅ Multi-provider mode: ${validProviders.length} provider(s) configured: ${validProviders.join(', ')}`);
         
-        // Warn about FlightAware CORS limitations
+        // Warn about provider limitations
         if (validProviders.includes('flightaware')) {
           console.warn('⚠️ FlightAware (AeroAPI) has CORS restrictions and may not work from browser. Consider removing it or using a backend proxy.');
+        }
+        if (validProviders.includes('flightradar24')) {
+          console.warn('⚠️ FlightRadar24 API is not publicly available for browser access. Consider using AviationStack instead.');
         }
         
         return { providers: validProviders, keys };
@@ -353,11 +356,12 @@ async function fetchFromProvider(
       
       apiUrl = `${config.url}${flightPath}`;
     } else {
-      // FlightRadar24 - Note: This API may require special access or different endpoint structure
-      // The current implementation is a placeholder and may need adjustment based on actual API documentation
-      // If you get 400 errors, FlightRadar24 may not be publicly available or requires different authentication
+      // FlightRadar24 - Note: This API is not publicly available for direct browser access
+      // The endpoint and authentication method used here are placeholders
+      // FlightRadar24 requires special API access and may not work from browser
       apiUrl = `${config.url}/flight/list.json?${config.paramName}=${encodeURIComponent(apiKey)}&${config.flightParam}=${encodeURIComponent(flightNumber)}`;
-      console.warn(`[${provider}] Note: FlightRadar24 API may require special access. If you get 400 errors, this provider may not be available.`);
+      console.warn(`[${provider}] ⚠️ FlightRadar24 API is not publicly available for browser access.`);
+      console.warn(`[${provider}] 💡 Recommendation: Use AviationStack instead (https://aviationstack.com/)`);
     }
 
     console.log(`[${provider}] Fetching flight status for ${flightNumber}...`);
@@ -385,7 +389,12 @@ async function fetchFromProvider(
         return null;
       }
       if (response.status === 400) {
-        console.warn(`[${provider}] ❌ 400 Bad Request - Invalid API endpoint or parameters. This provider may not be available or requires different configuration.`);
+        if (provider === 'flightradar24') {
+          console.warn(`[${provider}] ❌ 400 Bad Request - FlightRadar24 API is not publicly available for browser access.`);
+          console.warn(`[${provider}] 💡 Please switch to AviationStack: Set VITE_FLIGHT_API_PROVIDERS=aviationstack in AWS Amplify`);
+        } else {
+          console.warn(`[${provider}] ❌ 400 Bad Request - Invalid API endpoint or parameters. This provider may not be available or requires different configuration.`);
+        }
         return null; // Will trigger fallback to next provider
       }
       if (response.status === 429) {
@@ -499,6 +508,23 @@ export async function fetchFlightStatus(
 
   // All providers failed
   console.warn(`All ${providers.length} provider(s) failed to retrieve flight status for ${cleanFlightNumber}`);
+  
+  // Provide helpful guidance based on which providers were tried
+  if (providers.length === 1 && providers[0] === 'flightradar24') {
+    console.error('💡 Recommendation: FlightRadar24 API is not publicly available. Please configure AviationStack instead:');
+    console.error('   1. Go to AWS Amplify Console → Environment Variables');
+    console.error('   2. Set VITE_FLIGHT_API_PROVIDERS=aviationstack');
+    console.error('   3. Set VITE_FLIGHT_API_KEY_AVIATIONSTACK=your_api_key');
+    console.error('   4. Get your API key from https://aviationstack.com/');
+  } else if (providers.length === 1 && providers[0] === 'flightaware') {
+    console.error('💡 Recommendation: FlightAware has CORS restrictions and cannot be called from browser.');
+    console.error('   Please configure AviationStack instead or set up a backend proxy for FlightAware.');
+  } else if (providers.length === 0) {
+    console.error('💡 No flight API providers are configured. Please set up at least one provider:');
+    console.error('   - AviationStack (recommended): https://aviationstack.com/');
+    console.error('   - Configure in AWS Amplify: VITE_FLIGHT_API_PROVIDERS=aviationstack');
+  }
+  
   return { status: 'Unknown', flightNumber: cleanFlightNumber };
 }
 
