@@ -2,6 +2,7 @@
  * Flight Status Service Utility
  * 
  * This utility integrates with flight status APIs to get real-time flight information.
+ * Supports multiple providers with automatic fallback.
  * 
  * Supported APIs:
  * - AviationStack (https://aviationstack.com/) - Default
@@ -9,8 +10,18 @@
  * - FlightRadar24 (https://www.flightradar24.com/)
  * 
  * Configuration via environment variables:
+ * 
+ * SINGLE PROVIDER (legacy):
  * - VITE_FLIGHT_API_PROVIDER: 'aviationstack' | 'flightaware' | 'flightradar24'
  * - VITE_FLIGHT_API_KEY: Your API key for the selected provider
+ * 
+ * MULTIPLE PROVIDERS (recommended):
+ * - VITE_FLIGHT_API_PROVIDERS: Comma-separated list, e.g., 'aviationstack,flightaware,flightradar24'
+ * - VITE_FLIGHT_API_KEY_AVIATIONSTACK: API key for AviationStack
+ * - VITE_FLIGHT_API_KEY_FLIGHTAWARE: API key for FlightAware
+ * - VITE_FLIGHT_API_KEY_FLIGHTRADAR24: API key for FlightRadar24
+ * 
+ * The system will try providers in the order specified until one succeeds.
  * 
  * Debugging: Run debugFlightAPI() in browser console to diagnose API issues
  */
@@ -40,18 +51,40 @@ type FlightAPIProvider = 'aviationstack' | 'flightaware' | 'flightradar24';
 // This is ONLY for local development. For production, use environment variables!
 // const HARDCODED_API_KEY = 'your_api_key_here'; // ⚠️ DO NOT COMMIT THIS!
 
-// Use hardcoded key if set (testing only), otherwise use environment variables
-const API_PROVIDER = (
-  import.meta.env.VITE_FLIGHT_API_PROVIDER || 
-  'aviationstack'
-) as FlightAPIProvider;
+// Get provider configuration - support both single and multiple providers
+const getProviderConfig = (): {
+  providers: FlightAPIProvider[];
+  keys: Record<FlightAPIProvider, string | undefined>;
+} => {
+  // Check for multiple providers configuration (new method)
+  const providersEnv = import.meta.env.VITE_FLIGHT_API_PROVIDERS;
+  if (providersEnv) {
+    const providerList = providersEnv.split(',').map(p => p.trim().toLowerCase()) as FlightAPIProvider[];
+    const keys: Record<FlightAPIProvider, string | undefined> = {
+      aviationstack: import.meta.env.VITE_FLIGHT_API_KEY_AVIATIONSTACK,
+      flightaware: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTAWARE,
+      flightradar24: import.meta.env.VITE_FLIGHT_API_KEY_FLIGHTRADAR24,
+    };
+    return { providers: providerList, keys };
+  }
+  
+  // Fallback to single provider configuration (legacy)
+  const singleProvider = (
+    import.meta.env.VITE_FLIGHT_API_PROVIDER || 
+    'aviationstack'
+  ) as FlightAPIProvider;
+  
+  const singleKey = import.meta.env.VITE_FLIGHT_API_KEY;
+  const keys: Record<FlightAPIProvider, string | undefined> = {
+    aviationstack: singleProvider === 'aviationstack' ? singleKey : undefined,
+    flightaware: singleProvider === 'flightaware' ? singleKey : undefined,
+    flightradar24: singleProvider === 'flightradar24' ? singleKey : undefined,
+  };
+  
+  return { providers: [singleProvider], keys };
+};
 
-const API_KEY = (
-  // Uncomment the line below and add your key for local testing:
-  // HARDCODED_API_KEY ||
-  import.meta.env.VITE_FLIGHT_API_KEY || 
-  'YOUR_API_KEY'
-);
+const PROVIDER_CONFIG = getProviderConfig();
 
 // API Configuration
 const API_CONFIG = {
@@ -208,7 +241,95 @@ function formatDateForAPI(date: Date | string): string {
 }
 
 /**
- * Fetch flight status from the configured API provider
+ * Fetch flight status from a single provider
+ */
+async function fetchFromProvider(
+  provider: FlightAPIProvider,
+  apiKey: string,
+  flightNumber: string,
+  flightDate?: Date | string
+): Promise<FlightStatus | null> {
+  const config = API_CONFIG[provider];
+  if (!config) {
+    console.error(`Unknown API provider: ${provider}`);
+    return null;
+  }
+
+  // Validate API key
+  if (!apiKey || apiKey === 'YOUR_API_KEY' || apiKey.trim().length === 0) {
+    console.warn(`API key not configured for provider: ${provider}`);
+    return null;
+  }
+
+  try {
+    // Build API URL based on provider
+    let apiUrl: string;
+    if (provider === 'aviationstack') {
+      // AviationStack supports date filtering with flight_date parameter
+      const params = new URLSearchParams({
+        [config.paramName]: apiKey,
+        [config.flightParam]: flightNumber,
+        limit: '1',
+      });
+      
+      // Add date filter if provided (format: YYYY-MM-DD)
+      if (flightDate) {
+        const formattedDate = formatDateForAPI(flightDate);
+        params.append('flight_date', formattedDate);
+      }
+      
+      apiUrl = `${config.url}?${params.toString()}`;
+    } else if (provider === 'flightaware') {
+      // FlightAware requires different authentication (username/password or token)
+      apiUrl = `${config.url}/FlightInfo?${config.paramName}=${encodeURIComponent(apiKey)}&${config.flightParam}=${encodeURIComponent(flightNumber)}`;
+    } else {
+      // FlightRadar24
+      apiUrl = `${config.url}/flight/list.json?${config.paramName}=${encodeURIComponent(apiKey)}&${config.flightParam}=${encodeURIComponent(flightNumber)}`;
+    }
+
+    console.log(`[${provider}] Fetching flight status for ${flightNumber}...`);
+
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      // Handle 401 specifically
+      if (response.status === 401) {
+        console.warn(`[${provider}] 401 Unauthorized - Invalid API key`);
+        return null;
+      }
+      throw new Error(`Flight API returned ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.warn(`[${provider}] API error:`, data.error);
+      // Check for authentication errors
+      if (data.error.code === 104 || data.error.code === 101) {
+        console.warn(`[${provider}] API Authentication Error - Invalid or missing API key`);
+      }
+      return null;
+    }
+
+    // Parse response based on provider
+    switch (provider) {
+      case 'aviationstack':
+        return parseAviationStackResponse(data, flightNumber);
+      case 'flightaware':
+        return parseFlightAwareResponse(data, flightNumber);
+      case 'flightradar24':
+        return parseFlightRadar24Response(data, flightNumber);
+      default:
+        return null;
+    }
+  } catch (error) {
+    console.warn(`[${provider}] Error fetching flight status:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch flight status from the configured API provider(s) with automatic fallback
  * 
  * @param flightNumber - The flight number (e.g., "AA1234")
  * @param flightDate - Optional date for the flight (to get the correct flight for that day)
@@ -227,93 +348,42 @@ export async function fetchFlightStatus(
     return { status: 'Unknown', flightNumber: cleanFlightNumber };
   }
 
-  const config = API_CONFIG[API_PROVIDER];
-  if (!config) {
-    console.error(`Unknown API provider: ${API_PROVIDER}`);
+  // Try each provider in order until one succeeds
+  const { providers, keys } = PROVIDER_CONFIG;
+  
+  if (providers.length === 0) {
+    console.warn('No flight API providers configured');
     return { status: 'Unknown', flightNumber: cleanFlightNumber };
   }
 
-  // Check if API key is configured
-  if (!API_KEY || API_KEY === 'YOUR_API_KEY' || API_KEY.trim().length === 0) {
-    console.warn('Flight API key not configured. Set VITE_FLIGHT_API_KEY in your environment variables.');
-    return { status: 'Unknown', flightNumber: cleanFlightNumber };
+  console.log(`Trying ${providers.length} provider(s) in order: ${providers.join(', ')}`);
+
+  for (const provider of providers) {
+    const apiKey = keys[provider];
+    
+    if (!apiKey) {
+      console.log(`[${provider}] Skipping - no API key configured`);
+      continue;
+    }
+
+    const result = await fetchFromProvider(provider, apiKey, cleanFlightNumber, flightDate);
+    
+    if (result && result.status !== 'Unknown') {
+      console.log(`[${provider}] ✅ Successfully retrieved flight status`);
+      return result;
+    }
+    
+    if (result && result.status === 'Unknown') {
+      console.log(`[${provider}] ⚠️ Provider returned Unknown status, trying next provider...`);
+      continue;
+    }
+    
+    console.log(`[${provider}] ❌ Failed, trying next provider...`);
   }
 
-  try {
-    // Build API URL based on provider
-    let apiUrl: string;
-    if (API_PROVIDER === 'aviationstack') {
-      // AviationStack supports date filtering with flight_date parameter
-      const params = new URLSearchParams({
-        [config.paramName]: API_KEY,
-        [config.flightParam]: cleanFlightNumber,
-        limit: '1',
-      });
-      
-      // Add date filter if provided (format: YYYY-MM-DD)
-      if (flightDate) {
-        const formattedDate = formatDateForAPI(flightDate);
-        params.append('flight_date', formattedDate);
-        console.log(`Fetching flight status for ${cleanFlightNumber} on ${formattedDate}`);
-      } else {
-        console.log(`Fetching flight status for ${cleanFlightNumber} (no date filter)`);
-      }
-      
-      apiUrl = `${config.url}?${params.toString()}`;
-    } else if (API_PROVIDER === 'flightaware') {
-      // FlightAware requires different authentication (username/password or token)
-      apiUrl = `${config.url}/FlightInfo?${config.paramName}=${encodeURIComponent(API_KEY)}&${config.flightParam}=${encodeURIComponent(cleanFlightNumber)}`;
-    } else {
-      // FlightRadar24
-      apiUrl = `${config.url}/flight/list.json?${config.paramName}=${encodeURIComponent(API_KEY)}&${config.flightParam}=${encodeURIComponent(cleanFlightNumber)}`;
-    }
-
-    console.log('Fetching flight status from:', API_PROVIDER, 'for flight:', cleanFlightNumber);
-
-    const response = await fetch(apiUrl);
-
-    if (!response.ok) {
-      // Handle 401 specifically
-      if (response.status === 401) {
-        console.error('Flight API 401 Unauthorized - Check your API key:', {
-          provider: API_PROVIDER,
-          apiKeyConfigured: API_KEY ? 'Yes' : 'No',
-          apiKeyPreview: API_KEY ? `${API_KEY.substring(0, 8)}...` : 'Not set',
-        });
-        return { 
-          status: 'Unknown', 
-          flightNumber: cleanFlightNumber 
-        };
-      }
-      throw new Error(`Flight API returned ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    if (data.error) {
-      console.error('Flight API error:', data.error);
-      // Check for authentication errors
-      if (data.error.code === 104 || data.error.code === 101) {
-        console.error('API Authentication Error - Invalid or missing API key');
-      }
-      return { status: 'Unknown', flightNumber: cleanFlightNumber };
-    }
-
-    // Parse response based on provider
-    switch (API_PROVIDER) {
-      case 'aviationstack':
-        return parseAviationStackResponse(data, cleanFlightNumber);
-      case 'flightaware':
-        return parseFlightAwareResponse(data, cleanFlightNumber);
-      case 'flightradar24':
-        return parseFlightRadar24Response(data, cleanFlightNumber);
-      default:
-        return { status: 'Unknown', flightNumber: cleanFlightNumber };
-    }
-  } catch (error) {
-    console.error('Error fetching flight status:', error);
-    return { status: 'Unknown', flightNumber: cleanFlightNumber };
-  }
+  // All providers failed
+  console.warn(`All ${providers.length} provider(s) failed to retrieve flight status for ${cleanFlightNumber}`);
+  return { status: 'Unknown', flightNumber: cleanFlightNumber };
 }
 
 /**
