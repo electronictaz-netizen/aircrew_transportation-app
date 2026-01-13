@@ -55,6 +55,79 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
     }
   };
 
+  const getFlightStatusBadgeClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'on time':
+      case 'landed':
+        return 'flight-status-ontime';
+      case 'delayed':
+        return 'flight-status-delayed';
+      case 'cancelled':
+        return 'flight-status-cancelled';
+      default:
+        return 'flight-status-unknown';
+    }
+  };
+
+  const handleCheckFlightStatus = async (trip: Schema['Trip']['type']) => {
+    // Show cost warning
+    const warningMessage = 
+      '⚠️ COST WARNING ⚠️\n\n' +
+      'Checking flight status uses external API services that may incur costs.\n\n' +
+      'Excessive use of this feature will lead to increased costs for API services.\n\n' +
+      'Each check counts toward your API quota/limit.\n\n' +
+      'Do you want to proceed with checking flight status?';
+    
+    if (!confirm(warningMessage)) {
+      return; // User cancelled
+    }
+
+    // Only check for current day trips
+    if (!trip.pickupDate) {
+      alert('Cannot check flight status: Trip has no pickup date.');
+      return;
+    }
+
+    const tripDate = new Date(trip.pickupDate);
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    
+    if (tripDate < todayStart || tripDate > todayEnd) {
+      alert('Flight status can only be checked for trips scheduled today.');
+      return;
+    }
+
+    if (!trip.flightNumber) {
+      alert('Cannot check flight status: Trip has no flight number.');
+      return;
+    }
+
+    // Set loading state
+    setFlightStatuses(prev => ({
+      ...prev,
+      [trip.id]: { status: 'Checking...', loading: true }
+    }));
+
+    try {
+      const flightStatus = await fetchFlightStatus(
+        trip.flightNumber,
+        trip.pickupDate ? new Date(trip.pickupDate) : undefined
+      );
+      
+      setFlightStatuses(prev => ({
+        ...prev,
+        [trip.id]: { status: flightStatus.status, loading: false }
+      }));
+    } catch (error) {
+      console.error('Error fetching flight status:', error);
+      setFlightStatuses(prev => ({
+        ...prev,
+        [trip.id]: { status: 'Error', loading: false }
+      }));
+      alert('Failed to fetch flight status. Please try again later.');
+    }
+  };
 
   const handleFilterChange = (filteredTrips: Array<Schema['Trip']['type']>) => {
     setDisplayedTrips(filteredTrips);
