@@ -19,7 +19,7 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
     numberOfPassengers: trip?.numberOfPassengers || 1,
     driverId: trip?.driverId || '',
     status: trip?.status || 'Unassigned',
-    isRecurring: trip?.isRecurring || false,
+    isRecurring: trip?.isRecurring || !!trip?.parentTripId || false, // Show as recurring if it's a parent or child
     recurringPattern: trip?.recurringPattern || 'weekly',
     recurringEndDate: trip?.recurringEndDate ? format(new Date(trip.recurringEndDate), "yyyy-MM-dd'T'HH:mm") : '',
   });
@@ -200,9 +200,28 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
                 type="checkbox"
                 name="isRecurring"
                 checked={formData.isRecurring}
-                onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                onChange={(e) => {
+                  const newValue = e.target.checked;
+                  setFormData({ ...formData, isRecurring: newValue });
+                  // If unchecking recurrence, clear recurring fields
+                  if (!newValue) {
+                    setFormData(prev => ({
+                      ...prev,
+                      isRecurring: false,
+                      recurringPattern: 'weekly',
+                      recurringEndDate: '',
+                    }));
+                  }
+                }}
               />
               Recurring Job
+              {trip && (trip.isRecurring || trip.parentTripId) && (
+                <small style={{ display: 'block', marginTop: '0.25rem', color: '#dc2626' }}>
+                  {trip.isRecurring 
+                    ? '⚠️ Unchecking will delete all child trips'
+                    : '⚠️ Unchecking will cancel recurrence and delete future trips'}
+                </small>
+              )}
             </label>
           </div>
 

@@ -208,9 +208,91 @@ function ManagementDashboard() {
     try {
       const trip = trips.find(t => t.id === tripId);
       const isParentRecurring = trip?.isRecurring === true;
+      const isChildRecurring = !!trip?.parentTripId;
+      const wasRecurring = isParentRecurring || isChildRecurring;
+      const isRemovingRecurrence = wasRecurring && tripData.isRecurring === false;
       
-      // If editing a parent recurring trip, ask what to update
-      if (isParentRecurring && !tripData.updateScope) {
+      // If removing recurrence from a parent trip, delete all child trips
+      if (isParentRecurring && isRemovingRecurrence) {
+        const { data: allTrips } = await client.models.Trip.list();
+        const childTrips = allTrips?.filter(t => t.parentTripId === tripId) || [];
+        
+        if (childTrips.length > 0) {
+          const confirmMessage = `Removing recurrence will delete all ${childTrips.length} child trip${childTrips.length > 1 ? 's' : ''}.\n\nAre you sure you want to continue?`;
+          if (!confirm(confirmMessage)) {
+            return; // User cancelled
+          }
+          
+          // Delete all child trips
+          for (const childTrip of childTrips) {
+            try {
+              await client.models.Trip.delete({ id: childTrip.id });
+              console.log(`Deleted child trip ${childTrip.id}`);
+            } catch (error) {
+              console.error(`Error deleting child trip ${childTrip.id}:`, error);
+            }
+          }
+        }
+        
+        // Remove recurring fields from parent trip
+        tripData.isRecurring = false;
+        tripData.recurringPattern = undefined;
+        tripData.recurringEndDate = undefined;
+      }
+      
+      // If canceling recurrence from a child trip, delete all future child trips
+      if (isChildRecurring && isRemovingRecurrence) {
+        const parentTripId = trip.parentTripId!;
+        const { data: allTrips } = await client.models.Trip.list();
+        const allChildTrips = allTrips?.filter(t => t.parentTripId === parentTripId) || [];
+        const currentTripDate = trip.pickupDate ? new Date(trip.pickupDate) : null;
+        const now = new Date();
+        
+        // Find future child trips (after the current trip's date)
+        const futureChildTrips = allChildTrips.filter(t => {
+          if (!t.pickupDate) return false;
+          const childDate = new Date(t.pickupDate);
+          // Delete trips that are after the current trip's date, or after now if current trip is in the past
+          const cutoffDate = currentTripDate && currentTripDate > now ? currentTripDate : now;
+          return childDate > cutoffDate;
+        });
+        
+        if (futureChildTrips.length > 0) {
+          const confirmMessage = `Canceling recurrence will delete ${futureChildTrips.length} future trip${futureChildTrips.length > 1 ? 's' : ''}.\n\nAre you sure you want to continue?`;
+          if (!confirm(confirmMessage)) {
+            return; // User cancelled
+          }
+          
+          // Delete future child trips
+          for (const futureTrip of futureChildTrips) {
+            try {
+              await client.models.Trip.delete({ id: futureTrip.id });
+              console.log(`Deleted future child trip ${futureTrip.id}`);
+            } catch (error) {
+              console.error(`Error deleting future child trip ${futureTrip.id}:`, error);
+            }
+          }
+        }
+        
+        // Also cancel recurrence on the parent trip
+        try {
+          await client.models.Trip.update({
+            id: parentTripId,
+            isRecurring: false,
+            recurringPattern: undefined,
+            recurringEndDate: undefined,
+          });
+        } catch (error) {
+          console.error('Error updating parent trip:', error);
+        }
+        
+        // Remove recurring fields from current trip
+        tripData.isRecurring = false;
+        tripData.parentTripId = undefined;
+      }
+      
+      // If editing a parent recurring trip (and not removing recurrence), ask what to update
+      if (isParentRecurring && !isRemovingRecurrence && !tripData.updateScope) {
         const updateScope = prompt(
           'This is a recurring trip. What would you like to update?\n\n' +
           '1 - Update only this parent trip\n' +
@@ -230,7 +312,7 @@ function ManagementDashboard() {
       await client.models.Trip.update({ id: tripId, ...tripData });
       
       // If updating a parent recurring trip with scope 2 or 3, update future child trips
-      if (isParentRecurring && tripData.updateScope && ['2', '3'].includes(tripData.updateScope)) {
+      if (isParentRecurring && !isRemovingRecurrence && tripData.updateScope && ['2', '3'].includes(tripData.updateScope)) {
         const { data: allTrips } = await client.models.Trip.list();
         const childTrips = allTrips?.filter(t => t.parentTripId === tripId) || [];
         const now = new Date();
