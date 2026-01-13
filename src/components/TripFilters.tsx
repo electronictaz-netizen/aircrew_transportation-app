@@ -306,6 +306,9 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
 
   const handleQuickDateFilter = (filter: QuickDateFilter) => {
     setQuickDateFilter(filter);
+    // Always ensure sorting by pickup date when filter changes
+    setSortField('pickupDate');
+    setSortDirection('asc');
     if (filter !== 'custom') {
       setDateFrom('');
       setDateTo('');
@@ -428,6 +431,8 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
+                  setSortField('pickupDate');
+                  setSortDirection('asc');
                   handleFilterChange();
                 }}
               >
@@ -446,6 +451,8 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
                 value={driverFilter}
                 onChange={(e) => {
                   setDriverFilter(e.target.value);
+                  setSortField('pickupDate');
+                  setSortDirection('asc');
                   handleFilterChange();
                 }}
               >

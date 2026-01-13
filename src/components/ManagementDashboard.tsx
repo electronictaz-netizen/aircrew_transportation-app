@@ -5,6 +5,7 @@ import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
 import TripList from './TripList';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
+import { deleteAllTrips } from '../utils/deleteAllTrips';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -652,6 +653,13 @@ function ManagementDashboard() {
             onClick={() => setShowDriverManagement(true)}
           >
             Manage Drivers
+          </button>
+          <button
+            className="btn btn-danger"
+            onClick={handleDeleteAllTrips}
+            title="Delete all trips from the database"
+          >
+            Delete All Trips
           </button>
         </div>
       </div>
