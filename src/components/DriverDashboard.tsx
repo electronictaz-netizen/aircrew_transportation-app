@@ -19,9 +19,23 @@ function DriverDashboard() {
   }, []);
 
   useEffect(() => {
+    // Load flight statuses immediately for current day trips
     if (trips.length > 0) {
       loadFlightStatuses();
     }
+    
+    // Set up interval to refresh flight statuses every 60 minutes
+    const intervalId = setInterval(() => {
+      console.log('[DriverDashboard] Refreshing flight statuses (60-minute interval)...');
+      if (trips.length > 0) {
+        loadFlightStatuses();
+      }
+    }, 60 * 60 * 1000); // 60 minutes in milliseconds
+    
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [trips]);
 
   const loadDriverAndTrips = async () => {
@@ -68,8 +82,21 @@ function DriverDashboard() {
   };
 
   const loadFlightStatuses = async () => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    // Filter to only current day trips
+    const todayTrips = trips.filter(trip => {
+      if (!trip.pickupDate) return false;
+      const tripDate = new Date(trip.pickupDate);
+      return tripDate >= todayStart && tripDate <= todayEnd;
+    });
+    
+    console.log(`[DriverDashboard] Fetching flight status for ${todayTrips.length} of ${trips.length} trips (current day only)`);
+    
     const statuses: Record<string, string> = {};
-    for (const trip of trips) {
+    for (const trip of todayTrips) {
       if (trip.flightNumber) {
         try {
           // Pass the pickup date to get the correct flight for that day

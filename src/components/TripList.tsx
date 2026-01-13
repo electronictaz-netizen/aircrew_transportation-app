@@ -34,10 +34,23 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
   }, [trips]);
 
   useEffect(() => {
-    // Fetch flight statuses for displayed trips
+    // Fetch flight statuses only for current day trips
     const loadFlightStatuses = async () => {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      
+      // Filter to only current day trips
+      const todayTrips = displayedTrips.filter(trip => {
+        if (!trip.pickupDate) return false;
+        const tripDate = new Date(trip.pickupDate);
+        return tripDate >= todayStart && tripDate <= todayEnd;
+      });
+      
+      console.log(`Fetching flight status for ${todayTrips.length} of ${displayedTrips.length} trips (current day only)`);
+      
       const statuses: Record<string, string> = {};
-      for (const trip of displayedTrips) {
+      for (const trip of todayTrips) {
         if (trip.flightNumber) {
           try {
             // Pass the pickup date to get the correct flight for that day
@@ -55,9 +68,23 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
       setFlightStatuses(statuses);
     };
 
+    // Load flight statuses immediately
     if (displayedTrips.length > 0) {
       loadFlightStatuses();
     }
+    
+    // Set up interval to refresh flight statuses every 60 minutes
+    const intervalId = setInterval(() => {
+      console.log('Refreshing flight statuses (60-minute interval)...');
+      if (displayedTrips.length > 0) {
+        loadFlightStatuses();
+      }
+    }, 60 * 60 * 1000); // 60 minutes in milliseconds
+    
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [displayedTrips]);
 
   const getDriverName = (driverId: string | null | undefined) => {
