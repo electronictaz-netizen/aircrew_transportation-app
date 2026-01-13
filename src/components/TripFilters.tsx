@@ -182,8 +182,31 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
             if (isNaN(dateA.getTime())) return 1; // Invalid date goes to end
             if (isNaN(dateB.getTime())) return -1; // Invalid date goes to end
             
-            aValue = dateA.getTime();
-            bValue = dateB.getTime();
+            // Sort by date first (ignoring time)
+            const dateOnlyA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate());
+            const dateOnlyB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate());
+            const dateComparison = dateOnlyA.getTime() - dateOnlyB.getTime();
+            
+            // If dates are the same, sort by time
+            if (dateComparison === 0) {
+              // Extract time components (hours and minutes)
+              const timeA = dateA.getHours() * 60 + dateA.getMinutes();
+              const timeB = dateB.getHours() * 60 + dateB.getMinutes();
+              const timeComparison = timeA - timeB;
+              
+              // If times are also the same, maintain original order
+              if (timeComparison === 0) {
+                return a.originalIndex - b.originalIndex;
+              }
+              
+              // Return time comparison (will be multiplied by sortDirection later)
+              aValue = timeA;
+              bValue = timeB;
+            } else {
+              // Return date comparison (will be multiplied by sortDirection later)
+              aValue = dateOnlyA.getTime();
+              bValue = dateOnlyB.getTime();
+            }
             break;
           case 'flightNumber':
             aValue = tripA.flightNumber || '';
