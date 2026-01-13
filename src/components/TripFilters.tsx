@@ -93,16 +93,23 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
         filtered = filtered.filter((trip) => {
           if (!trip.pickupDate) return false;
           const tripDate = new Date(trip.pickupDate);
-          return tripDate >= dateRange.from! && tripDate <= dateRange.to!;
+          // Compare dates at start of day for accurate filtering
+          const tripDateStart = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
+          const fromStart = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate());
+          const toStart = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate());
+          return tripDateStart >= fromStart && tripDateStart <= toStart;
         });
       }
     } else if (quickDateFilter === 'custom') {
       // Use custom date range
       if (dateFrom) {
         const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0); // Start of day
         filtered = filtered.filter((trip) => {
           if (!trip.pickupDate) return false;
-          return new Date(trip.pickupDate) >= fromDate;
+          const tripDate = new Date(trip.pickupDate);
+          tripDate.setHours(0, 0, 0, 0);
+          return tripDate >= fromDate;
         });
       }
 
@@ -111,7 +118,8 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
         toDate.setHours(23, 59, 59, 999); // Include entire end date
         filtered = filtered.filter((trip) => {
           if (!trip.pickupDate) return false;
-          return new Date(trip.pickupDate) <= toDate;
+          const tripDate = new Date(trip.pickupDate);
+          return tripDate <= toDate;
         });
       }
     }
@@ -139,8 +147,13 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
 
         switch (sortField) {
           case 'pickupDate':
-            aValue = a.pickupDate ? new Date(a.pickupDate).getTime() : 0;
-            bValue = b.pickupDate ? new Date(b.pickupDate).getTime() : 0;
+            // Handle missing dates - put them at the end
+            if (!a.pickupDate && !b.pickupDate) return 0;
+            if (!a.pickupDate) return 1; // a goes to end
+            if (!b.pickupDate) return -1; // b goes to end
+            // Both have dates, compare them
+            aValue = new Date(a.pickupDate).getTime();
+            bValue = new Date(b.pickupDate).getTime();
             break;
           case 'flightNumber':
             aValue = a.flightNumber || '';

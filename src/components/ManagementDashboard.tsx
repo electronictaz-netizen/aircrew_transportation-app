@@ -268,6 +268,39 @@ function ManagementDashboard() {
     }
   };
 
+  const handleDeleteMultipleTrips = async (tripIds: string[]) => {
+    if (tripIds.length === 0) return;
+    
+    const count = tripIds.length;
+    if (!confirm(`Are you sure you want to delete ${count} trip${count > 1 ? 's' : ''}?`)) return;
+    
+    try {
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const tripId of tripIds) {
+        try {
+          await client.models.Trip.delete({ id: tripId });
+          successCount++;
+        } catch (error) {
+          console.error(`Error deleting trip ${tripId}:`, error);
+          failCount++;
+        }
+      }
+      
+      await loadTrips();
+      
+      if (failCount > 0) {
+        alert(`Deleted ${successCount} trip${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
+      } else {
+        alert(`Successfully deleted ${successCount} trip${successCount > 1 ? 's' : ''}.`);
+      }
+    } catch (error) {
+      console.error('Error deleting trips:', error);
+      alert('Failed to delete some trips. Please try again.');
+    }
+  };
+
   const handleDeleteTrip = async (tripId: string) => {
     const trip = trips.find(t => t.id === tripId);
     const isParentRecurring = trip?.isRecurring === true;
@@ -401,6 +434,7 @@ function ManagementDashboard() {
         drivers={drivers}
         onEdit={handleEditTrip}
         onDelete={handleDeleteTrip}
+        onDeleteMultiple={handleDeleteMultipleTrips}
         onUpdate={loadTrips}
       />
     </div>

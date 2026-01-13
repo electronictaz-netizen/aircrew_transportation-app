@@ -116,6 +116,9 @@
 }
 
 .trip-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
   padding: 0.75rem 0;
 }
@@ -124,6 +127,25 @@
   color: #6b7280;
   font-size: 0.875rem;
   margin: 0;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trips-table tr.selected {
+  background-color: #eff6ff;
+}
+
+.trips-table tr.selected:hover {
+  background-color: #dbeafe;
+}
+
+.trips-table th:first-child,
+.trips-table td:first-child {
+  width: 40px;
+  text-align: center;
 }
 
 .no-results {

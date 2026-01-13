@@ -14,6 +14,7 @@ interface DriverManagementProps {
 function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Schema['Driver']['type'] | null>(null);
+  const [selectedDrivers, setSelectedDrivers] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -61,6 +62,58 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     } catch (error) {
       console.error('Error deleting driver:', error);
       alert('Failed to delete driver. Please try again.');
+    }
+  };
+
+  const handleSelectDriver = (driverId: string) => {
+    const newSelected = new Set(selectedDrivers);
+    if (newSelected.has(driverId)) {
+      newSelected.delete(driverId);
+    } else {
+      newSelected.add(driverId);
+    }
+    setSelectedDrivers(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDrivers.size === drivers.length) {
+      setSelectedDrivers(new Set());
+    } else {
+      setSelectedDrivers(new Set(drivers.map(d => d.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedDrivers.size === 0) return;
+    
+    const count = selectedDrivers.size;
+    if (!confirm(`Are you sure you want to delete ${count} driver${count > 1 ? 's' : ''}?`)) return;
+    
+    try {
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const driverId of selectedDrivers) {
+        try {
+          await client.models.Driver.delete({ id: driverId });
+          successCount++;
+        } catch (error) {
+          console.error(`Error deleting driver ${driverId}:`, error);
+          failCount++;
+        }
+      }
+      
+      setSelectedDrivers(new Set());
+      onUpdate();
+      
+      if (failCount > 0) {
+        alert(`Deleted ${successCount} driver${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
+      } else {
+        alert(`Successfully deleted ${successCount} driver${successCount > 1 ? 's' : ''}.`);
+      }
+    } catch (error) {
+      console.error('Error deleting drivers:', error);
+      alert('Failed to delete some drivers. Please try again.');
     }
   };
 
@@ -165,6 +218,14 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
             <table className="drivers-table">
               <thead>
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={selectedDrivers.size === drivers.length && drivers.length > 0}
+                      onChange={handleSelectAll}
+                      title="Select all"
+                    />
+                  </th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Phone</th>
@@ -175,7 +236,14 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
               </thead>
               <tbody>
                 {drivers.map((driver) => (
-                  <tr key={driver.id}>
+                  <tr key={driver.id} className={selectedDrivers.has(driver.id) ? 'selected' : ''}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedDrivers.has(driver.id)}
+                        onChange={() => handleSelectDriver(driver.id)}
+                      />
+                    </td>
                     <td>{driver.name}</td>
                     <td>{driver.email || '-'}</td>
                     <td>{driver.phone || '-'}</td>

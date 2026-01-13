@@ -10,12 +10,14 @@ interface TripListProps {
   drivers: Array<Schema['Driver']['type']>;
   onEdit: (trip: Schema['Trip']['type']) => void;
   onDelete: (tripId: string) => void;
+  onDeleteMultiple?: (tripIds: string[]) => void;
   onUpdate: () => void;
 }
 
-function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
+function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple }: TripListProps) {
   const [flightStatuses, setFlightStatuses] = useState<Record<string, string>>({});
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>(trips);
+  const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
 
   // Update displayed trips when trips prop changes
   useEffect(() => {
@@ -93,6 +95,42 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
 
   const handleFilterChange = (filteredTrips: Array<Schema['Trip']['type']>) => {
     setDisplayedTrips(filteredTrips);
+    // Clear selections when filter changes
+    setSelectedTrips(new Set());
+  };
+
+  const handleSelectTrip = (tripId: string) => {
+    const newSelected = new Set(selectedTrips);
+    if (newSelected.has(tripId)) {
+      newSelected.delete(tripId);
+    } else {
+      newSelected.add(tripId);
+    }
+    setSelectedTrips(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTrips.size === displayedTrips.length) {
+      setSelectedTrips(new Set());
+    } else {
+      setSelectedTrips(new Set(displayedTrips.map(t => t.id)));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedTrips.size === 0) return;
+    
+    const count = selectedTrips.size;
+    if (!confirm(`Are you sure you want to delete ${count} trip${count > 1 ? 's' : ''}?`)) return;
+    
+    if (onDeleteMultiple) {
+      onDeleteMultiple(Array.from(selectedTrips));
+      setSelectedTrips(new Set());
+    } else {
+      // Fallback to individual deletes
+      selectedTrips.forEach(tripId => onDelete(tripId));
+      setSelectedTrips(new Set());
+    }
   };
 
   if (trips.length === 0) {
@@ -114,10 +152,33 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
         <p className="trip-count">
           Showing {displayedTrips.length} of {trips.length} trips
         </p>
+        {onDeleteMultiple && (
+          <div className="bulk-actions">
+            {selectedTrips.size > 0 && (
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteSelected}
+                title={`Delete ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''}`}
+              >
+                Delete Selected ({selectedTrips.size})
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <table className="trips-table">
         <thead>
           <tr>
+            {onDeleteMultiple && (
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedTrips.size === displayedTrips.length && displayedTrips.length > 0}
+                  onChange={handleSelectAll}
+                  title="Select all"
+                />
+              </th>
+            )}
             <th>Pickup Date/Time</th>
             <th>Flight Number</th>
             <th>Flight Status</th>
@@ -134,13 +195,22 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
         <tbody>
           {displayedTrips.length === 0 ? (
             <tr>
-              <td colSpan={11} className="no-results">
+              <td colSpan={onDeleteMultiple ? 12 : 11} className="no-results">
                 No trips match the current filters. Try adjusting your search criteria.
               </td>
             </tr>
           ) : (
             displayedTrips.map((trip) => (
-            <tr key={trip.id}>
+            <tr key={trip.id} className={selectedTrips.has(trip.id) ? 'selected' : ''}>
+              {onDeleteMultiple && (
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedTrips.has(trip.id)}
+                    onChange={() => handleSelectTrip(trip.id)}
+                  />
+                </td>
+              )}
               <td>
                 {trip.pickupDate
                   ? format(new Date(trip.pickupDate), 'MMM dd, yyyy HH:mm')

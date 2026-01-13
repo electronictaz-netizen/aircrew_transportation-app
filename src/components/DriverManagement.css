@@ -69,6 +69,26 @@
   background-color: #f9fafb;
 }
 
+.drivers-table tr.selected {
+  background-color: #eff6ff;
+}
+
+.drivers-table tr.selected:hover {
+  background-color: #dbeafe;
+}
+
+.drivers-table th:first-child,
+.drivers-table td:first-child {
+  width: 40px;
+  text-align: center;
+}
+
+.driver-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .status-active {
   color: #065f46;
   font-weight: 500;
