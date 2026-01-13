@@ -8,6 +8,7 @@ import outputs from '../amplify_outputs.json';
 // Import debug utilities (available in console)
 import './utils/flightStatusDebug';
 import './utils/recurringTripsDebug';
+import './utils/deleteAllTrips';
 
 Amplify.configure(outputs);
 
