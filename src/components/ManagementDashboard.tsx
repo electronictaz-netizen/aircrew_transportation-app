@@ -553,7 +553,7 @@ function ManagementDashboard() {
       }
       
       // Wait a moment for database to sync, then force refresh
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay for better sync
       await loadTrips(true);
       
       if (failCount > 0) {
@@ -561,9 +561,10 @@ function ManagementDashboard() {
       } else {
         alert(`Successfully deleted ${successCount} trip${successCount > 1 ? 's' : ''}.`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting trips:', error);
-      alert('Failed to delete some trips. Please try again.');
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to delete trips: ${errorMessage}. Please try again.`);
     }
   };
 
@@ -626,19 +627,27 @@ function ManagementDashboard() {
       }
       
       // Delete the trip itself
-      await client.models.Trip.delete({ id: tripId });
+      const deleteResult = await client.models.Trip.delete({ id: tripId });
+      
+      if (deleteResult.errors && deleteResult.errors.length > 0) {
+        console.error('Delete errors:', deleteResult.errors);
+        throw new Error(deleteResult.errors.map((e: any) => e.message || JSON.stringify(e)).join(', '));
+      }
+      
+      console.log('Trip deleted successfully:', tripId);
       
       // Wait a moment for database to sync, then force refresh
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay for better sync
       await loadTrips(true);
       
       const message = isParentRecurring 
         ? `Recurring trip deleted successfully!`
         : 'Trip deleted successfully!';
       alert(message);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting trip:', error);
-      alert('Failed to delete trip. Please try again.');
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to delete trip: ${errorMessage}. Please try again.`);
     }
   };
 

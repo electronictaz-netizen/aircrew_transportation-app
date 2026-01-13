@@ -153,15 +153,16 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
 
     console.log('TripFilters: After search filtering:', filtered.length);
 
-    // Sorting
-    if (sortField !== 'none') {
+    // Sorting - Always sort by pickupDate by default if sortField is 'none' or not set
+    const effectiveSortField = sortField === 'none' ? 'pickupDate' : sortField;
+    if (effectiveSortField) {
       filtered.sort((a, b) => {
         const tripA = a.trip;
         const tripB = b.trip;
         let aValue: any;
         let bValue: any;
 
-        switch (sortField) {
+        switch (effectiveSortField) {
           case 'pickupDate':
             // Handle missing dates - put them at the end
             if (!tripA.pickupDate && !tripB.pickupDate) {
