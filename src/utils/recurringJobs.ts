@@ -63,6 +63,29 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
     }
   });
 
+  // Check for duplicate parent trip before creating
+  const parentDate = new Date(tripData.pickupDate);
+  const parentDateStart = new Date(parentDate.getFullYear(), parentDate.getMonth(), parentDate.getDate());
+  const parentFlightNumber = tripData.flightNumber.trim().toUpperCase();
+  
+  const { data: existingTrips } = await client.models.Trip.list();
+  const duplicateParent = existingTrips?.find((existing: Schema['Trip']['type']) => {
+    if (!existing.pickupDate || !existing.flightNumber) return false;
+    
+    const existingFlightNumber = existing.flightNumber.trim().toUpperCase();
+    if (existingFlightNumber !== parentFlightNumber) return false;
+    
+    const existingDate = new Date(existing.pickupDate);
+    const existingDateStart = new Date(existingDate.getFullYear(), existingDate.getMonth(), existingDate.getDate());
+    
+    return existingDateStart.getTime() === parentDateStart.getTime();
+  });
+  
+  if (duplicateParent) {
+    console.error(`❌ Cannot create recurring trip: Duplicate trip with flight ${parentFlightNumber} already exists on ${parentDateStart.toLocaleDateString()} (ID: ${duplicateParent.id})`);
+    throw new Error(`A trip with flight number "${parentFlightNumber}" already exists on ${parentDateStart.toLocaleDateString()}. Please use a different flight number or date.`);
+  }
+
   // Create the parent trip first
   const parentTrip = await client.models.Trip.create(parentTripData);
 
@@ -143,14 +166,43 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
 
   console.log(`Generated ${tripsToCreate.length} child trips to create`);
 
+  // Get all existing trips to check for duplicates
+  const { data: allExistingTrips } = await client.models.Trip.list();
+  console.log(`Checking against ${allExistingTrips?.length || 0} existing trips for duplicates...`);
+
   // Create all child trips
   let createdCount = 0;
   let errorCount = 0;
+  let skippedCount = 0;
   
   console.log(`Starting to create ${tripsToCreate.length} child trips...`);
   
   for (let i = 0; i < tripsToCreate.length; i++) {
     const trip = tripsToCreate[i];
+    
+    // Check for duplicate before creating
+    const tripDate = new Date(trip.pickupDate);
+    const tripDateStart = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
+    const flightNumber = trip.flightNumber.trim().toUpperCase();
+    
+    const duplicate = allExistingTrips?.find((existing: Schema['Trip']['type']) => {
+      if (!existing.pickupDate || !existing.flightNumber) return false;
+      
+      const existingFlightNumber = existing.flightNumber.trim().toUpperCase();
+      if (existingFlightNumber !== flightNumber) return false;
+      
+      const existingDate = new Date(existing.pickupDate);
+      const existingDateStart = new Date(existingDate.getFullYear(), existingDate.getMonth(), existingDate.getDate());
+      
+      return existingDateStart.getTime() === tripDateStart.getTime();
+    });
+    
+    if (duplicate) {
+      skippedCount++;
+      console.log(`⏭️ Skipping duplicate child trip ${i + 1}/${tripsToCreate.length} - Flight ${flightNumber} on ${tripDateStart.toLocaleDateString()} already exists (ID: ${duplicate.id})`);
+      continue; // Skip this trip
+    }
+    
     try {
       console.log(`Creating child trip ${i + 1}/${tripsToCreate.length} for ${trip.pickupDate}...`);
       const result = await client.models.Trip.create(trip);
@@ -177,6 +229,7 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   }
 
   console.log(`\n=== Recurring trips creation summary ===`);
+  console.log(`Skipped duplicates: ${skippedCount}`);
   console.log(`Total to create: ${tripsToCreate.length}`);
   console.log(`Successfully created: ${createdCount}`);
   console.log(`Errors: ${errorCount}`);
