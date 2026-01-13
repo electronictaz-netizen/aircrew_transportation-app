@@ -23,6 +23,8 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
     recurringPattern: trip?.recurringPattern || 'weekly',
     recurringEndDate: trip?.recurringEndDate ? format(new Date(trip.recurringEndDate), "yyyy-MM-dd'T'HH:mm") : '',
   });
+  
+  const [passengerInput, setPassengerInput] = useState(String(formData.numberOfPassengers));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +47,9 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
         flightNumber: formData.flightNumber.trim(),
         pickupLocation: formData.pickupLocation.trim(),
         dropoffLocation: formData.dropoffLocation.trim(),
-        numberOfPassengers: formData.numberOfPassengers || 1,
+        numberOfPassengers: typeof formData.numberOfPassengers === 'number' 
+          ? formData.numberOfPassengers 
+          : (parseInt(String(formData.numberOfPassengers)) || 1),
         driverId: formData.driverId || undefined,
         status: formData.driverId ? 'Assigned' : 'Unassigned',
         isRecurring: formData.isRecurring || false,
@@ -69,9 +73,13 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    // numberOfPassengers is handled separately in its own onChange
+    if (name === 'numberOfPassengers') {
+      return; // Skip, handled by custom onChange
+    }
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'numberOfPassengers' ? parseInt(value) || 1 : value,
+      [name]: value,
     }));
   };
 
@@ -134,12 +142,36 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
           <div className="form-group">
             <label htmlFor="numberOfPassengers">Number of Passengers</label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               id="numberOfPassengers"
               name="numberOfPassengers"
-              value={formData.numberOfPassengers}
-              onChange={handleChange}
-              min="1"
+              value={passengerInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Allow empty string for typing, or valid numbers
+                if (value === '' || /^\d+$/.test(value)) {
+                  setPassengerInput(value);
+                  // Update formData with parsed number or keep current if empty
+                  const numValue = value === '' ? formData.numberOfPassengers : (parseInt(value) || 1);
+                  setFormData({
+                    ...formData,
+                    numberOfPassengers: numValue,
+                  });
+                }
+              }}
+              onBlur={(e) => {
+                // Ensure minimum value of 1 when field loses focus
+                const value = parseInt(e.target.value) || 1;
+                const finalValue = value < 1 ? 1 : value;
+                setPassengerInput(String(finalValue));
+                setFormData({
+                  ...formData,
+                  numberOfPassengers: finalValue,
+                });
+              }}
+              placeholder="Enter number"
             />
           </div>
 
