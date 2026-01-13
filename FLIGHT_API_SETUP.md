@@ -52,6 +52,15 @@ This application supports multiple flight status API providers. Choose the one t
 
 ## FlightAware AeroAPI Setup
 
+⚠️ **IMPORTANT CORS LIMITATION**: FlightAware AeroAPI does **NOT** support direct browser calls due to CORS (Cross-Origin Resource Sharing) restrictions. 
+
+**Options:**
+1. **Remove FlightAware** from your provider list (recommended for browser-only apps)
+2. **Use a backend proxy** - Create an AWS Lambda function or API Gateway endpoint to proxy requests to AeroAPI
+3. **Use AviationStack or FlightRadar24** instead, which support browser requests
+
+If you still want to configure FlightAware (for future backend implementation), here's how:
+
 FlightAware's AeroAPI is their modern REST API that uses API key authentication via headers.
 
 ### Step 1: Create Account

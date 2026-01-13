@@ -76,7 +76,12 @@ const getProviderConfig = (): {
       // Filter out providers without API keys
       const validProviders = providerList.filter(provider => {
         const key = keys[provider];
-        return key && key !== 'YOUR_API_KEY' && key.trim().length > 0;
+        // Check for valid API key (not empty, not placeholder, not "0", not undefined)
+        return key && 
+               key !== 'YOUR_API_KEY' && 
+               key !== '0' && 
+               key.trim().length > 0 &&
+               key !== 'undefined';
       });
       
       if (validProviders.length > 0) {
@@ -292,8 +297,12 @@ async function fetchFromProvider(
   }
 
   // Validate API key
-  if (!apiKey || apiKey === 'YOUR_API_KEY' || apiKey.trim().length === 0) {
-    console.warn(`API key not configured for provider: ${provider}`);
+  if (!apiKey || 
+      apiKey === 'YOUR_API_KEY' || 
+      apiKey === '0' || 
+      apiKey === 'undefined' ||
+      apiKey.trim().length === 0) {
+    console.warn(`[${provider}] ⚠️ API key not configured or invalid. Please check your environment variables.`);
     return null;
   }
 
@@ -358,23 +367,23 @@ async function fetchFromProvider(
     if (!response.ok) {
       // Handle specific error codes
       if (response.status === 401) {
-        console.warn(`[${provider}] 401 Unauthorized - Invalid API key`);
+        console.warn(`[${provider}] ❌ 401 Unauthorized - Invalid API key. Please verify your API key in AWS Amplify environment variables.`);
         return null;
       }
       if (response.status === 400) {
-        console.warn(`[${provider}] 400 Bad Request - Invalid API endpoint or parameters. This provider may not be available or requires different configuration.`);
+        console.warn(`[${provider}] ❌ 400 Bad Request - Invalid API endpoint or parameters. This provider may not be available or requires different configuration.`);
         return null; // Will trigger fallback to next provider
       }
       if (response.status === 429) {
-        console.warn(`[${provider}] 429 Too Many Requests - Rate limit exceeded`);
+        console.warn(`[${provider}] ❌ 429 Too Many Requests - Rate limit exceeded`);
         return null; // Will trigger fallback to next provider
       }
       if (response.status === 403) {
-        console.warn(`[${provider}] 403 Forbidden - API access denied or quota exceeded`);
+        console.warn(`[${provider}] ❌ 403 Forbidden - API access denied or quota exceeded`);
         return null; // Will trigger fallback to next provider
       }
       // For other errors, log but don't throw - let it fallback to next provider
-      console.warn(`[${provider}] API returned ${response.status}: ${response.statusText}`);
+      console.warn(`[${provider}] ❌ API returned ${response.status}: ${response.statusText}`);
       return null;
     }
 
@@ -406,8 +415,17 @@ async function fetchFromProvider(
       default:
         return null;
     }
-  } catch (error) {
-    console.warn(`[${provider}] Error fetching flight status:`, error);
+  } catch (error: any) {
+    // Check for CORS errors (FlightAware AeroAPI doesn't support browser CORS)
+    if (error?.message?.includes('CORS') || 
+        error?.message?.includes('Failed to fetch') ||
+        (error?.name === 'TypeError' && error?.message?.includes('fetch'))) {
+      console.warn(`[${provider}] ❌ CORS Error - ${provider === 'flightaware' ? 'FlightAware AeroAPI does not support direct browser calls due to CORS restrictions. This API requires a backend proxy to work from a browser. Please remove FlightAware from your provider list or set up a backend proxy.' : 'This API may not support browser requests.'}`);
+      return null;
+    }
+    
+    // Log error but don't throw - let it fallback to next provider
+    console.warn(`[${provider}] ❌ Error fetching flight status:`, error?.message || error);
     return null;
   }
 }
