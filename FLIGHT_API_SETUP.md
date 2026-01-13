@@ -97,6 +97,16 @@ This application supports multiple flight status API providers. Choose the one t
 
 ## FlightRadar24 API Setup
 
+⚠️ **IMPORTANT NOTE:** FlightRadar24 API is not publicly available and requires special business access. The current implementation is a placeholder and may return 400 errors. If you see 400 Bad Request errors, FlightRadar24 is likely not configured correctly or not available for your use case.
+
+### Current Status
+- FlightRadar24 API endpoint structure in this code is a placeholder
+- The API may require different authentication or endpoint format
+- 400 Bad Request errors indicate the API call format is incorrect
+- **Recommendation:** Use AviationStack or FlightAware instead, or contact FlightRadar24 for proper API documentation
+
+### If You Have FlightRadar24 Access
+
 ### Step 1: Create Account
 1. Go to [https://www.flightradar24.com/](https://www.flightradar24.com/)
 2. Click "Sign Up" or "Create Account"
@@ -116,18 +126,24 @@ This application supports multiple flight status API providers. Choose the one t
 2. Log into your FlightRadar24 business account
 3. Navigate to API settings
 4. Generate or copy your API token
+5. **Important:** Get the correct API endpoint and parameter format from FlightRadar24 documentation
 
-### Step 4: Configure in AWS Amplify
+### Step 4: Update Code (Required)
+The current FlightRadar24 implementation may need to be updated based on their actual API:
+1. Check FlightRadar24 API documentation for correct endpoint
+2. Update the API URL format in `src/utils/flightStatus.ts`
+3. Update the response parsing function `parseFlightRadar24Response()`
+4. Test with your API credentials
+
+### Step 5: Configure in AWS Amplify
 1. Go to AWS Amplify Console
 2. Select your app
 3. Go to **Environment variables**
 4. Add the following variables:
-   - **Key**: `VITE_FLIGHT_API_PROVIDER`
-   - **Value**: `flightradar24`
-   - **Key**: `VITE_FLIGHT_API_KEY`
+   - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTRADAR24`
    - **Value**: `your_api_token_here` (paste your actual token)
 
-**Note:** FlightRadar24 API structure may differ from the current implementation. You may need to adjust the API endpoint and response parsing based on their current API documentation.
+**Note:** If you continue to see 400 errors, the API endpoint or parameters in the code need to be updated to match FlightRadar24's current API specification.
 
 **Pricing:**
 - Contact FlightRadar24 for commercial pricing

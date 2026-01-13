@@ -274,8 +274,11 @@ async function fetchFromProvider(
       // FlightAware requires different authentication (username/password or token)
       apiUrl = `${config.url}/FlightInfo?${config.paramName}=${encodeURIComponent(apiKey)}&${config.flightParam}=${encodeURIComponent(flightNumber)}`;
     } else {
-      // FlightRadar24
+      // FlightRadar24 - Note: This API may require special access or different endpoint structure
+      // The current implementation is a placeholder and may need adjustment based on actual API documentation
+      // If you get 400 errors, FlightRadar24 may not be publicly available or requires different authentication
       apiUrl = `${config.url}/flight/list.json?${config.paramName}=${encodeURIComponent(apiKey)}&${config.flightParam}=${encodeURIComponent(flightNumber)}`;
+      console.warn(`[${provider}] Note: FlightRadar24 API may require special access. If you get 400 errors, this provider may not be available.`);
     }
 
     console.log(`[${provider}] Fetching flight status for ${flightNumber}...`);
@@ -288,6 +291,10 @@ async function fetchFromProvider(
         console.warn(`[${provider}] 401 Unauthorized - Invalid API key`);
         return null;
       }
+      if (response.status === 400) {
+        console.warn(`[${provider}] 400 Bad Request - Invalid API endpoint or parameters. This provider may not be available or requires different configuration.`);
+        return null; // Will trigger fallback to next provider
+      }
       if (response.status === 429) {
         console.warn(`[${provider}] 429 Too Many Requests - Rate limit exceeded`);
         return null; // Will trigger fallback to next provider
@@ -296,7 +303,9 @@ async function fetchFromProvider(
         console.warn(`[${provider}] 403 Forbidden - API access denied or quota exceeded`);
         return null; // Will trigger fallback to next provider
       }
-      throw new Error(`Flight API returned ${response.status}: ${response.statusText}`);
+      // For other errors, log but don't throw - let it fallback to next provider
+      console.warn(`[${provider}] API returned ${response.status}: ${response.statusText}`);
+      return null;
     }
 
     const data = await response.json();
