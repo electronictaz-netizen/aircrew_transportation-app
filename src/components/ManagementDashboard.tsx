@@ -208,7 +208,6 @@ function ManagementDashboard() {
     try {
       const trip = trips.find(t => t.id === tripId);
       const isParentRecurring = trip?.isRecurring === true;
-      const isChildRecurring = !!trip?.parentTripId;
       
       // If editing a parent recurring trip, ask what to update
       if (isParentRecurring && !tripData.updateScope) {
