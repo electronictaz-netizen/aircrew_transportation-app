@@ -143,6 +143,15 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
             + Add Driver
           </button>
+          {selectedDrivers.size > 0 && (
+            <button
+              className="btn btn-danger"
+              onClick={handleDeleteSelected}
+              title={`Delete ${selectedDrivers.size} selected driver${selectedDrivers.size > 1 ? 's' : ''}`}
+            >
+              Delete Selected ({selectedDrivers.size})
+            </button>
+          )}
         </div>
 
         {showForm && (

@@ -90,13 +90,15 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
     if (quickDateFilter !== 'all' && quickDateFilter !== 'custom') {
       const dateRange = getDateRange(quickDateFilter);
       if (dateRange.from && dateRange.to) {
+        const fromDate = dateRange.from;
+        const toDate = dateRange.to;
         filtered = filtered.filter((trip) => {
           if (!trip.pickupDate) return false;
           const tripDate = new Date(trip.pickupDate);
           // Compare dates at start of day for accurate filtering
           const tripDateStart = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
-          const fromStart = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate());
-          const toStart = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate());
+          const fromStart = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+          const toStart = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
           return tripDateStart >= fromStart && tripDateStart <= toStart;
         });
       }
