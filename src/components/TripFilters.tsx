@@ -61,8 +61,13 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
 
   const applyFiltersAndSort = () => {
     console.log('TripFilters: Starting with', trips.length, 'trips');
+    // Filter out any trips that might have been deleted (safety check)
+    // This shouldn't be necessary if trips are properly refreshed, but it's a safeguard
+    const validTrips = trips.filter(trip => trip && trip.id);
+    console.log('TripFilters: Valid trips after filtering deleted:', validTrips.length);
+    
     // Create a copy with original index to maintain stable sort
-    let filtered = trips.map((trip, index) => ({ trip, originalIndex: index }));
+    let filtered = validTrips.map((trip, index) => ({ trip, originalIndex: index }));
     console.log('TripFilters: After initial copy:', filtered.length);
 
     // Status filter
