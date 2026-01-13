@@ -17,7 +17,9 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
   
   try {
     // Load all trips
-    const { data: allTrips, errors: loadErrors } = await client.models.Trip.list();
+    const tripListResult = await client.models.Trip.list();
+    const allTrips = tripListResult.data;
+    const loadErrors = tripListResult.errors;
     
     if (loadErrors && loadErrors.length > 0) {
       console.error('❌ Errors loading trips:', loadErrors);
