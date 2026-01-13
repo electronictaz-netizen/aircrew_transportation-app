@@ -113,7 +113,7 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
       console.log('✅ Verification: All trips deleted. Database is empty.');
     } else {
       console.warn(`⚠️ Verification: ${remainingCount} trips still remain in database.`);
-      console.warn('Remaining trip IDs:', remainingTrips?.map(t => t.id));
+      console.warn('Remaining trip IDs:', remainingTrips?.map((t: Schema['Trip']['type']) => t.id));
     }
     
   } catch (error: any) {

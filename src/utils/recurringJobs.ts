@@ -231,9 +231,9 @@ export async function generateUpcomingRecurringTrips(): Promise<void> {
 
       const lastChildDate = childTrips && childTrips.length > 0
         ? childTrips
-            .map((t) => t.pickupDate ? parseISO(t.pickupDate) : null)
+            .map((t: Schema['Trip']['type']) => t.pickupDate ? parseISO(t.pickupDate) : null)
             .filter((d): d is Date => d !== null)
-            .sort((a, b) => b.getTime() - a.getTime())[0]
+            .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0]
         : parseISO(trip.pickupDate);
 
       if (!lastChildDate) continue;
