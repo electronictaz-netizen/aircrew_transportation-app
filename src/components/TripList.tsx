@@ -16,22 +16,23 @@ interface TripListProps {
 
 function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate }: TripListProps) {
   const [flightStatuses, setFlightStatuses] = useState<Record<string, string>>({});
-  const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>(trips);
+  const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
 
-  // Initialize displayed trips when trips prop changes (TripFilters will handle sorting)
+  // Log when trips prop changes (TripFilters will handle sorting via handleFilterChange)
   useEffect(() => {
     console.log('TripList: Received trips:', trips.length);
-    console.log('TripList: Trip dates:', trips.map(t => ({
+    console.log('TripList: Trip dates (unsorted):', trips.map(t => ({
       id: t.id,
       date: t.pickupDate,
+      dateParsed: t.pickupDate ? new Date(t.pickupDate).toISOString() : 'N/A',
       flight: t.flightNumber,
       isRecurring: t.isRecurring,
       parentId: t.parentTripId,
       status: t.status
     })));
-    // Don't set displayedTrips directly - let TripFilters handle sorting and filtering
-    // TripFilters will call handleFilterChange with sorted trips
+    // Don't set displayedTrips directly - TripFilters will call handleFilterChange with sorted trips
+    // This ensures sorting is always applied
   }, [trips]);
 
   useEffect(() => {
