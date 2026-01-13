@@ -127,55 +127,83 @@ FlightAware's AeroAPI is their modern REST API that uses API key authentication 
 - FlightRadar24 API endpoint structure in this code is a placeholder
 - The API may require different authentication or endpoint format
 - 400 Bad Request errors indicate the API call format is incorrect
-- **Recommendation:** Use AviationStack or FlightAware instead, or contact FlightRadar24 for proper API documentation
+## FlightRadar24 API Setup
 
-### If You Have FlightRadar24 Access
+FlightRadar24 provides a REST API that requires a valid API subscription and API key. The API uses header-based authentication.
 
-### Step 1: Create Account
-1. Go to [https://www.flightradar24.com/](https://www.flightradar24.com/)
-2. Click "Sign Up" or "Create Account"
-3. Complete registration
-
-### Step 2: Request API Access
+### Step 1: Create Account and Subscribe
 1. Go to [FlightRadar24 Business API](https://www.flightradar24.com/business/api)
-2. Click "Request Access" or "Contact Sales"
-3. Fill out the business inquiry form:
-   - Company information
-   - Use case
-   - Expected usage
-4. Wait for response from FlightRadar24 sales team
+2. Sign up for a business/enterprise account
+3. Subscribe to an API plan that suits your needs
+4. You can also use the Sandbox environment for free testing
 
-### Step 3: Get API Token
-1. Once approved, you'll receive API credentials
-2. Log into your FlightRadar24 business account
-3. Navigate to API settings
-4. Generate or copy your API token
-5. **Important:** Get the correct API endpoint and parameter format from FlightRadar24 documentation
+### Step 2: Generate API Token
+1. Log into your FlightRadar24 account
+2. Navigate to **Key Management** page
+3. Generate your API token
+4. Copy the API token (keep it secure)
 
-### Step 4: Update Code (Required)
-The current FlightRadar24 implementation may need to be updated based on their actual API:
-1. Check FlightRadar24 API documentation for correct endpoint
-2. Update the API URL format in `src/utils/flightStatus.ts`
-3. Update the response parsing function `parseFlightRadar24Response()`
-4. Test with your API credentials
+### Step 3: Configure in AWS Amplify
 
-### Step 5: Configure in AWS Amplify
+**For Multi-Provider Setup (Recommended):**
 1. Go to AWS Amplify Console
 2. Select your app
 3. Go to **Environment variables**
 4. Add the following variables:
+   - **Key**: `VITE_FLIGHT_API_PROVIDERS`
+   - **Value**: `flightradar24` (or `aviationstack,flightradar24` for multiple providers)
    - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTRADAR24`
-   - **Value**: `your_api_token_here` (paste your actual token)
+   - **Value**: `your_api_token_here` (paste your actual API token)
 
-**Note:** If you continue to see 400 errors, the API endpoint or parameters in the code need to be updated to match FlightRadar24's current API specification.
+**For Single Provider Setup:**
+1. **Key**: `VITE_FLIGHT_API_PROVIDER`
+   - **Value**: `flightradar24`
+2. **Key**: `VITE_FLIGHT_API_KEY`
+   - **Value**: `your_api_token_here`
 
-**Pricing:**
-- Contact FlightRadar24 for commercial pricing
-- Typically requires business/enterprise account
-- Pricing based on request volume
+### Step 4: Verify Configuration
+1. Deploy your app
+2. Test flight status check
+3. Check browser console for `[flightradar24]` logs
+4. Should see successful API calls or clear error messages
 
-**API Documentation:**
+### How It Works
+
+The implementation uses:
+- **Endpoint**: `https://api.flightradar24.com/common/v1/flight/list.json`
+- **Authentication**: API token in `x-api-key` header
+- **Parameters**: Flight number in query string
+- **Date Filtering**: Optional date parameter for historical flights
+
+### Error Handling
+
+The code handles:
+- **400 Bad Request**: Invalid API endpoint, parameters, or API key
+- **401 Unauthorized**: Invalid API token
+- **403 Forbidden**: Access denied or quota exceeded
+- **429 Too Many Requests**: Rate limit exceeded
+
+All errors trigger automatic fallback to the next provider in your list.
+
+### Pricing
+
+- **Sandbox**: Free for testing (limited)
+- **Commercial**: Contact FlightRadar24 for pricing
+- **Enterprise**: Custom pricing based on request volume
+
+### API Documentation
+
+For detailed API documentation:
 - [FlightRadar24 API Documentation](https://www.flightradar24.com/business/api)
+- [FlightRadar24 Support](https://support.fr24.com/)
+
+### Notes
+
+- FlightRadar24 API requires a valid subscription
+- API token must be kept secure
+- Rate limits apply based on your plan
+- The code automatically handles authentication headers
+- Date filtering is supported for historical flights
 
 ---
 
