@@ -215,7 +215,12 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
               )}
               <td>
                 {trip.pickupDate
-                  ? format(new Date(trip.pickupDate), 'MMM dd, yyyy HH:mm')
+                  ? format(new Date(trip.pickupDate), 'MMM dd, yyyy')
+                  : 'N/A'}
+              </td>
+              <td>
+                {trip.pickupDate
+                  ? format(new Date(trip.pickupDate), 'HH:mm')
                   : 'N/A'}
               </td>
               <td>
