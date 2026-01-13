@@ -1,0 +1,136 @@
+/* Install Prompt Styles */
+
+.install-prompt {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  animation: slideUp 0.3s ease-out;
+  border: 1px solid #e5e7eb;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.install-prompt-content {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+}
+
+.install-prompt-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.install-prompt-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-prompt-text strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.install-prompt-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.ios-icon {
+  display: inline-block;
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.install-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.install-prompt-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.install-prompt-close:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.ios-prompt {
+  max-width: 400px;
+}
+
+.ios-prompt .install-prompt-content {
+  flex-wrap: wrap;
+}
+
+.ios-prompt .install-prompt-text {
+  flex-basis: calc(100% - 44px);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .install-prompt {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .install-prompt-content {
+    padding: 12px;
+  }
+  
+  .install-prompt-icon {
+    font-size: 28px;
+  }
+  
+  .install-prompt-text strong {
+    font-size: 15px;
+  }
+  
+  .install-prompt-text p {
+    font-size: 13px;
+  }
+}

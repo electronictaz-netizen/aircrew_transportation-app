@@ -4,6 +4,7 @@ import '@aws-amplify/ui-react/styles.css';
 import ManagementDashboard from './components/ManagementDashboard';
 import DriverDashboard from './components/DriverDashboard';
 import Navigation from './components/Navigation';
+import InstallPrompt from './components/InstallPrompt';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Route path="/management" element={<ManagementDashboard />} />
             <Route path="/driver" element={<DriverDashboard />} />
           </Routes>
+          <InstallPrompt />
         </div>
       )}
     </Authenticator>
