@@ -108,16 +108,7 @@ const API_CONFIG = {
 export interface FlightStatus {
   status: 'On Time' | 'Delayed' | 'Cancelled' | 'Landed' | 'Unknown';
   flightNumber: string;
-  departure?: {
-    airport?: string;
-    scheduled?: string;
-    estimated?: string;
-  };
-  arrival?: {
-    airport?: string;
-    scheduled?: string;
-    estimated?: string;
-  };
+  // Minimal data only - departure/arrival info removed to reduce API costs
 }
 
 /**
