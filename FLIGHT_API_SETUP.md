@@ -192,9 +192,40 @@ For local testing, you can create a local config file (this file is gitignored a
 
 ---
 
-## Switching Between APIs
+## Multiple Provider Configuration (Recommended)
 
-To switch between different API providers:
+You can configure multiple providers with automatic fallback. The system will try each provider in order until one succeeds.
+
+### Setup Multiple Providers
+
+1. Go to AWS Amplify Console
+2. Navigate to **Environment variables**
+3. Add the following variables:
+   - **Key**: `VITE_FLIGHT_API_PROVIDERS`
+   - **Value**: `aviationstack,flightaware,flightradar24` (comma-separated list of providers to try)
+   - **Key**: `VITE_FLIGHT_API_KEY_AVIATIONSTACK`
+   - **Value**: Your AviationStack API key
+   - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTAWARE`
+   - **Value**: Your FlightAware API key (optional)
+   - **Key**: `VITE_FLIGHT_API_KEY_FLIGHTRADAR24`
+   - **Value**: Your FlightRadar24 API key (optional)
+
+4. Redeploy your app
+
+**How it works:**
+- The system tries providers in the order specified in `VITE_FLIGHT_API_PROVIDERS`
+- If the first provider fails or returns "Unknown", it automatically tries the next one
+- Only providers with configured API keys will be tried
+- This provides redundancy and better reliability
+
+**Example:**
+- Set `VITE_FLIGHT_API_PROVIDERS=aviationstack,flightaware`
+- Configure both API keys
+- If AviationStack fails, FlightAware will be tried automatically
+
+## Switching Between APIs (Single Provider - Legacy)
+
+To use a single provider (legacy method):
 
 1. Go to AWS Amplify Console
 2. Navigate to Environment variables
