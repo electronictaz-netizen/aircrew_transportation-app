@@ -62,6 +62,47 @@ function ManagementDashboard() {
     try {
       console.log('Creating trip with data:', tripData);
       
+      // Check for duplicate trips (same flight number on the same day)
+      if (tripData.pickupDate && tripData.flightNumber) {
+        const newTripDate = new Date(tripData.pickupDate);
+        const newTripDateStart = new Date(newTripDate.getFullYear(), newTripDate.getMonth(), newTripDate.getDate());
+        const newTripDateEnd = new Date(newTripDate.getFullYear(), newTripDate.getMonth(), newTripDate.getDate(), 23, 59, 59, 999);
+        const flightNumber = tripData.flightNumber.trim().toUpperCase();
+        
+        // Get all existing trips
+        const { data: allTrips } = await client.models.Trip.list();
+        
+        // Check for duplicates: same flight number on the same day
+        const duplicateTrips = allTrips?.filter((t: Schema['Trip']['type']) => {
+          if (!t.pickupDate || !t.flightNumber) return false;
+          
+          const existingFlightNumber = t.flightNumber.trim().toUpperCase();
+          if (existingFlightNumber !== flightNumber) return false;
+          
+          const existingDate = new Date(t.pickupDate);
+          const existingDateStart = new Date(existingDate.getFullYear(), existingDate.getMonth(), existingDate.getDate());
+          
+          // Check if dates are on the same day
+          return existingDateStart.getTime() === newTripDateStart.getTime();
+        }) || [];
+        
+        if (duplicateTrips.length > 0) {
+          const duplicateDate = newTripDateStart.toLocaleDateString();
+          const duplicateInfo = duplicateTrips.map((t: Schema['Trip']['type']) => {
+            const date = t.pickupDate ? new Date(t.pickupDate).toLocaleString() : 'N/A';
+            return `  - Trip ID: ${t.id}, Date: ${date}, Status: ${t.status || 'N/A'}`;
+          }).join('\n');
+          
+          alert(
+            `❌ Duplicate trip detected!\n\n` +
+            `A trip with flight number "${flightNumber}" already exists on ${duplicateDate}.\n\n` +
+            `Existing trip(s):\n${duplicateInfo}\n\n` +
+            `Please use a different flight number or date, or edit the existing trip instead.`
+          );
+          return; // Prevent creation
+        }
+      }
+      
       // Ensure status is set (default to 'Unassigned' if not provided)
       const tripWithStatus: any = {
         pickupDate: tripData.pickupDate,
