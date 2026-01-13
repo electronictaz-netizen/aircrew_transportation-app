@@ -511,6 +511,27 @@ function ManagementDashboard() {
     }
   };
 
+  const handleDeleteAllTrips = async () => {
+    const confirmation = confirm(
+      '⚠️ WARNING: This will permanently delete ALL trips in the database!\n\n' +
+      'This action CANNOT be undone!\n\n' +
+      'Are you sure you want to delete all trips?'
+    );
+    
+    if (!confirmation) {
+      return;
+    }
+    
+    try {
+      await deleteAllTrips(true); // Skip the internal confirmation since we already asked
+      await loadTrips(true); // Force refresh after deletion
+      alert('All trips have been deleted successfully.');
+    } catch (error) {
+      console.error('Error deleting all trips:', error);
+      alert('Failed to delete all trips. Check console for details.');
+    }
+  };
+
   const handleDeleteMultipleTrips = async (tripIds: string[]) => {
     if (tripIds.length === 0) return;
     
