@@ -60,29 +60,30 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
 
   const applyFiltersAndSort = () => {
     console.log('TripFilters: Starting with', trips.length, 'trips');
-    let filtered = [...trips];
+    // Create a copy with original index to maintain stable sort
+    let filtered = trips.map((trip, index) => ({ trip, originalIndex: index }));
     console.log('TripFilters: After initial copy:', filtered.length);
 
     // Status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((trip) => trip.status === statusFilter);
+      filtered = filtered.filter((item) => item.trip.status === statusFilter);
     }
 
     // Driver filter
     if (driverFilter !== 'all') {
       if (driverFilter === 'unassigned') {
-        filtered = filtered.filter((trip) => !trip.driverId);
+        filtered = filtered.filter((item) => !item.trip.driverId);
       } else {
-        filtered = filtered.filter((trip) => trip.driverId === driverFilter);
+        filtered = filtered.filter((item) => item.trip.driverId === driverFilter);
       }
     }
 
     // Recurring filter - by default show all (including recurring)
     if (recurringFilter !== 'all') {
       if (recurringFilter === 'recurring') {
-        filtered = filtered.filter((trip) => trip.isRecurring === true);
+        filtered = filtered.filter((item) => item.trip.isRecurring === true);
       } else if (recurringFilter === 'one-time') {
-        filtered = filtered.filter((trip) => !trip.isRecurring);
+        filtered = filtered.filter((item) => !item.trip.isRecurring);
       }
     }
 
@@ -92,7 +93,8 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
       if (dateRange.from && dateRange.to) {
         const fromDate = dateRange.from;
         const toDate = dateRange.to;
-        filtered = filtered.filter((trip) => {
+        filtered = filtered.filter((item) => {
+          const trip = item.trip;
           if (!trip.pickupDate) return false;
           const tripDate = new Date(trip.pickupDate);
           // Compare dates at start of day for accurate filtering
@@ -107,7 +109,8 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
       if (dateFrom) {
         const fromDate = new Date(dateFrom);
         fromDate.setHours(0, 0, 0, 0); // Start of day
-        filtered = filtered.filter((trip) => {
+        filtered = filtered.filter((item) => {
+          const trip = item.trip;
           if (!trip.pickupDate) return false;
           const tripDate = new Date(trip.pickupDate);
           tripDate.setHours(0, 0, 0, 0);
@@ -118,7 +121,8 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
       if (dateTo) {
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999); // Include entire end date
-        filtered = filtered.filter((trip) => {
+        filtered = filtered.filter((item) => {
+          const trip = item.trip;
           if (!trip.pickupDate) return false;
           const tripDate = new Date(trip.pickupDate);
           return tripDate <= toDate;
@@ -132,10 +136,12 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (trip) =>
-          trip.flightNumber?.toLowerCase().includes(search) ||
-          trip.pickupLocation?.toLowerCase().includes(search) ||
-          trip.dropoffLocation?.toLowerCase().includes(search)
+        (item) => {
+          const trip = item.trip;
+          return trip.flightNumber?.toLowerCase().includes(search) ||
+            trip.pickupLocation?.toLowerCase().includes(search) ||
+            trip.dropoffLocation?.toLowerCase().includes(search);
+        }
       );
     }
 
@@ -144,26 +150,42 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
     // Sorting
     if (sortField !== 'none') {
       filtered.sort((a, b) => {
+        const tripA = a.trip;
+        const tripB = b.trip;
         let aValue: any;
         let bValue: any;
 
         switch (sortField) {
           case 'pickupDate':
             // Handle missing dates - put them at the end
-            if (!a.pickupDate && !b.pickupDate) return 0;
-            if (!a.pickupDate) return 1; // a goes to end
-            if (!b.pickupDate) return -1; // b goes to end
+            if (!tripA.pickupDate && !tripB.pickupDate) {
+              // If both missing, maintain original order for stable sort
+              return a.originalIndex - b.originalIndex;
+            }
+            if (!tripA.pickupDate) return 1; // a goes to end
+            if (!tripB.pickupDate) return -1; // b goes to end
             // Both have dates, compare them
-            aValue = new Date(a.pickupDate).getTime();
-            bValue = new Date(b.pickupDate).getTime();
+            // Ensure dates are parsed correctly and handle invalid dates
+            const dateA = new Date(tripA.pickupDate);
+            const dateB = new Date(tripB.pickupDate);
+            
+            // Check for invalid dates
+            if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) {
+              return a.originalIndex - b.originalIndex;
+            }
+            if (isNaN(dateA.getTime())) return 1; // Invalid date goes to end
+            if (isNaN(dateB.getTime())) return -1; // Invalid date goes to end
+            
+            aValue = dateA.getTime();
+            bValue = dateB.getTime();
             break;
           case 'flightNumber':
-            aValue = a.flightNumber || '';
-            bValue = b.flightNumber || '';
+            aValue = tripA.flightNumber || '';
+            bValue = tripB.flightNumber || '';
             break;
           case 'status':
-            aValue = a.status || 'Unassigned';
-            bValue = b.status || 'Unassigned';
+            aValue = tripA.status || 'Unassigned';
+            bValue = tripB.status || 'Unassigned';
             break;
           case 'driver':
             const getDriverName = (driverId: string | null | undefined) => {
@@ -171,33 +193,49 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
               const driver = drivers.find((d) => d.id === driverId);
               return driver?.name || 'Unknown';
             };
-            aValue = getDriverName(a.driverId);
-            bValue = getDriverName(b.driverId);
+            aValue = getDriverName(tripA.driverId);
+            bValue = getDriverName(tripB.driverId);
             break;
           default:
-            return 0;
+            return a.originalIndex - b.originalIndex;
         }
 
         if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc'
+          const result = sortDirection === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue);
+          // If strings are equal, maintain original order for stable sort
+          if (result === 0) {
+            return a.originalIndex - b.originalIndex;
+          }
+          return result;
         } else {
-          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+          // For numbers (including dates as timestamps)
+          const result = sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+          // If values are equal, maintain original order for stable sort
+          if (result === 0) {
+            return a.originalIndex - b.originalIndex;
+          }
+          return result;
         }
       });
     }
+    
+    // Extract trips from the filtered array
+    const finalTrips = filtered.map(item => item.trip);
 
-    console.log('TripFilters: Final filtered trips:', filtered.length);
-    console.log('TripFilters: Final trip dates:', filtered.map(t => ({
+    console.log('TripFilters: Final filtered trips:', finalTrips.length);
+    console.log('TripFilters: Final trip dates:', finalTrips.map(t => ({
       id: t.id,
       date: t.pickupDate,
+      dateParsed: t.pickupDate ? new Date(t.pickupDate).toISOString() : 'N/A',
+      dateTime: t.pickupDate ? new Date(t.pickupDate).getTime() : 0,
       flight: t.flightNumber,
       isRecurring: t.isRecurring,
       parentId: t.parentTripId
     })));
     
-    onFilterChange(filtered);
+    onFilterChange(finalTrips);
   };
 
   // Apply filters on mount and when any filter or trips change
