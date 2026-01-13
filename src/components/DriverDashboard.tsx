@@ -3,6 +3,7 @@ import { generateClient } from 'aws-amplify/data';
 import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
+import { fetchFlightStatus } from '../utils/flightStatus';
 import './DriverDashboard.css';
 
 const client = generateClient<Schema>();
@@ -11,6 +12,7 @@ function DriverDashboard() {
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [currentDriver, setCurrentDriver] = useState<Schema['Driver']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
 
   useEffect(() => {
     loadDriverAndTrips();
@@ -133,6 +135,23 @@ function DriverDashboard() {
           <div key={trip.id} className="trip-card">
             <div className="trip-header">
               <h3>Flight {trip.flightNumber}</h3>
+              {flightStatuses[trip.id] ? (
+                <span
+                  className={`flight-status-badge ${getFlightStatusBadgeClass(
+                    flightStatuses[trip.id].status
+                  )}`}
+                >
+                  {flightStatuses[trip.id].loading ? 'Checking...' : flightStatuses[trip.id].status}
+                </span>
+              ) : (
+                <button
+                  className="btn btn-small btn-secondary"
+                  onClick={() => handleCheckFlightStatus(trip)}
+                  title="Check flight status (may incur API costs)"
+                >
+                  Check Status
+                </button>
+              )}
             </div>
 
             <div className="trip-details">

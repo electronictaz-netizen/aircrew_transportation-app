@@ -132,6 +132,7 @@ function parseAviationStackResponse(data: any, flightNumber: string): FlightStat
   let status: FlightStatus['status'] = 'Unknown';
   const flightStatus = flight.flight_status?.toLowerCase();
 
+  // Only extract status - minimal data parsing to reduce processing
   if (flightStatus === 'active' || flightStatus === 'scheduled') {
     status = (flight.departure?.delay || flight.arrival?.delay) ? 'Delayed' : 'On Time';
   } else if (flightStatus === 'landed') {
@@ -142,19 +143,10 @@ function parseAviationStackResponse(data: any, flightNumber: string): FlightStat
     status = 'Cancelled';
   }
 
+  // Return minimal data - only status is needed
   return {
     status,
     flightNumber,
-    departure: {
-      airport: flight.departure?.airport || flight.departure?.iata,
-      scheduled: flight.departure?.scheduled,
-      estimated: flight.departure?.estimated,
-    },
-    arrival: {
-      airport: flight.arrival?.airport || flight.arrival?.iata,
-      scheduled: flight.arrival?.scheduled,
-      estimated: flight.arrival?.estimated,
-    },
   };
 }
 
@@ -171,25 +163,16 @@ function parseFlightAwareResponse(data: any, flightNumber: string): FlightStatus
   const flight = data.FlightInfoResult.flights[0];
   let status: FlightStatus['status'] = 'Unknown';
 
-  // Map FlightAware status codes
+  // Map FlightAware status codes - only extract status
   if (flight.status === 'On Time') status = 'On Time';
   else if (flight.status === 'Delayed') status = 'Delayed';
   else if (flight.status === 'Cancelled') status = 'Cancelled';
   else if (flight.status === 'Arrived') status = 'Landed';
 
+  // Return minimal data - only status is needed
   return {
     status,
     flightNumber,
-    departure: {
-      airport: flight.origin,
-      scheduled: flight.filed_departuretime,
-      estimated: flight.estimateddeparturetime,
-    },
-    arrival: {
-      airport: flight.destination,
-      scheduled: flight.filed_arrivaltime,
-      estimated: flight.estimatedarrivaltime,
-    },
   };
 }
 
@@ -206,26 +189,17 @@ function parseFlightRadar24Response(data: any, flightNumber: string): FlightStat
   const flight = data.result.response.data[0];
   let status: FlightStatus['status'] = 'Unknown';
 
-  // Map FlightRadar24 status
+  // Map FlightRadar24 status - only extract status
   const flightStatus = flight.status?.text?.toLowerCase();
   if (flightStatus?.includes('on time')) status = 'On Time';
   else if (flightStatus?.includes('delayed')) status = 'Delayed';
   else if (flightStatus?.includes('cancelled')) status = 'Cancelled';
   else if (flightStatus?.includes('landed') || flightStatus?.includes('arrived')) status = 'Landed';
 
+  // Return minimal data - only status is needed
   return {
     status,
     flightNumber,
-    departure: {
-      airport: flight.airport?.origin?.name,
-      scheduled: flight.time?.scheduled?.departure,
-      estimated: flight.time?.estimated?.departure,
-    },
-    arrival: {
-      airport: flight.airport?.destination?.name,
-      scheduled: flight.time?.scheduled?.arrival,
-      estimated: flight.time?.estimated?.arrival,
-    },
   };
 }
 
@@ -292,10 +266,18 @@ async function fetchFromProvider(
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
-      // Handle 401 specifically
+      // Handle specific error codes
       if (response.status === 401) {
         console.warn(`[${provider}] 401 Unauthorized - Invalid API key`);
         return null;
+      }
+      if (response.status === 429) {
+        console.warn(`[${provider}] 429 Too Many Requests - Rate limit exceeded`);
+        return null; // Will trigger fallback to next provider
+      }
+      if (response.status === 403) {
+        console.warn(`[${provider}] 403 Forbidden - API access denied or quota exceeded`);
+        return null; // Will trigger fallback to next provider
       }
       throw new Error(`Flight API returned ${response.status}: ${response.statusText}`);
     }
@@ -307,6 +289,12 @@ async function fetchFromProvider(
       // Check for authentication errors
       if (data.error.code === 104 || data.error.code === 101) {
         console.warn(`[${provider}] API Authentication Error - Invalid or missing API key`);
+      }
+      // Check for rate limit errors (common error codes)
+      if (data.error.code === 429 || data.error.message?.toLowerCase().includes('rate limit') || 
+          data.error.message?.toLowerCase().includes('quota') || 
+          data.error.message?.toLowerCase().includes('limit exceeded')) {
+        console.warn(`[${provider}] Rate limit or quota exceeded`);
       }
       return null;
     }

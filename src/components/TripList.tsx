@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
+import { fetchFlightStatus } from '../utils/flightStatus';
 import TripFilters from './TripFilters';
 import './TripList.css';
 
@@ -16,6 +17,7 @@ interface TripListProps {
 function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate }: TripListProps) {
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
+  const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
 
   // Log when trips prop changes (TripFilters will handle sorting via handleFilterChange)
   useEffect(() => {
@@ -144,6 +146,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
             <th>Pickup Date</th>
             <th>Pickup Time</th>
             <th>Flight Number</th>
+            <th>Flight Status</th>
             <th>Pickup Location</th>
             <th>Dropoff Location</th>
             <th>Passengers</th>
@@ -157,7 +160,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
         <tbody>
           {displayedTrips.length === 0 ? (
             <tr>
-              <td colSpan={onDeleteMultiple ? 12 : 11} className="no-results">
+              <td colSpan={onDeleteMultiple ? 13 : 12} className="no-results">
                 No trips match the current filters. Try adjusting your search criteria.
               </td>
             </tr>
