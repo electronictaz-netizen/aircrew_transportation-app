@@ -59,7 +59,9 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
   };
 
   const applyFiltersAndSort = () => {
+    console.log('TripFilters: Starting with', trips.length, 'trips');
     let filtered = [...trips];
+    console.log('TripFilters: After initial copy:', filtered.length);
 
     // Status filter
     if (statusFilter !== 'all') {
@@ -114,6 +116,7 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
       }
     }
     // If quickDateFilter is 'all', show all trips (no date filtering)
+    console.log('TripFilters: After date filtering:', filtered.length);
 
     // Search filter (flight number, locations)
     if (searchTerm) {
@@ -125,6 +128,8 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
           trip.dropoffLocation?.toLowerCase().includes(search)
       );
     }
+
+    console.log('TripFilters: After search filtering:', filtered.length);
 
     // Sorting
     if (sortField !== 'none') {
@@ -168,6 +173,15 @@ function TripFilters({ trips, drivers, onFilterChange }: TripFiltersProps) {
       });
     }
 
+    console.log('TripFilters: Final filtered trips:', filtered.length);
+    console.log('TripFilters: Final trip dates:', filtered.map(t => ({
+      id: t.id,
+      date: t.pickupDate,
+      flight: t.flightNumber,
+      isRecurring: t.isRecurring,
+      parentId: t.parentTripId
+    })));
+    
     onFilterChange(filtered);
   };
 

@@ -152,19 +152,38 @@ function ManagementDashboard() {
 
       // Wait a moment for database to sync, then reload trips
       console.log('Waiting for database sync...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for better sync
       
       console.log('Reloading trips...');
       await loadTrips();
       console.log('Trips reloaded');
       
+      // Verify trips were created
+      const { data: allTrips } = await client.models.Trip.list();
+      const totalTrips = allTrips?.length || 0;
+      const parentTrips = allTrips?.filter(t => t.isRecurring === true).length || 0;
+      const childTrips = allTrips?.filter(t => t.parentTripId).length || 0;
+      const todayTrips = allTrips?.filter(t => {
+        if (!t.pickupDate) return false;
+        const tripDate = new Date(t.pickupDate);
+        const today = new Date();
+        return tripDate.toDateString() === today.toDateString();
+      }).length || 0;
+      
+      console.log('Trip creation summary:', {
+        totalTrips,
+        parentTrips,
+        childTrips,
+        todayTrips,
+        allTripDates: allTrips?.map(t => ({ id: t.id, date: t.pickupDate, isRecurring: t.isRecurring, parentId: t.parentTripId }))
+      });
+      
       setShowTripForm(false);
       setEditingTrip(null);
       
-      // Show success message with count
-      const { data: allTrips } = await client.models.Trip.list();
-      const recurringCount = allTrips?.filter(t => t.isRecurring || t.parentTripId).length || 0;
-      alert(`Trip created successfully! ${recurringCount > 1 ? `Generated ${recurringCount} trips (including recurring).` : ''}`);
+      // Show success message with detailed count
+      const message = `Trip created successfully!\n\nTotal trips: ${totalTrips}\nParent trips: ${parentTrips}\nChild trips: ${childTrips}\nToday's trips: ${todayTrips}`;
+      alert(message);
     } catch (error: any) {
       console.error('Error creating trip:', error);
       console.error('Error type:', typeof error);

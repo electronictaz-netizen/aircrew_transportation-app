@@ -76,7 +76,9 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   
   const tripsToCreate: any[] = [];
   // Start from the parent trip date, then generate subsequent occurrences
+  // Note: The parent trip IS the first occurrence (today), child trips start from tomorrow
   let currentDate = new Date(startDate);
+  console.log('Starting date for child trip generation:', currentDate.toISOString());
 
   // Generate trips up to the end date
   // The parent trip is the first occurrence, so we generate from the next occurrence

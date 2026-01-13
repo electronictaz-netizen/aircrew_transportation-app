@@ -19,6 +19,15 @@ function TripList({ trips, drivers, onEdit, onDelete }: TripListProps) {
 
   // Update displayed trips when trips prop changes
   useEffect(() => {
+    console.log('TripList: Received trips:', trips.length);
+    console.log('TripList: Trip dates:', trips.map(t => ({
+      id: t.id,
+      date: t.pickupDate,
+      flight: t.flightNumber,
+      isRecurring: t.isRecurring,
+      parentId: t.parentTripId,
+      status: t.status
+    })));
     setDisplayedTrips(trips);
   }, [trips]);
 
