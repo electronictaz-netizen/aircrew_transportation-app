@@ -17,10 +17,10 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
   
   try {
     // Load all trips
-    const { data: allTrips, errors } = await client.models.Trip.list();
+    const { data: allTrips, errors: loadErrors } = await client.models.Trip.list();
     
-    if (errors && errors.length > 0) {
-      console.error('❌ Errors loading trips:', errors);
+    if (loadErrors && loadErrors.length > 0) {
+      console.error('❌ Errors loading trips:', loadErrors);
       return;
     }
     
@@ -66,7 +66,7 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
     // Delete all trips
     let deletedCount = 0;
     let failedCount = 0;
-    const errors: Array<{ tripId: string; error: any }> = [];
+    const deletionErrors: Array<{ tripId: string; error: any }> = [];
     
     for (const trip of allTrips || []) {
       try {
@@ -77,7 +77,7 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
         }
       } catch (error) {
         failedCount++;
-        errors.push({ tripId: trip.id, error });
+        deletionErrors.push({ tripId: trip.id, error });
         console.error(`❌ Failed to delete trip ${trip.id}:`, error);
       }
     }
@@ -87,9 +87,9 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
     console.log(`Successfully deleted: ${deletedCount}`);
     console.log(`Failed: ${failedCount}`);
     
-    if (errors.length > 0) {
+    if (deletionErrors.length > 0) {
       console.error('\n❌ Errors occurred:');
-      errors.forEach(({ tripId, error }) => {
+      deletionErrors.forEach(({ tripId, error }) => {
         console.error(`  Trip ${tripId}:`, error);
       });
     }
