@@ -26,9 +26,13 @@ function ManagementDashboard() {
     });
   }, []);
 
-  const loadTrips = async () => {
+  const loadTrips = async (forceRefresh: boolean = false) => {
     try {
-      console.log('Loading trips...');
+      console.log('Loading trips...', forceRefresh ? '(force refresh)' : '');
+      // Add a small delay to ensure database consistency
+      if (forceRefresh) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
       const { data: tripsData, errors } = await client.models.Trip.list();
       
       if (errors && errors.length > 0) {
@@ -311,8 +315,47 @@ function ManagementDashboard() {
       // Update the trip
       await client.models.Trip.update({ id: tripId, ...tripData });
       
+      // Check if trip is no longer recurring after update (parent was changed to non-recurring)
+      // If so, delete all future child trips
+      if (tripData.isRecurring === false && (isParentRecurring || isChildRecurring)) {
+        const { data: allTrips } = await client.models.Trip.list();
+        let tripsToDelete: Array<Schema['Trip']['type']> = [];
+        
+        if (isParentRecurring) {
+          // If parent is no longer recurring, delete all child trips
+          tripsToDelete = allTrips?.filter(t => t.parentTripId === tripId) || [];
+        } else if (isChildRecurring) {
+          // If child trip is being updated and is no longer recurring, delete future child trips
+          const parentTripId = trip.parentTripId!;
+          const allChildTrips = allTrips?.filter(t => t.parentTripId === parentTripId) || [];
+          const currentTripDate = trip.pickupDate ? new Date(trip.pickupDate) : null;
+          const now = new Date();
+          
+          tripsToDelete = allChildTrips.filter(t => {
+            if (!t.pickupDate || t.id === tripId) return false; // Don't delete the current trip
+            const childDate = new Date(t.pickupDate);
+            const cutoffDate = currentTripDate && currentTripDate > now ? currentTripDate : now;
+            return childDate > cutoffDate;
+          });
+        }
+        
+        if (tripsToDelete.length > 0 && !isRemovingRecurrence) {
+          // Only delete if we haven't already handled it above
+          console.log(`Deleting ${tripsToDelete.length} future trips because trip is no longer recurring`);
+          for (const tripToDelete of tripsToDelete) {
+            try {
+              await client.models.Trip.delete({ id: tripToDelete.id });
+              console.log(`Deleted future trip ${tripToDelete.id}`);
+            } catch (error) {
+              console.error(`Error deleting future trip ${tripToDelete.id}:`, error);
+            }
+          }
+        }
+      }
+      
       // If updating a parent recurring trip with scope 2 or 3, update future child trips
-      if (isParentRecurring && !isRemovingRecurrence && tripData.updateScope && ['2', '3'].includes(tripData.updateScope)) {
+      // BUT only if the trip is still recurring
+      if (isParentRecurring && !isRemovingRecurrence && tripData.isRecurring !== false && tripData.updateScope && ['2', '3'].includes(tripData.updateScope)) {
         const { data: allTrips } = await client.models.Trip.list();
         const childTrips = allTrips?.filter(t => t.parentTripId === tripId) || [];
         const now = new Date();
@@ -340,7 +383,7 @@ function ManagementDashboard() {
         }
       }
       
-      await loadTrips();
+      await loadTrips(true); // Force refresh after update
       setShowTripForm(false);
       setEditingTrip(null);
       alert('Trip updated successfully!');
@@ -370,7 +413,9 @@ function ManagementDashboard() {
         }
       }
       
-      await loadTrips();
+      // Wait a moment for database to sync, then force refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await loadTrips(true);
       
       if (failCount > 0) {
         alert(`Deleted ${successCount} trip${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
@@ -443,7 +488,10 @@ function ManagementDashboard() {
       
       // Delete the trip itself
       await client.models.Trip.delete({ id: tripId });
-      await loadTrips();
+      
+      // Wait a moment for database to sync, then force refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await loadTrips(true);
       
       const message = isParentRecurring 
         ? `Recurring trip deleted successfully!`
