@@ -86,9 +86,23 @@ const getProviderConfig = (): {
       
       if (validProviders.length > 0) {
         console.log(`✅ Multi-provider mode: ${validProviders.length} provider(s) configured: ${validProviders.join(', ')}`);
+        
+        // Warn about FlightAware CORS limitations
+        if (validProviders.includes('flightaware')) {
+          console.warn('⚠️ FlightAware (AeroAPI) has CORS restrictions and may not work from browser. Consider removing it or using a backend proxy.');
+        }
+        
         return { providers: validProviders, keys };
       } else {
-        console.warn('⚠️ VITE_FLIGHT_API_PROVIDERS is set but no providers have valid API keys. Falling back to single provider.');
+        console.warn('⚠️ VITE_FLIGHT_API_PROVIDERS is set but no providers have valid API keys. Please check your AWS Amplify environment variables.');
+        
+        // Log which keys are missing
+        providerList.forEach(provider => {
+          const key = keys[provider];
+          if (!key || key === 'YOUR_API_KEY' || key === '0' || key === 'undefined' || key.trim().length === 0) {
+            console.warn(`  - ${provider}: API key missing or invalid (value: ${key || 'undefined'})`);
+          }
+        });
       }
     }
   }
