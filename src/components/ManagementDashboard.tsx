@@ -371,40 +371,53 @@ function ManagementDashboard() {
       await client.models.Trip.update({ id: tripId, ...tripData });
       
       // Check if trip is no longer recurring after update (parent was changed to non-recurring)
-      // If so, delete all future child trips
-      if (tripData.isRecurring === false && (isParentRecurring || isChildRecurring)) {
+      // If so, delete all future child trips - this is a fallback in case isRemovingRecurrence wasn't detected
+      if (tripData.isRecurring === false && (isParentRecurring || isChildRecurring) && !isRemovingRecurrence) {
+        console.log('Fallback: Detected recurrence removal that wasn\'t caught earlier');
         const { data: allTrips } = await client.models.Trip.list();
         let tripsToDelete: Array<Schema['Trip']['type']> = [];
+        const flightNumber = trip.flightNumber;
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
         if (isParentRecurring) {
-          // If parent is no longer recurring, delete all child trips
-          tripsToDelete = allTrips?.filter(t => t.parentTripId === tripId) || [];
+          // If parent is no longer recurring, delete all child trips with matching flight number
+          tripsToDelete = allTrips?.filter(t => 
+            t.parentTripId === tripId && 
+            t.flightNumber === flightNumber
+          ) || [];
+          console.log(`Fallback: Found ${tripsToDelete.length} child trips to delete for parent ${tripId}`);
         } else if (isChildRecurring) {
-          // If child trip is being updated and is no longer recurring, delete future child trips
+          // If child trip is being updated and is no longer recurring, delete all future child trips
           const parentTripId = trip.parentTripId!;
-          const allChildTrips = allTrips?.filter(t => t.parentTripId === parentTripId) || [];
-          const currentTripDate = trip.pickupDate ? new Date(trip.pickupDate) : null;
-          const now = new Date();
+          const allChildTrips = allTrips?.filter(t => 
+            t.parentTripId === parentTripId && 
+            t.flightNumber === flightNumber
+          ) || [];
           
           tripsToDelete = allChildTrips.filter(t => {
             if (!t.pickupDate || t.id === tripId) return false; // Don't delete the current trip
             const childDate = new Date(t.pickupDate);
-            const cutoffDate = currentTripDate && currentTripDate > now ? currentTripDate : now;
-            return childDate > cutoffDate;
+            const childDateStart = new Date(childDate.getFullYear(), childDate.getMonth(), childDate.getDate());
+            // Delete all trips that are today or in the future
+            return childDateStart >= todayStart;
           });
+          console.log(`Fallback: Found ${tripsToDelete.length} future child trips to delete`);
         }
         
-        if (tripsToDelete.length > 0 && !isRemovingRecurrence) {
-          // Only delete if we haven't already handled it above
-          console.log(`Deleting ${tripsToDelete.length} future trips because trip is no longer recurring`);
+        if (tripsToDelete.length > 0) {
+          console.log(`Fallback: Deleting ${tripsToDelete.length} trips because trip is no longer recurring`);
+          let deletedCount = 0;
           for (const tripToDelete of tripsToDelete) {
             try {
               await client.models.Trip.delete({ id: tripToDelete.id });
-              console.log(`Deleted future trip ${tripToDelete.id}`);
+              deletedCount++;
+              console.log(`Fallback: Deleted trip ${tripToDelete.id} (Flight: ${tripToDelete.flightNumber}, Date: ${tripToDelete.pickupDate})`);
             } catch (error) {
-              console.error(`Error deleting future trip ${tripToDelete.id}:`, error);
+              console.error(`Fallback: Error deleting trip ${tripToDelete.id}:`, error);
             }
           }
+          console.log(`Fallback: Successfully deleted ${deletedCount} of ${tripsToDelete.length} trips`);
         }
       }
       
