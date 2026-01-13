@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
 import './TripFilters.css';
