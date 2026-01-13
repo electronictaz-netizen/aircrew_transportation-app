@@ -19,18 +19,31 @@ function InstallPrompt() {
   useEffect(() => {
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('[PWA] App is already installed (standalone mode)');
       setIsInstalled(true);
       return;
     }
 
     // Check if app was previously installed
     if (localStorage.getItem('pwa-installed') === 'true') {
+      console.log('[PWA] App was previously installed');
       setIsInstalled(true);
       return;
     }
 
+    // Check if prompt was recently dismissed
+    const dismissedUntil = localStorage.getItem('pwa-dismissed-until');
+    if (dismissedUntil) {
+      const dismissDate = new Date(dismissedUntil);
+      if (dismissDate > new Date()) {
+        console.log('[PWA] Install prompt was dismissed, not showing again');
+        return;
+      }
+    }
+
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('[PWA] beforeinstallprompt event fired');
       // Prevent the mini-infobar from appearing
       e.preventDefault();
       
@@ -43,14 +56,39 @@ function InstallPrompt() {
 
     // Listen for app installed event
     const handleAppInstalled = () => {
+      console.log('[PWA] App was installed');
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
       localStorage.setItem('pwa-installed', 'true');
     };
 
+    // Check if service worker is supported
+    if ('serviceWorker' in navigator) {
+      console.log('[PWA] Service Worker is supported');
+    } else {
+      console.warn('[PWA] Service Worker is not supported');
+    }
+
+    // Check if running on iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    
+    if (isIOS && !isInStandaloneMode) {
+      console.log('[PWA] iOS detected, showing install instructions');
+      // Show iOS install instructions after a short delay
+      setTimeout(() => {
+        setShowPrompt(true);
+      }, 2000);
+    }
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Log PWA readiness
+    console.log('[PWA] Install prompt component initialized');
+    console.log('[PWA] User agent:', navigator.userAgent);
+    console.log('[PWA] Standalone mode:', window.matchMedia('(display-mode: standalone)').matches);
 
     // Check if running on iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
