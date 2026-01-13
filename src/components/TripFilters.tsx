@@ -255,7 +255,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
     const finalTrips = filtered.map(item => item.trip);
 
     console.log('TripFilters: Final filtered trips:', finalTrips.length);
-    console.log('TripFilters: Final trip dates:', finalTrips.map(t => ({
+    console.log('TripFilters: Final trip dates (sorted):', finalTrips.map(t => ({
       id: t.id,
       date: t.pickupDate,
       dateParsed: t.pickupDate ? new Date(t.pickupDate).toISOString() : 'N/A',
@@ -264,6 +264,19 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
       isRecurring: t.isRecurring,
       parentId: t.parentTripId
     })));
+    
+    // Verify sorting is correct
+    if (effectiveSortField === 'pickupDate' && finalTrips.length > 1) {
+      const dates = finalTrips.map(t => t.pickupDate ? new Date(t.pickupDate).getTime() : 0);
+      const isSorted = dates.every((date, i) => i === 0 || dates[i - 1] <= date);
+      console.log('TripFilters: Sorting verification:', {
+        isSorted,
+        firstDate: finalTrips[0]?.pickupDate,
+        lastDate: finalTrips[finalTrips.length - 1]?.pickupDate,
+        sortField: effectiveSortField,
+        sortDirection
+      });
+    }
     
     onFilterChange(finalTrips);
   };
