@@ -71,10 +71,10 @@ function InstallPrompt() {
     }
 
     // Check if running on iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const checkStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
     
-    if (isIOS && !isInStandaloneMode) {
+    if (checkIOS && !checkStandaloneMode) {
       console.log('[PWA] iOS detected, showing install instructions');
       // Show iOS install instructions after a short delay
       setTimeout(() => {
@@ -89,15 +89,6 @@ function InstallPrompt() {
     console.log('[PWA] Install prompt component initialized');
     console.log('[PWA] User agent:', navigator.userAgent);
     console.log('[PWA] Standalone mode:', window.matchMedia('(display-mode: standalone)').matches);
-
-    // Check if running on iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
-    
-    if (isIOS && !isInStandaloneMode) {
-      // Show iOS install instructions
-      setShowPrompt(true);
-    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
