@@ -2,20 +2,33 @@
  * Migration Script: Single-Tenant to Multi-Tenant
  * 
  * This script migrates existing data to multi-tenant architecture:
- * 1. Creates default GLS company
+ * 1. Creates default GLS Transportation company
  * 2. Associates all existing trips, drivers, and locations with the company
  * 3. Creates CompanyUser records for existing Cognito users
  * 
  * Run this script ONCE after deploying the multi-tenant schema.
  * 
  * Usage:
- * 1. Deploy the updated schema with Company model
+ * 1. Deploy the updated schema with Company model (npx ampx sandbox)
  * 2. Run: npx ts-node scripts/migrateToMultiTenant.ts
  * 3. Verify all data is associated correctly
  */
 
+import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../amplify/data/resource';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Get directory path for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Read and configure Amplify
+const outputsPath = join(__dirname, '../amplify_outputs.json');
+const outputs = JSON.parse(readFileSync(outputsPath, 'utf-8'));
+Amplify.configure(outputs);
 
 const client = generateClient<Schema>();
 
@@ -23,22 +36,44 @@ async function migrateToMultiTenant() {
   console.log('🚀 Starting migration to multi-tenant architecture...\n');
 
   try {
-    // Step 1: Check if GLS company already exists
-    console.log('Step 1: Checking for existing GLS company...');
-    const { data: existingCompanies } = await client.models.Company.list({
+    // Check if Company model exists
+    if (!client.models.Company) {
+      throw new Error(
+        'Company model not found. Please deploy the schema first:\n' +
+        '  npx ampx sandbox\n' +
+        'Then run this script again.'
+      );
+    }
+
+    // Step 1: Check if GLS Transportation company already exists (try both names)
+    console.log('Step 1: Checking for existing GLS Transportation company...');
+    const { data: existingCompaniesGLS } = await client.models.Company.list({
       filter: { name: { eq: 'GLS' } }
+    });
+    const { data: existingCompaniesGLSTransport } = await client.models.Company.list({
+      filter: { name: { eq: 'GLS Transportation' } }
     });
 
     let glsCompany: Schema['Company']['type'] | null = null;
 
-    if (existingCompanies && existingCompanies.length > 0) {
-      glsCompany = existingCompanies[0];
+    if (existingCompaniesGLSTransport && existingCompaniesGLSTransport.length > 0) {
+      glsCompany = existingCompaniesGLSTransport[0];
+      console.log(`✅ Found existing GLS Transportation company: ${glsCompany.id}`);
+    } else if (existingCompaniesGLS && existingCompaniesGLS.length > 0) {
+      glsCompany = existingCompaniesGLS[0];
       console.log(`✅ Found existing GLS company: ${glsCompany.id}`);
+      // Update name to GLS Transportation
+      console.log('📝 Updating company name to "GLS Transportation"...');
+      await client.models.Company.update({
+        id: glsCompany.id,
+        name: 'GLS Transportation',
+      });
+      glsCompany = { ...glsCompany, name: 'GLS Transportation' };
     } else {
-      // Step 2: Create GLS company
-      console.log('Step 2: Creating GLS company...');
+      // Step 2: Create GLS Transportation company
+      console.log('Step 2: Creating GLS Transportation company...');
       const { data: newCompany, errors: companyErrors } = await client.models.Company.create({
-        name: 'GLS',
+        name: 'GLS Transportation',
         subdomain: 'gls',
         isActive: true,
         subscriptionTier: 'premium',
@@ -54,7 +89,7 @@ async function migrateToMultiTenant() {
       }
 
       glsCompany = newCompany;
-      console.log(`✅ Created GLS company: ${glsCompany.id}`);
+      console.log(`✅ Created GLS Transportation company: ${glsCompany.id}`);
     }
 
     if (!glsCompany) {
@@ -165,8 +200,13 @@ async function migrateToMultiTenant() {
   }
 }
 
-// Run migration
-if (require.main === module) {
+// Run migration if this file is executed directly
+// Check if running as main module (ES module compatible)
+const isMainModule = import.meta.url === `file://${process.argv[1]}` || 
+                     process.argv[1]?.endsWith('migrateToMultiTenant.ts') ||
+                     process.argv[1]?.endsWith('migrateToMultiTenant.js');
+
+if (isMainModule) {
   migrateToMultiTenant()
     .then(() => {
       console.log('\n✅ Migration script completed');
@@ -174,6 +214,10 @@ if (require.main === module) {
     })
     .catch((error) => {
       console.error('\n❌ Migration script failed:', error);
+      console.error('\nTroubleshooting:');
+      console.error('1. Ensure the schema is deployed: npx ampx sandbox');
+      console.error('2. Check that amplify_outputs.json exists and is valid');
+      console.error('3. Verify AWS credentials are configured');
       process.exit(1);
     });
 }

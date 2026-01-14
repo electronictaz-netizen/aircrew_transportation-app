@@ -1023,7 +1023,20 @@ function ManagementDashboard() {
       <div className="management-dashboard">
         <div className="error-state">
           <h2>No Company Assigned</h2>
-          <p>Your account is not associated with a company. Please contact your administrator.</p>
+          <p>Your account is not associated with a company. Please check the following:</p>
+          <ul style={{ textAlign: 'left', display: 'inline-block', marginTop: '1rem' }}>
+            <li>Check the browser console for detailed error messages</li>
+            <li>Ensure the schema has been deployed (Company model must exist)</li>
+            <li>Try refreshing the page</li>
+            <li>If the issue persists, run the migration script: <code>npx ts-node scripts/migrateToMultiTenant.ts</code></li>
+          </ul>
+          <button 
+            className="btn btn-primary" 
+            onClick={() => window.location.reload()}
+            style={{ marginTop: '1rem' }}
+          >
+            Refresh Page
+          </button>
         </div>
       </div>
     );

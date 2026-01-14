@@ -57,21 +57,36 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // No company found - try to create default GLS company or assign user to it
-        await ensureDefaultCompany(user.userId, user.signInDetails?.loginId || '');
-        // Retry loading
-        const { data: retryCompanyUsers } = await client.models.CompanyUser.list({
-          filter: { 
-            userId: { eq: user.userId },
-            isActive: { eq: true }
-          }
-        });
-        if (retryCompanyUsers && retryCompanyUsers.length > 0) {
-          const { data: companyData } = await client.models.Company.get({
-            id: retryCompanyUsers[0].companyId
+        console.log('⚠️ No CompanyUser found, attempting to create default company...');
+        try {
+          await ensureDefaultCompany(user.userId, user.signInDetails?.loginId || '');
+          // Retry loading
+          const { data: retryCompanyUsers } = await client.models.CompanyUser.list({
+            filter: { 
+              userId: { eq: user.userId },
+              isActive: { eq: true }
+            }
           });
-          if (companyData) {
-            setCompany(companyData);
+          if (retryCompanyUsers && retryCompanyUsers.length > 0) {
+            const { data: companyData } = await client.models.Company.get({
+              id: retryCompanyUsers[0].companyId
+            });
+            if (companyData) {
+              console.log('✅ Successfully loaded company after creation:', companyData.name);
+              setCompany(companyData);
+            } else {
+              console.error('❌ Company data not found after creating CompanyUser');
+            }
+          } else {
+            console.error('❌ CompanyUser still not found after ensureDefaultCompany');
           }
+        } catch (error: any) {
+          console.error('❌ Failed to ensure default company:', error);
+          // Show user-friendly error
+          console.error('Please check:');
+          console.error('1. Is the schema deployed? (Company model must exist)');
+          console.error('2. Do you have permission to create companies?');
+          console.error('3. Check browser console for detailed errors');
         }
       }
     } catch (error) {
@@ -84,25 +99,56 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   const ensureDefaultCompany = async (userId: string, email: string) => {
     try {
-      // Try to find existing GLS company
-      const { data: companies } = await client.models.Company.list({
+      console.log('🔍 Ensuring default company for user:', userId, email);
+      
+      // Try to find existing GLS company (try both 'GLS' and 'GLS Transportation')
+      const { data: companiesGLS } = await client.models.Company.list({
         filter: { name: { eq: 'GLS' } }
+      });
+      
+      const { data: companiesGLSTransport } = await client.models.Company.list({
+        filter: { name: { eq: 'GLS Transportation' } }
       });
 
       let glsCompany: Schema['Company']['type'] | null = null;
 
-      if (companies && companies.length > 0) {
-        glsCompany = companies[0];
+      // Check for existing company (either name)
+      if (companiesGLS && companiesGLS.length > 0) {
+        glsCompany = companiesGLS[0];
+        console.log('✅ Found existing GLS company:', glsCompany.id);
+      } else if (companiesGLSTransport && companiesGLSTransport.length > 0) {
+        glsCompany = companiesGLSTransport[0];
+        console.log('✅ Found existing GLS Transportation company:', glsCompany.id);
       } else {
         // Create GLS company if it doesn't exist
-        const { data: newCompany } = await client.models.Company.create({
-          name: 'GLS',
-          subdomain: 'gls',
-          isActive: true,
-          subscriptionTier: 'premium',
-          subscriptionStatus: 'active',
-        });
-        glsCompany = newCompany;
+        console.log('📝 Creating new GLS company...');
+        try {
+          const { data: newCompany, errors: createErrors } = await client.models.Company.create({
+            name: 'GLS Transportation',
+            subdomain: 'gls',
+            isActive: true,
+            subscriptionTier: 'premium',
+            subscriptionStatus: 'active',
+          });
+          
+          if (createErrors && createErrors.length > 0) {
+            console.error('❌ Company creation errors:', createErrors);
+            throw new Error(`Failed to create company: ${createErrors.map(e => e.message).join(', ')}`);
+          }
+          
+          if (!newCompany) {
+            throw new Error('Company creation returned no data');
+          }
+          
+          glsCompany = newCompany;
+          console.log('✅ Created GLS Transportation company:', glsCompany.id);
+        } catch (createError: any) {
+          console.error('❌ Failed to create company:', createError);
+          // If creation fails, try to list all companies to see what's available
+          const { data: allCompanies } = await client.models.Company.list();
+          console.log('Available companies:', allCompanies);
+          throw createError;
+        }
       }
 
       if (glsCompany) {
@@ -115,18 +161,41 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         });
 
         if (!existingUsers || existingUsers.length === 0) {
-          // Create CompanyUser record
-          await client.models.CompanyUser.create({
-            companyId: glsCompany.id,
-            userId: userId,
-            email: email,
-            role: 'admin',
-            isActive: true,
-          });
+          console.log('📝 Creating CompanyUser record...');
+          try {
+            const { data: newUser, errors: userErrors } = await client.models.CompanyUser.create({
+              companyId: glsCompany.id,
+              userId: userId,
+              email: email,
+              role: 'admin',
+              isActive: true,
+            });
+            
+            if (userErrors && userErrors.length > 0) {
+              console.error('❌ CompanyUser creation errors:', userErrors);
+              throw new Error(`Failed to create CompanyUser: ${userErrors.map(e => e.message).join(', ')}`);
+            }
+            
+            console.log('✅ Created CompanyUser record:', newUser?.id);
+          } catch (userError: any) {
+            console.error('❌ Failed to create CompanyUser:', userError);
+            throw userError;
+          }
+        } else {
+          console.log('✅ CompanyUser record already exists');
         }
+      } else {
+        console.error('❌ No company available to associate user with');
       }
-    } catch (error) {
-      console.error('Error ensuring default company:', error);
+    } catch (error: any) {
+      console.error('❌ Error ensuring default company:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        errors: error?.errors,
+        stack: error?.stack
+      });
+      // Re-throw to allow caller to handle
+      throw error;
     }
   };
 
