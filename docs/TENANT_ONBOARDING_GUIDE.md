@@ -235,11 +235,7 @@ If enabled by your administrator, you'll receive:
 
 ### Airport Selection
 
-The system supports four airports:
-- **BUF**: Buffalo Niagara International Airport
-- **ROC**: Frederick Douglass Greater Rochester International Airport
-- **SYR**: Syracuse Hancock International Airport
-- **ALB**: Albany International Airport
+The system supports airport selection for trip management. Your company administrator will configure which airports are available in your system. When creating trips, you'll select from the airports configured for your company.
 
 ### Location Management
 

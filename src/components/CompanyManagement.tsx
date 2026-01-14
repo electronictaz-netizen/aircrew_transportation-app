@@ -15,6 +15,8 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
   const { company, refreshCompany } = useCompany();
   const [formData, setFormData] = useState({
     name: '',
+    displayName: '',
+    logoUrl: '',
     subdomain: '',
     subscriptionTier: 'premium' as 'free' | 'basic' | 'premium',
     subscriptionStatus: 'active' as 'active' | 'suspended' | 'cancelled',
@@ -25,6 +27,8 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
     if (company) {
       setFormData({
         name: company.name || '',
+        displayName: company.displayName || '',
+        logoUrl: company.logoUrl || '',
         subdomain: company.subdomain || '',
         subscriptionTier: (company.subscriptionTier as 'free' | 'basic' | 'premium') || 'premium',
         subscriptionStatus: (company.subscriptionStatus as 'active' | 'suspended' | 'cancelled') || 'active',
@@ -54,6 +58,8 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
       await client.models.Company.update({
         id: company.id,
         name: formData.name,
+        displayName: formData.displayName,
+        logoUrl: formData.logoUrl,
         subdomain: formData.subdomain,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
@@ -111,6 +117,41 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
               required
               placeholder="Company Name"
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="displayName">Display Name</label>
+            <input
+              type="text"
+              id="displayName"
+              value={formData.displayName}
+              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+              placeholder="Name displayed in the app (defaults to Company Name)"
+            />
+            <small>This name will be displayed at the top of the app. Leave empty to use Company Name.</small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="logoUrl">Logo URL</label>
+            <input
+              type="url"
+              id="logoUrl"
+              value={formData.logoUrl}
+              onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+              placeholder="https://example.com/logo.png"
+            />
+            <small>Enter a URL to your company logo. The logo will appear to the right of the display name.</small>
+            {formData.logoUrl && (
+              <div className="logo-preview">
+                <img 
+                  src={formData.logoUrl} 
+                  alt="Logo preview" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="form-group">

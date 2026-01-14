@@ -51,7 +51,7 @@ Your company administrator will send you an invitation email. **Keep this email*
 ### Creating a Trip (Administrators/Managers)
 
 1. Click "Create Trip"
-2. Select Airport (BUF, ROC, SYR, or ALB)
+2. Select Airport (choose from your company's configured airports)
 3. Enter Flight Number
 4. Set Pickup Date & Time
 5. Choose Pickup Location (Airport, Saved Location, or Custom)

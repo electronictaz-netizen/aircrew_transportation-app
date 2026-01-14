@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { signOutWithCacheClear } from '../utils/cacheClear';
 import { useAdminAccess } from '../utils/adminAccess';
+import { useCompany } from '../contexts/CompanyContext';
 import './Navigation.css';
 
 interface NavigationProps {
@@ -11,15 +12,31 @@ interface NavigationProps {
 function Navigation({ signOut, user }: NavigationProps) {
   const location = useLocation();
   const hasAdminAccess = useAdminAccess();
+  const { company } = useCompany();
 
   const handleSignOut = async () => {
     await signOutWithCacheClear(signOut);
   };
 
+  // Get display name - use displayName if set, otherwise use name, otherwise default
+  const displayName = company?.displayName || company?.name || 'Aircrew Transportation';
+
   return (
     <nav className="navigation">
       <div className="nav-container">
-        <h1 className="nav-title">Aircrew Transportation</h1>
+        <div className="nav-brand">
+          <h1 className="nav-title">{displayName}</h1>
+          {company?.logoUrl && (
+            <img 
+              src={company.logoUrl} 
+              alt={`${displayName} logo`} 
+              className="nav-logo"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          )}
+        </div>
         <div className="nav-links">
           <Link
             to="/management"

@@ -4,6 +4,8 @@ const schema = a.schema({
   Company: a
     .model({
       name: a.string().required(),
+      displayName: a.string(), // Custom name displayed in the app
+      logoUrl: a.string(), // URL to company logo image
       subdomain: a.string(),
       isActive: a.boolean().default(true),
       subscriptionTier: a.string().default('premium'),
