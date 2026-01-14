@@ -40,8 +40,6 @@ export function useAdminAccess(): boolean {
   const userEmail = 
     user.signInDetails?.loginId || 
     user.username || 
-    (user.attributes as any)?.email ||
-    (user as any)?.email ||
     '';
   
   const userId = user.userId || '';

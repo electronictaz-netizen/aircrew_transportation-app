@@ -18,32 +18,7 @@ interface NavigationProps {
 function Navigation({ signOut, user }: NavigationProps) {
   const location = useLocation();
   const { company } = useCompany();
-  const { user: authUser } = useAuthenticator();
   const hasAdminAccess = useAdminAccess();
-  const [userRole, setUserRole] = useState<'admin' | 'manager' | 'driver' | null>(null);
-
-  useEffect(() => {
-    const checkUserRole = async () => {
-      if (!authUser?.userId || !company) return;
-
-      try {
-        const { data: companyUsers } = await client.models.CompanyUser.list({
-          filter: {
-            userId: { eq: authUser.userId },
-            companyId: { eq: company.id },
-          },
-        });
-
-        if (companyUsers && companyUsers.length > 0) {
-          setUserRole(companyUsers[0].role || 'driver');
-        }
-      } catch (error) {
-        console.error('Error checking user role:', error);
-      }
-    };
-
-    checkUserRole();
-  }, [authUser, company]);
 
   const handleSignOut = async () => {
     await signOutWithCacheClear(signOut);
