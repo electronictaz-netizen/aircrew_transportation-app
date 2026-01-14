@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { signOutWithCacheClear } from '../utils/cacheClear';
 import './Navigation.css';
 
 interface NavigationProps {
@@ -8,6 +9,10 @@ interface NavigationProps {
 
 function Navigation({ signOut, user }: NavigationProps) {
   const location = useLocation();
+
+  const handleSignOut = async () => {
+    await signOutWithCacheClear(signOut);
+  };
 
   return (
     <nav className="navigation">
@@ -29,7 +34,7 @@ function Navigation({ signOut, user }: NavigationProps) {
         </div>
         <div className="nav-user">
           <span>{user?.signInDetails?.loginId || user?.username}</span>
-          <button onClick={signOut} className="sign-out-btn">
+          <button onClick={handleSignOut} className="sign-out-btn">
             Sign Out
           </button>
         </div>
