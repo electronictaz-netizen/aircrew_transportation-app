@@ -112,6 +112,11 @@ function ManagementDashboard() {
         status: tripData.status || 'Unassigned',
       };
 
+      // Add airport if provided
+      if (tripData.airport) {
+        tripWithStatus.airport = tripData.airport;
+      }
+
       // Add optional fields only if they have values
       if (tripData.driverId) {
         tripWithStatus.driverId = tripData.driverId;

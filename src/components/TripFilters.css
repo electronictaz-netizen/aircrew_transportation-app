@@ -54,6 +54,15 @@
   color: #2563eb;
 }
 
+.airport-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
 .quick-date-filters {
   display: flex;
   align-items: center;
@@ -174,6 +183,12 @@
 
   .filters-row {
     grid-template-columns: 1fr;
+  }
+
+  .airport-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
   }
 
   .quick-date-filters {

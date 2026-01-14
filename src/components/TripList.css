@@ -3,30 +3,122 @@
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.trips-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .trips-table {
   width: 100%;
   border-collapse: collapse;
   display: table;
+  min-width: 1200px; /* Ensure minimum width for all columns */
+  table-layout: auto;
 }
 
 .trips-table th {
   background-color: #f9fafb;
-  padding: 1rem;
+  padding: 0.75rem;
   text-align: left;
   font-weight: 600;
   color: #374151;
   border-bottom: 2px solid #e5e7eb;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .trips-table td {
-  padding: 1rem;
+  padding: 0.75rem;
   border-bottom: 1px solid #e5e7eb;
   color: #1f2937;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+/* Column width optimizations */
+.trips-table th:nth-child(1),
+.trips-table td:nth-child(1) {
+  width: 40px;
+  text-align: center;
+}
+
+.trips-table th:nth-child(2),
+.trips-table td:nth-child(2) {
+  width: 80px;
+  min-width: 80px;
+}
+
+.trips-table th:nth-child(3),
+.trips-table td:nth-child(3) {
+  width: 100px;
+  min-width: 100px;
+}
+
+.trips-table th:nth-child(4),
+.trips-table td:nth-child(4) {
+  width: 120px;
+  min-width: 120px;
+}
+
+.trips-table th:nth-child(5),
+.trips-table td:nth-child(5) {
+  width: 130px;
+  min-width: 130px;
+}
+
+.trips-table th:nth-child(6),
+.trips-table td:nth-child(6) {
+  width: 180px;
+  min-width: 180px;
+}
+
+.trips-table th:nth-child(7),
+.trips-table td:nth-child(7) {
+  width: 180px;
+  min-width: 180px;
+}
+
+.trips-table th:nth-child(8),
+.trips-table td:nth-child(8) {
+  width: 100px;
+  min-width: 100px;
+}
+
+.trips-table th:nth-child(9),
+.trips-table td:nth-child(9) {
+  width: 120px;
+  min-width: 120px;
+}
+
+.trips-table th:nth-child(10),
+.trips-table td:nth-child(10) {
+  width: 120px;
+  min-width: 120px;
+}
+
+.trips-table th:nth-child(11),
+.trips-table td:nth-child(11) {
+  width: 150px;
+  min-width: 150px;
+}
+
+.trips-table th:nth-child(12),
+.trips-table td:nth-child(12) {
+  width: 150px;
+  min-width: 150px;
+}
+
+.trips-table th:nth-child(13),
+.trips-table td:nth-child(13) {
+  width: 100px;
+  min-width: 100px;
 }
 
 /* Mobile: Card view instead of table */
@@ -219,11 +311,6 @@
   background-color: #dbeafe;
 }
 
-.trips-table th:first-child,
-.trips-table td:first-child {
-  width: 40px;
-  text-align: center;
-}
 
 .no-results {
   text-align: center;
@@ -245,7 +332,7 @@
   }
 
   /* Hide table on mobile, show card view */
-  .trips-table {
+  .trips-table-wrapper {
     display: none;
   }
 

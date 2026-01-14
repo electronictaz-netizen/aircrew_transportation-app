@@ -18,6 +18,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [driverFilter, setDriverFilter] = useState<string>('all');
   const [recurringFilter, setRecurringFilter] = useState<string>('all');
+  const [airportFilter, setAirportFilter] = useState<string>('all');
   const [quickDateFilter, setQuickDateFilter] = useState<QuickDateFilter>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
@@ -91,6 +92,11 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
       } else if (recurringFilter === 'one-time') {
         filtered = filtered.filter((item) => !item.trip.isRecurring);
       }
+    }
+
+    // Airport filter
+    if (airportFilter !== 'all') {
+      filtered = filtered.filter((item) => item.trip.airport === airportFilter);
     }
 
     // Date filter - use quick filter or custom date range
@@ -299,7 +305,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
       applyFiltersAndSort();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trips, statusFilter, driverFilter, recurringFilter, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection]);
+  }, [trips, statusFilter, driverFilter, recurringFilter, airportFilter, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection]);
 
   const handleFilterChange = () => {
     applyFiltersAndSort();
@@ -309,6 +315,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
     setStatusFilter('all');
     setDriverFilter('all');
     setRecurringFilter('all');
+    setAirportFilter('all');
     setQuickDateFilter('all');
     setDateFrom('');
     setDateTo('');
@@ -333,6 +340,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
     statusFilter !== 'all' ||
     driverFilter !== 'all' ||
     recurringFilter !== 'all' ||
+    airportFilter !== 'all' ||
     quickDateFilter !== 'all' ||
     dateFrom !== '' ||
     dateTo !== '' ||
@@ -365,6 +373,53 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
               Clear All
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Airport Filters */}
+      <div className="airport-filters">
+        <label className="quick-filters-label">Airport:</label>
+        <div className="quick-filter-buttons">
+          <button
+            className={`quick-filter-btn ${airportFilter === 'all' ? 'active' : ''}`}
+            onClick={() => {
+              setAirportFilter('all');
+              setSortField('pickupDate');
+              setSortDirection('asc');
+            }}
+          >
+            All Airports
+          </button>
+          <button
+            className={`quick-filter-btn ${airportFilter === 'BUF' ? 'active' : ''}`}
+            onClick={() => {
+              setAirportFilter('BUF');
+              setSortField('pickupDate');
+              setSortDirection('asc');
+            }}
+          >
+            BUF
+          </button>
+          <button
+            className={`quick-filter-btn ${airportFilter === 'ROC' ? 'active' : ''}`}
+            onClick={() => {
+              setAirportFilter('ROC');
+              setSortField('pickupDate');
+              setSortDirection('asc');
+            }}
+          >
+            ROC
+          </button>
+          <button
+            className={`quick-filter-btn ${airportFilter === 'SYR' ? 'active' : ''}`}
+            onClick={() => {
+              setAirportFilter('SYR');
+              setSortField('pickupDate');
+              setSortDirection('asc');
+            }}
+          >
+            SYR
+          </button>
         </div>
       </div>
 

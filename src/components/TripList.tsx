@@ -203,7 +203,8 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
           </div>
         )}
       </div>
-      <table className="trips-table">
+      <div className="trips-table-wrapper">
+        <table className="trips-table">
         <thead>
           <tr>
             {onDeleteMultiple && (
@@ -337,6 +338,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
           )}
         </tbody>
       </table>
+      </div>
       
       {/* Mobile Card View */}
       <div className="trips-table-mobile">
@@ -386,6 +388,18 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
                   </button>
                 </div>
               </div>
+              
+              {trip.airport && (
+                <div className="trip-card-field">
+                  <span className="trip-card-label">Airport</span>
+                  <span className="trip-card-value">
+                    {trip.airport === 'BUF' ? 'Buffalo Niagara International Airport (BUF)' :
+                     trip.airport === 'ROC' ? 'Frederick Douglass Greater Rochester International Airport (ROC)' :
+                     trip.airport === 'SYR' ? 'Syracuse Hancock International Airport (SYR)' :
+                     trip.airport}
+                  </span>
+                </div>
+              )}
               
               <div className="trip-card-field">
                 <span className="trip-card-label">Pickup Date & Time</span>
