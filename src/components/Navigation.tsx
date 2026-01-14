@@ -1,14 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { signOutWithCacheClear } from '../utils/cacheClear';
-import { useCompany } from '../contexts/CompanyContext';
-import { useState, useEffect } from 'react';
-import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../amplify/data/resource';
-import { useAuthenticator } from '@aws-amplify/ui-react';
 import { useAdminAccess } from '../utils/adminAccess';
 import './Navigation.css';
-
-const client = generateClient<Schema>();
 
 interface NavigationProps {
   signOut: () => void;
@@ -17,7 +10,6 @@ interface NavigationProps {
 
 function Navigation({ signOut, user }: NavigationProps) {
   const location = useLocation();
-  const { company } = useCompany();
   const hasAdminAccess = useAdminAccess();
 
   const handleSignOut = async () => {
