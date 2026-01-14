@@ -21,6 +21,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     name: '',
     address: '',
     description: '',
+    category: '',
     isActive: true,
   });
 
@@ -60,6 +61,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
       name: location.name,
       address: location.address || '',
       description: location.description || '',
+      category: location.category || '',
       isActive: location.isActive ?? true,
     });
     setShowForm(true);
@@ -133,6 +135,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
       name: '',
       address: '',
       description: '',
+      category: '',
       isActive: true,
     });
     setEditingLocation(null);
@@ -203,6 +206,18 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
             </div>
 
             <div className="form-group">
+              <label htmlFor="category">Category</label>
+              <input
+                type="text"
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="e.g., Airport, Hotel, Office, Warehouse"
+              />
+              <small>Used for filtering and organization (optional)</small>
+            </div>
+
+            <div className="form-group">
               <label>
                 <input
                   type="checkbox"
@@ -241,6 +256,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                     />
                   </th>
                   <th>Name</th>
+                  <th>Category</th>
                   <th>Address</th>
                   <th>Description</th>
                   <th>Status</th>
@@ -258,6 +274,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                       />
                     </td>
                     <td>{location.name}</td>
+                    <td>{location.category || '-'}</td>
                     <td>{location.address || '-'}</td>
                     <td>{location.description || '-'}</td>
                     <td>

@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
+import { useCompany } from '../contexts/CompanyContext';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
 import './TripFilters.css';
+
+const client = generateClient<Schema>();
 
 interface TripFiltersProps {
   trips: Array<Schema['Trip']['type']>;
@@ -15,10 +19,11 @@ type SortDirection = 'asc' | 'desc';
 type QuickDateFilter = 'all' | 'today' | 'thisWeek' | 'nextWeek' | 'custom';
 
 function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersProps) {
+  const { companyId } = useCompany();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [driverFilter, setDriverFilter] = useState<string>('all');
   const [recurringFilter, setRecurringFilter] = useState<string>('all');
-  const [airportFilter, setAirportFilter] = useState<string>('all');
+  const [customFilters, setCustomFilters] = useState<Record<string, string>>({}); // Dynamic filters by category name
   const [quickDateFilter, setQuickDateFilter] = useState<QuickDateFilter>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
@@ -26,6 +31,30 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
   const [sortField, setSortField] = useState<SortField>('pickupDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [filterCategories, setFilterCategories] = useState<Array<Schema['FilterCategory']['type']>>([]);
+
+  // Load filter categories
+  useEffect(() => {
+    if (companyId) {
+      loadFilterCategories();
+    }
+  }, [companyId]);
+
+  const loadFilterCategories = async () => {
+    if (!companyId) return;
+    
+    try {
+      const { data } = await client.models.FilterCategory.list({
+        filter: { 
+          companyId: { eq: companyId },
+          isActive: { eq: true }
+        },
+      });
+      setFilterCategories((data || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
+    } catch (error) {
+      console.error('Error loading filter categories:', error);
+    }
+  };
 
   // Calculate date ranges for quick filters
   const getDateRange = (filter: QuickDateFilter): { from: Date | null; to: Date | null } => {
@@ -94,9 +123,48 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
       }
     }
 
-    // Airport filter
-    if (airportFilter !== 'all') {
-      filtered = filtered.filter((item) => item.trip.airport === airportFilter);
+    // Dynamic custom filters based on FilterCategories
+    for (const category of filterCategories) {
+      const filterValue = customFilters[category.name];
+      if (filterValue && filterValue !== 'all') {
+        try {
+          let values: string[] = [];
+          if (category.values) {
+            try {
+              values = JSON.parse(category.values);
+            } catch {
+              // If not JSON, treat as comma-separated
+              values = category.values.split(',').map(v => v.trim());
+            }
+          }
+          
+          // Filter based on the category's field
+          if (category.field === 'locationCategory' || category.field === 'primaryLocationCategory') {
+            // Get locations with this category
+            filtered = filtered.filter((item) => {
+              const trip = item.trip;
+              // Check primaryLocationCategory first, then fall back to airport for backward compatibility
+              const categoryValue = trip.primaryLocationCategory || trip.airport || '';
+              return categoryValue === filterValue;
+            });
+          } else if (category.field === 'pickupLocation') {
+            filtered = filtered.filter((item) => item.trip.pickupLocation === filterValue);
+          } else if (category.field === 'dropoffLocation') {
+            filtered = filtered.filter((item) => item.trip.dropoffLocation === filterValue);
+          }
+        } catch (error) {
+          console.error(`Error applying filter for category ${category.name}:`, error);
+        }
+      }
+    }
+    
+    // Legacy airport filter (for backward compatibility)
+    const legacyAirportFilter = customFilters['Airports'] || 'all';
+    if (legacyAirportFilter !== 'all') {
+      filtered = filtered.filter((item) => {
+        const trip = item.trip;
+        return trip.airport === legacyAirportFilter || trip.primaryLocationCategory === legacyAirportFilter;
+      });
     }
 
     // Date filter - use quick filter or custom date range
@@ -305,7 +373,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
       applyFiltersAndSort();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trips, statusFilter, driverFilter, recurringFilter, airportFilter, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection]);
+  }, [trips, statusFilter, driverFilter, recurringFilter, customFilters, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection, filterCategories]);
 
   const handleFilterChange = () => {
     applyFiltersAndSort();
@@ -315,7 +383,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
     setStatusFilter('all');
     setDriverFilter('all');
     setRecurringFilter('all');
-    setAirportFilter('all');
+    setCustomFilters({});
     setQuickDateFilter('all');
     setDateFrom('');
     setDateTo('');
@@ -340,7 +408,7 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
     statusFilter !== 'all' ||
     driverFilter !== 'all' ||
     recurringFilter !== 'all' ||
-    airportFilter !== 'all' ||
+    Object.values(customFilters).some(v => v !== 'all') ||
     quickDateFilter !== 'all' ||
     dateFrom !== '' ||
     dateTo !== '' ||
@@ -376,62 +444,65 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
         </div>
       </div>
 
-      {/* Airport Filters */}
-      <div className="airport-filters">
-        <label className="quick-filters-label">Airport:</label>
-        <div className="quick-filter-buttons">
-          <button
-            className={`quick-filter-btn ${airportFilter === 'all' ? 'active' : ''}`}
-            onClick={() => {
-              setAirportFilter('all');
-              setSortField('pickupDate');
-              setSortDirection('asc');
-            }}
-          >
-            All Airports
-          </button>
-          <button
-            className={`quick-filter-btn ${airportFilter === 'BUF' ? 'active' : ''}`}
-            onClick={() => {
-              setAirportFilter('BUF');
-              setSortField('pickupDate');
-              setSortDirection('asc');
-            }}
-          >
-            BUF
-          </button>
-          <button
-            className={`quick-filter-btn ${airportFilter === 'ROC' ? 'active' : ''}`}
-            onClick={() => {
-              setAirportFilter('ROC');
-              setSortField('pickupDate');
-              setSortDirection('asc');
-            }}
-          >
-            ROC
-          </button>
-          <button
-            className={`quick-filter-btn ${airportFilter === 'SYR' ? 'active' : ''}`}
-            onClick={() => {
-              setAirportFilter('SYR');
-              setSortField('pickupDate');
-              setSortDirection('asc');
-            }}
-          >
-            SYR
-          </button>
-          <button
-            className={`quick-filter-btn ${airportFilter === 'ALB' ? 'active' : ''}`}
-            onClick={() => {
-              setAirportFilter('ALB');
-              setSortField('pickupDate');
-              setSortDirection('asc');
-            }}
-          >
-            ALB
-          </button>
-        </div>
-      </div>
+      {/* Dynamic Custom Filters */}
+      {filterCategories.map((category) => {
+        // Get filter values for this category
+        let values: string[] = [];
+        try {
+          if (category.values) {
+            values = JSON.parse(category.values);
+            if (!Array.isArray(values)) {
+              values = category.values.split(',').map(v => v.trim()).filter(v => v);
+            }
+          } else {
+            // Auto-generate from trips if no values specified
+            // This would require loading locations, so for now we'll use empty array
+            values = [];
+          }
+        } catch {
+          values = category.values ? category.values.split(',').map(v => v.trim()).filter(v => v) : [];
+        }
+
+        const currentFilter = customFilters[category.name] || 'all';
+
+        return (
+          <div key={category.id} className="custom-filters">
+            <label className="quick-filters-label">{category.name}:</label>
+            <div className="quick-filter-buttons">
+              <button
+                className={`quick-filter-btn ${currentFilter === 'all' ? 'active' : ''}`}
+                onClick={() => {
+                  setCustomFilters(prev => ({ ...prev, [category.name]: 'all' }));
+                  setSortField('pickupDate');
+                  setSortDirection('asc');
+                }}
+              >
+                All {category.name}
+              </button>
+              {values.length > 0 ? (
+                values.map((value) => (
+                  <button
+                    key={value}
+                    className={`quick-filter-btn ${currentFilter === value ? 'active' : ''}`}
+                    onClick={() => {
+                      setCustomFilters(prev => ({ ...prev, [category.name]: value }));
+                      setSortField('pickupDate');
+                      setSortDirection('asc');
+                    }}
+                  >
+                    {value}
+                  </button>
+                ))
+              ) : (
+                // If no values specified, show a message or auto-generate from trips
+                <span style={{ fontSize: '0.875rem', color: '#6b7280', padding: '0.5rem' }}>
+                  Configure values in Filter Categories
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
 
       {/* Quick Date Filters */}
       <div className="quick-date-filters">

@@ -64,7 +64,6 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       
       // Filter out system admins from company user lookup
       if (companyUsers && companyUsers.length > 0) {
-        const userEmail = user.signInDetails?.loginId || user.username || '';
         companyUsers = companyUsers.filter(
           cu => !isSystemAdmin(cu.email, cu.userId)
         );

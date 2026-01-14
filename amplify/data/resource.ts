@@ -14,6 +14,7 @@ const schema = a.schema({
       trips: a.hasMany('Trip', 'companyId'),
       drivers: a.hasMany('Driver', 'companyId'),
       locations: a.hasMany('Location', 'companyId'),
+      filterCategories: a.hasMany('FilterCategory', 'companyId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update']),
@@ -52,7 +53,8 @@ const schema = a.schema({
     .model({
       companyId: a.id().required(),
       company: a.belongsTo('Company', 'companyId'),
-      airport: a.string(), // Airport code: BUF, ROC, or SYR
+      airport: a.string(), // Deprecated: Use location categories instead. Kept for backward compatibility.
+      primaryLocationCategory: a.string(), // Primary location category for filtering (e.g., airport code or category name)
       pickupDate: a.datetime().required(),
       flightNumber: a.string().required(),
       pickupLocation: a.string().required(),
@@ -84,6 +86,21 @@ const schema = a.schema({
       name: a.string().required(),
       address: a.string(),
       description: a.string(),
+      category: a.string(), // Category for filtering (e.g., 'Airport', 'Hotel', 'Office')
+      isActive: a.boolean().default(true),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  FilterCategory: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      name: a.string().required(), // Category name (e.g., 'Airport', 'Service Type', 'Region')
+      field: a.string().required(), // Field to filter on: 'locationCategory', 'pickupLocation', 'dropoffLocation', etc.
+      values: a.string(), // JSON array of filter values/options
+      displayOrder: a.integer().default(0), // Order for display
       isActive: a.boolean().default(true),
     })
     .authorization((allow) => [

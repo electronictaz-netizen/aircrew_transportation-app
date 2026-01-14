@@ -231,7 +231,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onAssign
                 />
               </th>
             )}
-            <th>Airport</th>
+            <th>Category</th>
             <th>Pickup Date</th>
             <th>Pickup Time</th>
             <th>Flight Number</th>
@@ -266,13 +266,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onAssign
                 </td>
               )}
               <td>
-                {trip.airport ? (
-                  trip.airport === 'BUF' ? 'BUF' :
-                  trip.airport === 'ROC' ? 'ROC' :
-                  trip.airport === 'SYR' ? 'SYR' :
-                  trip.airport === 'ALB' ? 'ALB' :
-                  trip.airport
-                ) : 'N/A'}
+                {trip.primaryLocationCategory || trip.airport || 'N/A'}
               </td>
               <td>
                 {trip.pickupDate
@@ -404,15 +398,11 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onAssign
                 </div>
               </div>
               
-              {trip.airport && (
+              {(trip.primaryLocationCategory || trip.airport) && (
                 <div className="trip-card-field">
-                  <span className="trip-card-label">Airport</span>
+                  <span className="trip-card-label">Category</span>
                   <span className="trip-card-value">
-                    {trip.airport === 'BUF' ? 'Buffalo Niagara International Airport (BUF)' :
-                     trip.airport === 'ROC' ? 'Frederick Douglass Greater Rochester International Airport (ROC)' :
-                     trip.airport === 'SYR' ? 'Syracuse Hancock International Airport (SYR)' :
-                     trip.airport === 'ALB' ? 'Albany International Airport (ALB)' :
-                     trip.airport}
+                    {trip.primaryLocationCategory || trip.airport}
                   </span>
                 </div>
               )}

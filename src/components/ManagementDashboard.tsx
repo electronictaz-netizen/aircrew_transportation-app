@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
 import LocationManagement from './LocationManagement';
+import FilterCategoryManagement from './FilterCategoryManagement';
 import CompanyManagement from './CompanyManagement';
 import TripList from './TripList';
 import DriverSelectionDialog from './DriverSelectionDialog';
@@ -19,7 +20,7 @@ import './ManagementDashboard.css';
 const client = generateClient<Schema>();
 
 function ManagementDashboard() {
-  const { companyId, loading: companyLoading, company, isAdminOverride, setAdminSelectedCompany } = useCompany();
+  const { companyId, loading: companyLoading, company, isAdminOverride } = useCompany();
   const hasAdminAccess = useAdminAccess();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
@@ -27,6 +28,7 @@ function ManagementDashboard() {
   const [showTripForm, setShowTripForm] = useState(false);
   const [showDriverManagement, setShowDriverManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
+  const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
   const [showCompanyManagement, setShowCompanyManagement] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Schema['Trip']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1116,6 +1118,12 @@ function ManagementDashboard() {
           </button>
           <button
             className="btn btn-secondary"
+            onClick={() => setShowFilterCategoryManagement(true)}
+          >
+            Filter Categories
+          </button>
+          <button
+            className="btn btn-secondary"
             onClick={() => setShowCompanyManagement(true)}
           >
             Company Settings
@@ -1163,6 +1171,16 @@ function ManagementDashboard() {
           locations={locations}
           onClose={() => setShowLocationManagement(false)}
           onUpdate={handleLocationUpdate}
+        />
+      )}
+
+      {showFilterCategoryManagement && (
+        <FilterCategoryManagement
+          onClose={() => setShowFilterCategoryManagement(false)}
+          onUpdate={() => {
+            // Refresh filters if needed
+            window.location.reload();
+          }}
         />
       )}
 

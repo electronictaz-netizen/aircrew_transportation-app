@@ -11,8 +11,8 @@ interface TripFormProps {
   onCancel: () => void;
 }
 
-// Airport options
-const AIRPORTS = [
+// Legacy airport codes for backward compatibility (deprecated - use locations with categories instead)
+const LEGACY_AIRPORTS = [
   { code: 'BUF', name: 'Buffalo Niagara International Airport (BUF)' },
   { code: 'ROC', name: 'Frederick Douglass Greater Rochester International Airport (ROC)' },
   { code: 'SYR', name: 'Syracuse Hancock International Airport (SYR)' },
@@ -56,7 +56,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     e.preventDefault();
     
     // Validate required fields
-    if (!formData.airport || !formData.pickupDate || !formData.flightNumber || !formData.pickupLocation || !formData.dropoffLocation) {
+    if (!formData.pickupDate || !formData.flightNumber || !formData.pickupLocation || !formData.dropoffLocation) {
       alert('Please fill in all required fields.');
       return;
     }
@@ -68,8 +68,16 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     }
 
     try {
+      // Determine primary location category from pickup location
+      let primaryCategory = '';
+      if (pickupLocationMode === 'location') {
+        const selectedLocation = activeLocations.find(l => l.name === formData.pickupLocation);
+        primaryCategory = selectedLocation?.category || '';
+      }
+      
       const submitData: any = {
-        airport: formData.airport || undefined,
+        primaryLocationCategory: primaryCategory || undefined,
+        airport: formData.primaryLocationCategory || undefined, // Keep for backward compatibility
         pickupDate: new Date(formData.pickupDate).toISOString(),
         flightNumber: formData.flightNumber.trim(),
         pickupLocation: formData.pickupLocation.trim(),
@@ -79,7 +87,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
           : (parseInt(String(formData.numberOfPassengers)) || 1),
         driverId: formData.driverId || undefined,
         status: formData.driverId ? 'Assigned' : 'Unassigned',
-        isRecurring: formData.isRecurring === true, // Explicitly set to true or false
+        isRecurring: formData.isRecurring === true,
       };
 
       // Only include recurring fields if it's a recurring job
@@ -110,27 +118,23 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       return; // Skip, handled by custom onChange
     }
     
-    // If airport changes and location modes are set to airport, update locations
-    if (name === 'airport' && value) {
-      const selectedAirport = AIRPORTS.find(a => a.code === value);
-      setFormData((prev) => {
-        const updates: any = { airport: value };
-        // Update pickup location if in airport mode
-        if (pickupLocationMode === 'airport' && selectedAirport) {
-          updates.pickupLocation = selectedAirport.name;
-        }
-        // Update dropoff location if in airport mode
-        if (dropoffLocationMode === 'airport' && selectedAirport) {
-          updates.dropoffLocation = selectedAirport.name;
-        }
-        return { ...prev, ...updates };
-      });
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+    // If location is selected, update primary category
+    if (name === 'pickupLocation' && pickupLocationMode === 'location') {
+      const selectedLocation = activeLocations.find(l => l.name === value);
+      if (selectedLocation?.category) {
+        setFormData((prev) => ({
+          ...prev,
+          pickupLocation: value,
+          primaryLocationCategory: selectedLocation.category,
+        }));
+        return;
+      }
     }
+    
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   return (
@@ -138,24 +142,6 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       <div className="modal-content">
         <h3>{trip ? 'Edit Trip' : 'Create New Trip'}</h3>
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="airport">Airport *</label>
-            <select
-              id="airport"
-              name="airport"
-              value={formData.airport}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Select Airport</option>
-              {AIRPORTS.map((airport) => (
-                <option key={airport.code} value={airport.code}>
-                  {airport.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="form-group">
             <label htmlFor="pickupDate">Pickup Date and Time *</label>
             <input
@@ -187,31 +173,6 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
               <button
                 type="button"
                 onClick={() => {
-                  setPickupLocationMode('airport');
-                  if (formData.airport) {
-                    const selectedAirport = AIRPORTS.find(a => a.code === formData.airport);
-                    if (selectedAirport) {
-                      setFormData(prev => ({
-                        ...prev,
-                        pickupLocation: selectedAirport.name
-                      }));
-                    }
-                  }
-                }}
-                style={{
-                  padding: '0.5rem 1rem',
-                  border: pickupLocationMode === 'airport' ? '2px solid #3b82f6' : '1px solid #d1d5db',
-                  backgroundColor: pickupLocationMode === 'airport' ? '#eff6ff' : 'white',
-                  borderRadius: '0.375rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Use Airport
-              </button>
-              <button
-                type="button"
-                onClick={() => {
                   setPickupLocationMode('location');
                 }}
                 style={{
@@ -222,8 +183,8 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                   cursor: 'pointer',
                   fontSize: '0.875rem'
                 }}
-                disabled={locations.filter(l => l.isActive !== false).length === 0}
-                title={locations.filter(l => l.isActive !== false).length === 0 ? 'No saved locations available. Add locations in Manage Locations.' : 'Select from saved locations'}
+                disabled={activeLocations.length === 0}
+                title={activeLocations.length === 0 ? 'No saved locations available. Add locations in Manage Locations.' : 'Select from saved locations'}
               >
                 Use Saved Location
               </button>
@@ -244,23 +205,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 Enter Text
               </button>
             </div>
-            {pickupLocationMode === 'airport' ? (
-              <select
-                id="pickupLocation"
-                name="pickupLocation"
-                value={formData.pickupLocation}
-                onChange={handleChange}
-                required
-                disabled={!formData.airport}
-              >
-                <option value="">Select Airport</option>
-                {AIRPORTS.map((airport) => (
-                  <option key={airport.code} value={airport.name}>
-                    {airport.name}
-                  </option>
-                ))}
-              </select>
-            ) : pickupLocationMode === 'location' ? (
+            {pickupLocationMode === 'location' ? (
               <select
                 id="pickupLocation"
                 name="pickupLocation"
@@ -269,11 +214,15 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 required
               >
                 <option value="">Select Saved Location</option>
-                {locations.filter(l => l.isActive !== false).map((location) => (
-                  <option key={location.id} value={location.name}>
-                    {location.name}{location.address ? ` - ${location.address}` : ''}
-                  </option>
-                ))}
+                {Object.entries(locationsByCategory).map(([category, locs]) => [
+                  <optgroup key={category} label={category || 'Uncategorized'}>
+                    {locs.map((location) => (
+                      <option key={location.id} value={location.name}>
+                        {location.name}{location.address ? ` - ${location.address}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                ])}
               </select>
             ) : (
               <input
@@ -283,7 +232,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 value={formData.pickupLocation}
                 onChange={handleChange}
                 required
-                placeholder="e.g., Airport Terminal 1"
+                placeholder="Enter pickup location"
               />
             )}
           </div>
@@ -291,31 +240,6 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
           <div className="form-group">
             <label htmlFor="dropoffLocation">Dropoff Location *</label>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setDropoffLocationMode('airport');
-                  if (formData.airport) {
-                    const selectedAirport = AIRPORTS.find(a => a.code === formData.airport);
-                    if (selectedAirport) {
-                      setFormData(prev => ({
-                        ...prev,
-                        dropoffLocation: selectedAirport.name
-                      }));
-                    }
-                  }
-                }}
-                style={{
-                  padding: '0.5rem 1rem',
-                  border: dropoffLocationMode === 'airport' ? '2px solid #3b82f6' : '1px solid #d1d5db',
-                  backgroundColor: dropoffLocationMode === 'airport' ? '#eff6ff' : 'white',
-                  borderRadius: '0.375rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Use Airport
-              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -329,8 +253,8 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                   cursor: 'pointer',
                   fontSize: '0.875rem'
                 }}
-                disabled={locations.filter(l => l.isActive !== false).length === 0}
-                title={locations.filter(l => l.isActive !== false).length === 0 ? 'No saved locations available. Add locations in Manage Locations.' : 'Select from saved locations'}
+                disabled={activeLocations.length === 0}
+                title={activeLocations.length === 0 ? 'No saved locations available. Add locations in Manage Locations.' : 'Select from saved locations'}
               >
                 Use Saved Location
               </button>
@@ -351,23 +275,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 Enter Text
               </button>
             </div>
-            {dropoffLocationMode === 'airport' ? (
-              <select
-                id="dropoffLocation"
-                name="dropoffLocation"
-                value={formData.dropoffLocation}
-                onChange={handleChange}
-                required
-                disabled={!formData.airport}
-              >
-                <option value="">Select Airport</option>
-                {AIRPORTS.map((airport) => (
-                  <option key={airport.code} value={airport.name}>
-                    {airport.name}
-                  </option>
-                ))}
-              </select>
-            ) : dropoffLocationMode === 'location' ? (
+            {dropoffLocationMode === 'location' ? (
               <select
                 id="dropoffLocation"
                 name="dropoffLocation"
@@ -376,11 +284,15 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 required
               >
                 <option value="">Select Saved Location</option>
-                {locations.filter(l => l.isActive !== false).map((location) => (
-                  <option key={location.id} value={location.name}>
-                    {location.name}{location.address ? ` - ${location.address}` : ''}
-                  </option>
-                ))}
+                {Object.entries(locationsByCategory).map(([category, locs]) => [
+                  <optgroup key={category} label={category || 'Uncategorized'}>
+                    {locs.map((location) => (
+                      <option key={location.id} value={location.name}>
+                        {location.name}{location.address ? ` - ${location.address}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                ])}
               </select>
             ) : (
               <input
@@ -390,7 +302,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 value={formData.dropoffLocation}
                 onChange={handleChange}
                 required
-                placeholder="e.g., Hotel Downtown"
+                placeholder="Enter dropoff location"
               />
             )}
           </div>
