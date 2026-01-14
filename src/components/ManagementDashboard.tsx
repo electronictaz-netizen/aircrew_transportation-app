@@ -6,6 +6,7 @@ import DriverManagement from './DriverManagement';
 import TripList from './TripList';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
+import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -194,6 +195,22 @@ function ManagementDashboard() {
           }
           
           console.log('Trip successfully created with ID:', result.data.id);
+          
+          // Send notification to driver if assigned
+          if (tripData.driverId && result.data) {
+            const assignedDriver = drivers.find(d => d.id === tripData.driverId);
+            if (assignedDriver) {
+              await notifyDriver({
+                trip: result.data,
+                driver: assignedDriver,
+                isReassignment: false,
+              }, {
+                email: true,
+                sms: false, // Set to true if SMS is configured
+                inApp: true,
+              });
+            }
+          }
         } catch (createError: any) {
           console.error('Detailed create error:', createError);
           throw createError;
@@ -462,8 +479,46 @@ function ManagementDashboard() {
         tripData.updateScope = updateScope;
       }
       
+      // Check for driver reassignment before updating
+      if (!trip) {
+        throw new Error('Trip not found');
+      }
+      
+      const previousDriverId = trip.driverId;
+      const newDriverId = tripData.driverId;
+      const isDriverReassignment = previousDriverId && newDriverId && previousDriverId !== newDriverId;
+      const isNewAssignment = !previousDriverId && newDriverId;
+      
       // Update the trip
-      await client.models.Trip.update({ id: tripId, ...tripData });
+      const updateResult = await client.models.Trip.update({ id: tripId, ...tripData });
+      
+      // Send notifications for driver assignment changes
+      if (updateResult.data) {
+        // Notify new driver if assigned or reassigned
+        if ((isNewAssignment || isDriverReassignment) && newDriverId) {
+          const newDriver = drivers.find(d => d.id === newDriverId);
+          if (newDriver) {
+            await notifyDriver({
+              trip: updateResult.data,
+              driver: newDriver,
+              isReassignment: isDriverReassignment,
+              previousDriver: previousDriverId ? drivers.find(d => d.id === previousDriverId) || null : null,
+            }, {
+              email: true,
+              sms: false, // Set to true if SMS is configured
+              inApp: true,
+            });
+          }
+        }
+        
+        // Notify previous driver if reassigned
+        if (isDriverReassignment && previousDriverId) {
+          const previousDriver = drivers.find(d => d.id === previousDriverId);
+          if (previousDriver) {
+            await notifyPreviousDriver(previousDriver, updateResult.data);
+          }
+        }
+      }
       
       // Check if trip is no longer recurring after update (parent was changed to non-recurring)
       // If so, delete all future child trips - this is a fallback in case isRemovingRecurrence wasn't detected
