@@ -4,6 +4,7 @@ import type { Schema } from '../../amplify/data/resource';
 import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
 import TripList from './TripList';
+import DriverSelectionDialog from './DriverSelectionDialog';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
@@ -19,6 +20,9 @@ function ManagementDashboard() {
   const [showDriverManagement, setShowDriverManagement] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Schema['Trip']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDriverDialog, setShowDriverDialog] = useState(false);
+  const [tripsToAssign, setTripsToAssign] = useState<string[]>([]);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTrips();
@@ -676,6 +680,110 @@ function ManagementDashboard() {
     }
   };
 
+  const handleAssignMultipleTrips = (tripIds: string[]) => {
+    if (tripIds.length === 0) return;
+    setTripsToAssign(tripIds);
+    setSelectedDriverId(null);
+    setShowDriverDialog(true);
+  };
+
+  const handleConfirmAssignment = async () => {
+    if (tripsToAssign.length === 0) {
+      setShowDriverDialog(false);
+      return;
+    }
+
+    try {
+      const driverId = selectedDriverId || undefined;
+      const driver = driverId ? drivers.find(d => d.id === driverId) : null;
+      let successCount = 0;
+      let failCount = 0;
+      const previousDrivers = new Map<string, Schema['Driver']['type'] | null>();
+
+      // Get previous drivers for notification purposes
+      for (const tripId of tripsToAssign) {
+        const trip = trips.find(t => t.id === tripId);
+        if (trip?.driverId) {
+          const prevDriver = drivers.find(d => d.id === trip.driverId);
+          if (prevDriver) {
+            previousDrivers.set(tripId, prevDriver);
+          }
+        }
+      }
+
+      // Assign trips
+      for (const tripId of tripsToAssign) {
+        try {
+          const statusValue: 'Assigned' | 'Unassigned' = driverId ? 'Assigned' : 'Unassigned';
+          const updateResult = await client.models.Trip.update({
+            id: tripId,
+            driverId: driverId || undefined,
+            status: statusValue,
+          });
+
+          if (updateResult.data) {
+            successCount++;
+
+            // Send notifications
+            const trip = trips.find(t => t.id === tripId);
+            const previousDriver = previousDrivers.get(tripId);
+            const isReassignment: boolean = !!previousDriver && !!driverId && previousDriver.id !== driverId;
+            const isNewAssignment: boolean = !previousDriver && !!driverId;
+
+            // Notify new driver if assigned
+            if (driver && updateResult.data && (isNewAssignment || isReassignment)) {
+              const preference = driver.notificationPreference || 'both';
+              await notifyDriver(
+                {
+                  trip: updateResult.data,
+                  driver: driver,
+                  isReassignment: isReassignment,
+                },
+                {
+                  email: preference === 'email' || preference === 'both',
+                  sms: preference === 'sms' || preference === 'both',
+                  inApp: true,
+                }
+              );
+            }
+
+            // Notify previous driver if reassigned
+            if (previousDriver && driverId && previousDriver.id !== driverId && trip) {
+              await notifyPreviousDriver(previousDriver, trip);
+            }
+          }
+        } catch (error) {
+          console.error(`Error assigning trip ${tripId}:`, error);
+          failCount++;
+        }
+      }
+
+      // Wait for database sync
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await loadTrips(true);
+
+      // Show confirmation
+      const driverName = driver?.name || 'Unassigned';
+      if (failCount > 0) {
+        alert(
+          `Assigned ${successCount} trip${successCount > 1 ? 's' : ''} to ${driverName}.\n` +
+          `${failCount} trip${failCount > 1 ? 's' : ''} failed to assign.`
+        );
+      } else {
+        alert(
+          `Successfully assigned ${successCount} trip${successCount > 1 ? 's' : ''} to ${driverName}.`
+        );
+      }
+
+      setShowDriverDialog(false);
+      setTripsToAssign([]);
+      setSelectedDriverId(null);
+    } catch (error: any) {
+      console.error('Error assigning trips:', error);
+      alert('Failed to assign trips. Please check the console for details.');
+    }
+  };
+
   const handleDeleteTrip = async (tripId: string) => {
     const trip = trips.find(t => t.id === tripId);
     const isParentRecurring = trip?.isRecurring === true;
@@ -904,7 +1012,22 @@ function ManagementDashboard() {
         onEdit={handleEditTrip}
         onDelete={handleDeleteTrip}
         onDeleteMultiple={handleDeleteMultipleTrips}
+        onAssignMultiple={handleAssignMultipleTrips}
         onUpdate={loadTrips}
+      />
+
+      <DriverSelectionDialog
+        isOpen={showDriverDialog}
+        drivers={drivers}
+        selectedDriverId={selectedDriverId}
+        onSelectDriver={setSelectedDriverId}
+        onConfirm={handleConfirmAssignment}
+        onCancel={() => {
+          setShowDriverDialog(false);
+          setTripsToAssign([]);
+          setSelectedDriverId(null);
+        }}
+        tripCount={tripsToAssign.length}
       />
     </div>
   );

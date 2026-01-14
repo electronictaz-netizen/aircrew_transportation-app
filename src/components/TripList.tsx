@@ -11,10 +11,11 @@ interface TripListProps {
   onEdit: (trip: Schema['Trip']['type']) => void;
   onDelete: (tripId: string) => void;
   onDeleteMultiple?: (tripIds: string[]) => void;
+  onAssignMultiple?: (tripIds: string[]) => void;
   onUpdate: () => void;
 }
 
-function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate }: TripListProps) {
+function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onUpdate }: TripListProps) {
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
@@ -189,16 +190,29 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
         <p className="trip-count">
           Showing {displayedTrips.length} of {trips.length} trips
         </p>
-        {onDeleteMultiple && (
+        {(onDeleteMultiple || onAssignMultiple) && (
           <div className="bulk-actions">
             {selectedTrips.size > 0 && (
-              <button
-                className="btn btn-danger"
-                onClick={handleDeleteSelected}
-                title={`Delete ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''}`}
-              >
-                Delete Selected ({selectedTrips.size})
-              </button>
+              <>
+                {onAssignMultiple && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => onAssignMultiple(Array.from(selectedTrips))}
+                    title={`Assign ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''} to driver`}
+                  >
+                    Assign ({selectedTrips.size})
+                  </button>
+                )}
+                {onDeleteMultiple && (
+                  <button
+                    className="btn btn-danger"
+                    onClick={handleDeleteSelected}
+                    title={`Delete ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''}`}
+                  >
+                    Delete Selected ({selectedTrips.size})
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
