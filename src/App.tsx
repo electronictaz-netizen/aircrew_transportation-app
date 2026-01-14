@@ -5,6 +5,7 @@ import { CompanyProvider } from './contexts/CompanyContext';
 import ManagementDashboard from './components/ManagementDashboard';
 import DriverDashboard from './components/DriverDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import Navigation from './components/Navigation';
 import InstallPrompt from './components/InstallPrompt';
 
@@ -19,7 +20,14 @@ function App() {
               <Route path="/" element={<Navigate to="/management" replace />} />
               <Route path="/management" element={<ManagementDashboard />} />
               <Route path="/driver" element={<DriverDashboard />} />
-              <Route path="/admin" element={<AdminDashboard />} />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminDashboard />
+                  </ProtectedAdminRoute>
+                } 
+              />
             </Routes>
             <InstallPrompt />
           </div>

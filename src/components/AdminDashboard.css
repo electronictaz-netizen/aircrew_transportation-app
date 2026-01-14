@@ -328,6 +328,26 @@
   color: #666;
 }
 
+.access-denied {
+  text-align: center;
+  padding: 3rem;
+  max-width: 600px;
+  margin: 2rem auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.access-denied h2 {
+  color: #d32f2f;
+  margin-bottom: 1rem;
+}
+
+.access-denied p {
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
 @media (max-width: 1024px) {
   .companies-grid {
     grid-template-columns: 1fr;

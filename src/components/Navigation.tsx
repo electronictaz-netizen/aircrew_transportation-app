@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useAdminAccess } from '../utils/adminAccess';
 import './Navigation.css';
 
 const client = generateClient<Schema>();
@@ -18,8 +19,8 @@ function Navigation({ signOut, user }: NavigationProps) {
   const location = useLocation();
   const { company } = useCompany();
   const { user: authUser } = useAuthenticator();
+  const hasAdminAccess = useAdminAccess();
   const [userRole, setUserRole] = useState<'admin' | 'manager' | 'driver' | null>(null);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -35,18 +36,6 @@ function Navigation({ signOut, user }: NavigationProps) {
 
         if (companyUsers && companyUsers.length > 0) {
           setUserRole(companyUsers[0].role || 'driver');
-        }
-
-        // Check if user is a super admin (has admin role in any company)
-        const { data: allCompanyUsers } = await client.models.CompanyUser.list({
-          filter: {
-            userId: { eq: authUser.userId },
-            role: { eq: 'admin' },
-          },
-        });
-
-        if (allCompanyUsers && allCompanyUsers.length > 0) {
-          setIsSuperAdmin(true);
         }
       } catch (error) {
         console.error('Error checking user role:', error);
@@ -77,7 +66,7 @@ function Navigation({ signOut, user }: NavigationProps) {
           >
             Driver View
           </Link>
-          {(isSuperAdmin || userRole === 'admin') && (
+          {hasAdminAccess && (
             <Link
               to="/admin"
               className={location.pathname === '/admin' ? 'active' : ''}

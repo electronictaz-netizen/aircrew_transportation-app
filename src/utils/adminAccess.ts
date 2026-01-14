@@ -12,8 +12,7 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
  */
 const AUTHORIZED_ADMIN_EMAILS: string[] = [
   'electronictaz@gmail.com',
-  // Add additional emails if needed:
-  // 'admin2@example.com',
+  
 ];
 
 /**
@@ -33,32 +32,60 @@ export function useAdminAccess(): boolean {
   const { user } = useAuthenticator();
   
   if (!user) {
+    console.log('[AdminAccess] No user found');
     return false;
   }
 
-  const userEmail = user.signInDetails?.loginId || user.username || '';
+  // Try multiple ways to get the email
+  const userEmail = 
+    user.signInDetails?.loginId || 
+    user.username || 
+    (user.attributes as any)?.email ||
+    (user as any)?.email ||
+    '';
+  
   const userId = user.userId || '';
 
-  // Check email-based access
+  // Log for debugging (remove in production if needed)
+  console.log('[AdminAccess] Checking access for:', {
+    email: userEmail,
+    userId: userId,
+    authorizedEmails: AUTHORIZED_ADMIN_EMAILS,
+    authorizedUserIds: AUTHORIZED_ADMIN_USER_IDS
+  });
+
+  // STRICT: If no authorized emails/IDs are configured, deny access
+  if (AUTHORIZED_ADMIN_EMAILS.length === 0 && AUTHORIZED_ADMIN_USER_IDS.length === 0) {
+    console.log('[AdminAccess] No authorized admins configured - denying access');
+    return false;
+  }
+
+  // Check email-based access (case-insensitive, trimmed)
   if (AUTHORIZED_ADMIN_EMAILS.length > 0) {
+    const normalizedUserEmail = userEmail.toLowerCase().trim();
     const emailMatch = AUTHORIZED_ADMIN_EMAILS.some(
-      email => email.toLowerCase() === userEmail.toLowerCase()
+      email => email.toLowerCase().trim() === normalizedUserEmail
     );
     if (emailMatch) {
+      console.log('[AdminAccess] Email match found - granting access');
       return true;
     }
+    console.log('[AdminAccess] Email does not match:', normalizedUserEmail, 'vs', AUTHORIZED_ADMIN_EMAILS);
   }
 
   // Check user ID-based access
-  if (AUTHORIZED_ADMIN_USER_IDS.length > 0) {
+  if (AUTHORIZED_ADMIN_USER_IDS.length > 0 && userId) {
     const idMatch = AUTHORIZED_ADMIN_USER_IDS.some(
       id => id === userId
     );
     if (idMatch) {
+      console.log('[AdminAccess] User ID match found - granting access');
       return true;
     }
+    console.log('[AdminAccess] User ID does not match');
   }
 
+  console.log('[AdminAccess] Access denied - no match found');
   return false;
 }
 

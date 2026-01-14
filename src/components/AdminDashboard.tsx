@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
+import { useAdminAccess } from '../utils/adminAccess';
+import { Navigate } from 'react-router-dom';
 import './AdminDashboard.css';
 
 const client = generateClient<Schema>();
@@ -12,6 +14,7 @@ type CompanyWithUsers = Schema['Company']['type'] & {
 
 function AdminDashboard() {
   const { company: _currentCompany } = useCompany(); // Reserved for future use
+  const hasAdminAccess = useAdminAccess();
   const [companies, setCompanies] = useState<CompanyWithUsers[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState<string | null>(null);
@@ -40,6 +43,12 @@ function AdminDashboard() {
   }, [selectedCompany]);
 
   const loadCompanies = async () => {
+    // Additional security check before loading data
+    if (!hasAdminAccess) {
+      console.warn('[AdminDashboard] Access denied - preventing data load');
+      return;
+    }
+
     try {
       setLoading(true);
       const { data } = await client.models.Company.list();
@@ -289,6 +298,24 @@ function AdminDashboard() {
       alert('Failed to remove user: ' + (error.message || 'Unknown error'));
     }
   };
+
+  // Double-check admin access (redundant protection)
+  if (!hasAdminAccess) {
+    console.warn('[AdminDashboard] Access denied - redirecting');
+    return (
+      <div className="admin-dashboard">
+        <div className="access-denied">
+          <h2>Access Denied</h2>
+          <p>You do not have permission to access the Admin Dashboard.</p>
+          <p>Only authorized administrators can access this section.</p>
+          <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '1rem' }}>
+            If you believe this is an error, please contact your system administrator.
+          </p>
+          <Navigate to="/management" replace />
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
