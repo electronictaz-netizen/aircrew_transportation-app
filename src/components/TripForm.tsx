@@ -11,17 +11,18 @@ interface TripFormProps {
   onCancel: () => void;
 }
 
-// Legacy airport codes for backward compatibility (deprecated - use locations with categories instead)
-const LEGACY_AIRPORTS = [
-  { code: 'BUF', name: 'Buffalo Niagara International Airport (BUF)' },
-  { code: 'ROC', name: 'Frederick Douglass Greater Rochester International Airport (ROC)' },
-  { code: 'SYR', name: 'Syracuse Hancock International Airport (SYR)' },
-  { code: 'ALB', name: 'Albany International Airport (ALB)' },
-];
-
 function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFormProps) {
+  // Get active locations grouped by category
+  const activeLocations = locations.filter(l => l.isActive !== false);
+  const locationsByCategory = activeLocations.reduce((acc, loc) => {
+    const category = loc.category || 'Other';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(loc);
+    return acc;
+  }, {} as Record<string, typeof activeLocations>);
+
   const [formData, setFormData] = useState({
-    airport: trip?.airport || '',
+    primaryLocationCategory: trip?.primaryLocationCategory || trip?.airport || '',
     pickupDate: trip?.pickupDate ? format(new Date(trip.pickupDate), "yyyy-MM-dd'T'HH:mm") : '',
     flightNumber: trip?.flightNumber || '',
     pickupLocation: trip?.pickupLocation || '',
@@ -29,26 +30,24 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     numberOfPassengers: trip?.numberOfPassengers || 1,
     driverId: trip?.driverId || '',
     status: trip?.status || 'Unassigned',
-    isRecurring: trip?.isRecurring || !!trip?.parentTripId || false, // Show as recurring if it's a parent or child
+    isRecurring: trip?.isRecurring || !!trip?.parentTripId || false,
     recurringPattern: trip?.recurringPattern || 'weekly',
     recurringEndDate: trip?.recurringEndDate ? format(new Date(trip.recurringEndDate), "yyyy-MM-dd'T'HH:mm") : '',
   });
   
   const [passengerInput, setPassengerInput] = useState(String(formData.numberOfPassengers));
   
-  // Initialize location modes based on whether current values match airport names or saved locations
-  const getInitialLocationMode = (location: string): 'text' | 'airport' | 'location' => {
-    const airportNames = AIRPORTS.map(a => a.name);
-    if (airportNames.includes(location)) return 'airport';
-    const savedLocationNames = locations.filter(l => l.isActive !== false).map(l => l.name);
+  // Initialize location modes based on whether current values match saved locations
+  const getInitialLocationMode = (location: string): 'text' | 'location' => {
+    const savedLocationNames = activeLocations.map(l => l.name);
     if (savedLocationNames.includes(location)) return 'location';
     return 'text';
   };
   
-  const [pickupLocationMode, setPickupLocationMode] = useState<'text' | 'airport' | 'location'>(() => 
+  const [pickupLocationMode, setPickupLocationMode] = useState<'text' | 'location'>(() => 
     getInitialLocationMode(formData.pickupLocation)
   );
-  const [dropoffLocationMode, setDropoffLocationMode] = useState<'text' | 'airport' | 'location'>(() => 
+  const [dropoffLocationMode, setDropoffLocationMode] = useState<'text' | 'location'>(() => 
     getInitialLocationMode(formData.dropoffLocation)
   );
 
@@ -77,7 +76,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       
       const submitData: any = {
         primaryLocationCategory: primaryCategory || undefined,
-        airport: formData.primaryLocationCategory || undefined, // Keep for backward compatibility
+        airport: primaryCategory || undefined, // Keep for backward compatibility (use category if available)
         pickupDate: new Date(formData.pickupDate).toISOString(),
         flightNumber: formData.flightNumber.trim(),
         pickupLocation: formData.pickupLocation.trim(),
@@ -120,12 +119,12 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     
     // If location is selected, update primary category
     if (name === 'pickupLocation' && pickupLocationMode === 'location') {
-      const selectedLocation = activeLocations.find(l => l.name === value);
+      const selectedLocation = activeLocations.find((l: Schema['Location']['type']) => l.name === value);
       if (selectedLocation?.category) {
         setFormData((prev) => ({
           ...prev,
           pickupLocation: value,
-          primaryLocationCategory: selectedLocation.category,
+          primaryLocationCategory: selectedLocation.category || '',
         }));
         return;
       }
@@ -214,15 +213,15 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 required
               >
                 <option value="">Select Saved Location</option>
-                {Object.entries(locationsByCategory).map(([category, locs]) => [
+                {Object.entries(locationsByCategory).map(([category, locs]) => (
                   <optgroup key={category} label={category || 'Uncategorized'}>
-                    {locs.map((location) => (
+                    {(locs as typeof activeLocations).map((location: Schema['Location']['type']) => (
                       <option key={location.id} value={location.name}>
                         {location.name}{location.address ? ` - ${location.address}` : ''}
                       </option>
                     ))}
                   </optgroup>
-                ])}
+                ))}
               </select>
             ) : (
               <input
@@ -284,15 +283,15 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 required
               >
                 <option value="">Select Saved Location</option>
-                {Object.entries(locationsByCategory).map(([category, locs]) => [
+                {Object.entries(locationsByCategory).map(([category, locs]) => (
                   <optgroup key={category} label={category || 'Uncategorized'}>
-                    {locs.map((location) => (
+                    {(locs as typeof activeLocations).map((location: Schema['Location']['type']) => (
                       <option key={location.id} value={location.name}>
                         {location.name}{location.address ? ` - ${location.address}` : ''}
                       </option>
                     ))}
                   </optgroup>
-                ])}
+                ))}
               </select>
             ) : (
               <input

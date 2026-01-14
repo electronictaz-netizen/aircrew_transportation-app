@@ -9,9 +9,10 @@ const client = generateClient<Schema>();
 interface FilterCategoryManagementProps {
   onClose: () => void;
   onUpdate: () => void;
+  locations?: Array<Schema['Location']['type']>;
 }
 
-function FilterCategoryManagement({ onClose, onUpdate }: FilterCategoryManagementProps) {
+function FilterCategoryManagement({ onClose, onUpdate, locations = [] }: FilterCategoryManagementProps) {
   const { companyId } = useCompany();
   const [filterCategories, setFilterCategories] = useState<Array<Schema['FilterCategory']['type']>>([]);
   const [showForm, setShowForm] = useState(false);
@@ -148,9 +149,13 @@ function FilterCategoryManagement({ onClose, onUpdate }: FilterCategoryManagemen
         </div>
 
         <div className="info-section" style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#f0f9ff', borderRadius: '4px' }}>
-          <p style={{ margin: 0, fontSize: '0.875rem' }}>
+          <p style={{ margin: 0, fontSize: '0.875rem', marginBottom: '0.5rem' }}>
             <strong>Filter Categories</strong> allow you to create custom filter buttons (like the airport filters) 
             for your company. Categories can filter by location categories, pickup/dropoff locations, or other trip fields.
+          </p>
+          <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e40af' }}>
+            <strong>Tip:</strong> For "Location Category" filters, use the "Auto-fill" button to automatically populate 
+            values from your existing location categories.
           </p>
         </div>
 
@@ -192,14 +197,39 @@ function FilterCategoryManagement({ onClose, onUpdate }: FilterCategoryManagemen
 
             <div className="form-group">
               <label htmlFor="values">Filter Values</label>
-              <input
-                type="text"
-                id="values"
-                value={formData.values}
-                onChange={(e) => setFormData({ ...formData, values: e.target.value })}
-                placeholder="Comma-separated: Airport, Hotel, Office"
-              />
-              <small>Leave empty to auto-generate from location categories</small>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                <input
+                  type="text"
+                  id="values"
+                  value={formData.values}
+                  onChange={(e) => setFormData({ ...formData, values: e.target.value })}
+                  placeholder="Comma-separated: Airport, Hotel, Office"
+                  style={{ flex: 1 }}
+                />
+                {formData.field === 'locationCategory' || formData.field === 'primaryLocationCategory' ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      // Auto-populate from location categories
+                      const categories = new Set<string>();
+                      locations
+                        .filter(l => l.isActive !== false && l.category)
+                        .forEach(l => categories.add(l.category!));
+                      const categoryArray = Array.from(categories).sort();
+                      setFormData({ ...formData, values: categoryArray.join(', ') });
+                    }}
+                    title="Auto-populate from existing location categories"
+                  >
+                    Auto-fill
+                  </button>
+                ) : null}
+              </div>
+              <small>
+                {formData.field === 'locationCategory' || formData.field === 'primaryLocationCategory' 
+                  ? 'Enter values manually or click "Auto-fill" to use existing location categories'
+                  : 'Enter comma-separated values to filter on'}
+              </small>
             </div>
 
             <div className="form-group">

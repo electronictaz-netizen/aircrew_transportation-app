@@ -128,16 +128,6 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
       const filterValue = customFilters[category.name];
       if (filterValue && filterValue !== 'all') {
         try {
-          let values: string[] = [];
-          if (category.values) {
-            try {
-              values = JSON.parse(category.values);
-            } catch {
-              // If not JSON, treat as comma-separated
-              values = category.values.split(',').map(v => v.trim());
-            }
-          }
-          
           // Filter based on the category's field
           if (category.field === 'locationCategory' || category.field === 'primaryLocationCategory') {
             // Get locations with this category
@@ -493,8 +483,12 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
                     {value}
                   </button>
                 ))
+              ) : category.field === 'locationCategory' || category.field === 'primaryLocationCategory' ? (
+                // Auto-generate from trips if no values specified
+                <span style={{ fontSize: '0.875rem', color: '#6b7280', padding: '0.5rem', fontStyle: 'italic' }}>
+                  No values configured. Add values in Filter Categories or they will be auto-generated from trips.
+                </span>
               ) : (
-                // If no values specified, show a message or auto-generate from trips
                 <span style={{ fontSize: '0.875rem', color: '#6b7280', padding: '0.5rem' }}>
                   Configure values in Filter Categories
                 </span>

@@ -1176,6 +1176,7 @@ function ManagementDashboard() {
 
       {showFilterCategoryManagement && (
         <FilterCategoryManagement
+          locations={locations}
           onClose={() => setShowFilterCategoryManagement(false)}
           onUpdate={() => {
             // Refresh filters if needed
