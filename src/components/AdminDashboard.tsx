@@ -6,12 +6,12 @@ import './AdminDashboard.css';
 
 const client = generateClient<Schema>();
 
-interface CompanyWithUsers extends Schema['Company']['type'] {
+type CompanyWithUsers = Schema['Company']['type'] & {
   userCount?: number;
-}
+};
 
 function AdminDashboard() {
-  const { company: currentCompany } = useCompany();
+  const { company: _currentCompany } = useCompany(); // Reserved for future use
   const [companies, setCompanies] = useState<CompanyWithUsers[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState<string | null>(null);
@@ -35,7 +35,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     if (selectedCompany) {
-      loadCompanyUsers(selectedCompany.id);
+      loadCompanyUsers((selectedCompany as Schema['Company']['type']).id);
     }
   }, [selectedCompany]);
 
@@ -162,7 +162,7 @@ function AdminDashboard() {
 
       // Create CompanyUser record (user will be linked when they sign up)
       // Note: userId will be 'pending' until user signs up
-      const { data, errors } = await client.models.CompanyUser.create({
+      const { errors } = await client.models.CompanyUser.create({
         companyId: selectedCompany.id,
         userId: 'pending', // Placeholder until user signs up
         email: inviteData.email.toLowerCase().trim(),
@@ -258,7 +258,9 @@ function AdminDashboard() {
       }
 
       alert('User role updated successfully!');
-      loadCompanyUsers(selectedCompany!.id);
+      if (selectedCompany) {
+        loadCompanyUsers(selectedCompany.id);
+      }
     } catch (error: any) {
       console.error('Error updating user role:', error);
       alert('Failed to update user role: ' + (error.message || 'Unknown error'));
@@ -279,7 +281,9 @@ function AdminDashboard() {
       }
 
       alert('User removed successfully!');
-      loadCompanyUsers(selectedCompany!.id);
+      if (selectedCompany) {
+        loadCompanyUsers(selectedCompany.id);
+      }
     } catch (error: any) {
       console.error('Error removing user:', error);
       alert('Failed to remove user: ' + (error.message || 'Unknown error'));
@@ -406,7 +410,7 @@ function AdminDashboard() {
                       className="btn btn-sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedCompany(company);
+                        setSelectedCompany(company as CompanyWithUsers);
                       }}
                     >
                       Manage
@@ -433,7 +437,7 @@ function AdminDashboard() {
               <div className="info-item">
                 <label>Tier:</label>
                 <select
-                  value={selectedCompany.subscriptionTier}
+                  value={selectedCompany.subscriptionTier || 'premium'}
                   onChange={(e) => handleUpdateCompany(selectedCompany, { subscriptionTier: e.target.value as any })}
                 >
                   <option value="free">Free</option>
@@ -444,7 +448,7 @@ function AdminDashboard() {
               <div className="info-item">
                 <label>Status:</label>
                 <select
-                  value={selectedCompany.subscriptionStatus}
+                  value={selectedCompany.subscriptionStatus || 'active'}
                   onChange={(e) => handleUpdateCompany(selectedCompany, { subscriptionStatus: e.target.value as any })}
                 >
                   <option value="active">Active</option>
