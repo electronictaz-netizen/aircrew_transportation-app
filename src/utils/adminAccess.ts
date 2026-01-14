@@ -10,7 +10,7 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
  * List of authorized admin emails
  * Add your email address here to grant admin access
  */
-const AUTHORIZED_ADMIN_EMAILS = [
+const AUTHORIZED_ADMIN_EMAILS: string[] = [
   'electronictaz@gmail.com',
   // Add additional emails if needed:
   // 'admin2@example.com',
@@ -20,7 +20,7 @@ const AUTHORIZED_ADMIN_EMAILS = [
  * List of authorized admin user IDs (Cognito User IDs)
  * Alternative to email-based access - use if you know your Cognito User ID
  */
-const AUTHORIZED_ADMIN_USER_IDS = [
+const AUTHORIZED_ADMIN_USER_IDS: string[] = [
   // Add your Cognito User ID here if using ID-based access
   // Example: 'us-east-1:12345678-1234-1234-1234-123456789012',
 ];
