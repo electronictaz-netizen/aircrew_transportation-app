@@ -14,7 +14,7 @@ const schema = a.schema({
       locations: a.hasMany('Location', 'companyId'),
     })
     .authorization((allow) => [
-      allow.authenticated().to(['read', 'update']),
+      allow.authenticated().to(['read', 'create', 'update']),
     ]),
 
   CompanyUser: a
