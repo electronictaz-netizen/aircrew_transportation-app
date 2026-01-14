@@ -37,6 +37,15 @@ const schema = a.schema({
       parentTrip: a.belongsTo('Trip', 'parentTripId'),
     })
     .authorization((allow) => [allow.authenticated()]),
+
+  Location: a
+    .model({
+      name: a.string().required(),
+      address: a.string(),
+      description: a.string(),
+      isActive: a.boolean().default(true),
+    })
+    .authorization((allow) => [allow.authenticated()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

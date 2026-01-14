@@ -3,6 +3,7 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
+import LocationManagement from './LocationManagement';
 import TripList from './TripList';
 import DriverSelectionDialog from './DriverSelectionDialog';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
@@ -16,8 +17,10 @@ const client = generateClient<Schema>();
 function ManagementDashboard() {
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
+  const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
   const [showTripForm, setShowTripForm] = useState(false);
   const [showDriverManagement, setShowDriverManagement] = useState(false);
+  const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Schema['Trip']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDriverDialog, setShowDriverDialog] = useState(false);
@@ -27,6 +30,7 @@ function ManagementDashboard() {
   useEffect(() => {
     loadTrips();
     loadDrivers();
+    loadLocations();
     // Generate upcoming recurring trips on load
     generateUpcomingRecurringTrips().then(() => {
       loadTrips(); // Reload trips after generating recurring ones
@@ -61,6 +65,15 @@ function ManagementDashboard() {
       setDrivers(driversData as Array<Schema['Driver']['type']>);
     } catch (error) {
       console.error('Error loading drivers:', error);
+    }
+  };
+
+  const loadLocations = async () => {
+    try {
+      const { data: locationsData } = await client.models.Location.list();
+      setLocations(locationsData as Array<Schema['Location']['type']>);
+    } catch (error) {
+      console.error('Error loading locations:', error);
     }
   };
 
@@ -876,6 +889,10 @@ function ManagementDashboard() {
     loadDrivers();
   };
 
+  const handleLocationUpdate = () => {
+    loadLocations();
+  };
+
   const handleSendDailyAssignmentEmails = async () => {
     // Ask user which notification methods to use
     // Note: Individual driver preferences will be respected automatically
@@ -970,6 +987,12 @@ function ManagementDashboard() {
             Manage Drivers
           </button>
           <button
+            className="btn btn-secondary"
+            onClick={() => setShowLocationManagement(true)}
+          >
+            Manage Locations
+          </button>
+          <button
             className="btn btn-danger"
             onClick={handleDeleteAllTrips}
             title="Delete all trips from the database"
@@ -990,6 +1013,7 @@ function ManagementDashboard() {
         <TripForm
           trip={editingTrip}
           drivers={drivers}
+          locations={locations}
           onSubmit={editingTrip ? (data) => handleUpdateTrip(editingTrip.id, data) : handleCreateTrip}
           onCancel={() => {
             setShowTripForm(false);
@@ -1003,6 +1027,14 @@ function ManagementDashboard() {
           drivers={drivers}
           onClose={() => setShowDriverManagement(false)}
           onUpdate={handleDriverUpdate}
+        />
+      )}
+
+      {showLocationManagement && (
+        <LocationManagement
+          locations={locations}
+          onClose={() => setShowLocationManagement(false)}
+          onUpdate={handleLocationUpdate}
         />
       )}
 
