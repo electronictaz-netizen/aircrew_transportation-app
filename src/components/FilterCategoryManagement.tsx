@@ -187,12 +187,18 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [] }: FilterC
                 onChange={(e) => setFormData({ ...formData, field: e.target.value })}
                 required
               >
-                <option value="locationCategory">Location Category</option>
+                <option value="locationCategory">Location Category (Any - Pickup or Dropoff)</option>
+                <option value="primaryLocationCategory">Primary Location Category (Pickup Only)</option>
                 <option value="pickupLocation">Pickup Location</option>
                 <option value="dropoffLocation">Dropoff Location</option>
-                <option value="primaryLocationCategory">Primary Location Category</option>
               </select>
-              <small>Which field to filter on</small>
+              <small>
+                {formData.field === 'locationCategory' 
+                  ? 'Matches trips where the category appears in either pickup or dropoff location'
+                  : formData.field === 'primaryLocationCategory'
+                  ? 'Matches trips based on the pickup location category only'
+                  : 'Which field to filter on'}
+              </small>
             </div>
 
             <div className="form-group">

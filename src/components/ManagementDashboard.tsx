@@ -1198,6 +1198,7 @@ function ManagementDashboard() {
       <TripList
         trips={trips}
         drivers={drivers}
+        locations={locations}
         onEdit={handleEditTrip}
         onDelete={handleDeleteTrip}
         onDeleteMultiple={handleDeleteMultipleTrips}

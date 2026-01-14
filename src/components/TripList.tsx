@@ -8,6 +8,7 @@ import './TripList.css';
 interface TripListProps {
   trips: Array<Schema['Trip']['type']>;
   drivers: Array<Schema['Driver']['type']>;
+  locations?: Array<Schema['Location']['type']>;
   onEdit: (trip: Schema['Trip']['type']) => void;
   onDelete: (tripId: string) => void;
   onDeleteMultiple?: (tripIds: string[]) => void;
@@ -15,7 +16,7 @@ interface TripListProps {
   onUpdate: () => void;
 }
 
-function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onUpdate }: TripListProps) {
+function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onUpdate }: TripListProps) {
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
@@ -183,6 +184,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onAssign
       <TripFilters
         trips={trips}
         drivers={drivers}
+        locations={locations}
         onFilterChange={handleFilterChange}
         onRefresh={onUpdate}
       />

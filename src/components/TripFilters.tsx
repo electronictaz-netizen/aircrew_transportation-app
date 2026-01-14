@@ -10,6 +10,7 @@ const client = generateClient<Schema>();
 interface TripFiltersProps {
   trips: Array<Schema['Trip']['type']>;
   drivers: Array<Schema['Driver']['type']>;
+  locations?: Array<Schema['Location']['type']>;
   onFilterChange: (filteredTrips: Array<Schema['Trip']['type']>) => void;
   onRefresh?: () => void;
 }
@@ -18,8 +19,16 @@ type SortField = 'pickupDate' | 'flightNumber' | 'status' | 'driver' | 'none';
 type SortDirection = 'asc' | 'desc';
 type QuickDateFilter = 'all' | 'today' | 'thisWeek' | 'nextWeek' | 'custom';
 
-function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersProps) {
+function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh }: TripFiltersProps) {
   const { companyId } = useCompany();
+  
+  // Create a map of location names to categories for quick lookup
+  const locationCategoryMap = new Map<string, string>();
+  locations.forEach(loc => {
+    if (loc.isActive !== false && loc.category) {
+      locationCategoryMap.set(loc.name, loc.category);
+    }
+  });
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [driverFilter, setDriverFilter] = useState<string>('all');
   const [recurringFilter, setRecurringFilter] = useState<string>('all');
@@ -129,11 +138,22 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
       if (filterValue && filterValue !== 'all') {
         try {
           // Filter based on the category's field
-          if (category.field === 'locationCategory' || category.field === 'primaryLocationCategory') {
-            // Get locations with this category
+          if (category.field === 'locationCategory') {
+            // Check both pickup and dropoff locations for the category
             filtered = filtered.filter((item) => {
               const trip = item.trip;
-              // Check primaryLocationCategory first, then fall back to airport for backward compatibility
+              // Get category from pickup location
+              const pickupCategory = locationCategoryMap.get(trip.pickupLocation || '') || 
+                                    (trip.primaryLocationCategory || trip.airport || '');
+              // Get category from dropoff location
+              const dropoffCategory = locationCategoryMap.get(trip.dropoffLocation || '') || '';
+              // Match if either pickup or dropoff has the category
+              return pickupCategory === filterValue || dropoffCategory === filterValue;
+            });
+          } else if (category.field === 'primaryLocationCategory') {
+            // Only check pickup location category (backward compatibility)
+            filtered = filtered.filter((item) => {
+              const trip = item.trip;
               const categoryValue = trip.primaryLocationCategory || trip.airport || '';
               return categoryValue === filterValue;
             });
@@ -446,8 +466,26 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
             }
           } else {
             // Auto-generate from trips if no values specified
-            // This would require loading locations, so for now we'll use empty array
-            values = [];
+            if (category.field === 'locationCategory' || category.field === 'primaryLocationCategory') {
+              const uniqueCategories = new Set<string>();
+              trips.forEach(trip => {
+                // For locationCategory, check both pickup and dropoff
+                if (category.field === 'locationCategory') {
+                  const pickupCat = locationCategoryMap.get(trip.pickupLocation || '') || 
+                                    trip.primaryLocationCategory || trip.airport || '';
+                  const dropoffCat = locationCategoryMap.get(trip.dropoffLocation || '') || '';
+                  if (pickupCat) uniqueCategories.add(pickupCat);
+                  if (dropoffCat) uniqueCategories.add(dropoffCat);
+                } else {
+                  // For primaryLocationCategory, only check pickup
+                  const cat = trip.primaryLocationCategory || trip.airport;
+                  if (cat) uniqueCategories.add(cat);
+                }
+              });
+              values = Array.from(uniqueCategories).sort();
+            } else {
+              values = [];
+            }
           }
         } catch {
           values = category.values ? category.values.split(',').map(v => v.trim()).filter(v => v) : [];
