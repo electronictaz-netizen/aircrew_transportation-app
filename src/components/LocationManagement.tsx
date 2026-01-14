@@ -142,6 +142,65 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     setShowForm(false);
   };
 
+  const handleAddAirports = async () => {
+    if (!companyId) {
+      alert('Company not found. Please contact support.');
+      return;
+    }
+
+    const airports = [
+      { code: 'BUF', name: 'Buffalo Niagara International Airport (BUF)', address: 'Buffalo, NY' },
+      { code: 'ROC', name: 'Frederick Douglass Greater Rochester International Airport (ROC)', address: 'Rochester, NY' },
+      { code: 'SYR', name: 'Syracuse Hancock International Airport (SYR)', address: 'Syracuse, NY' },
+      { code: 'ALB', name: 'Albany International Airport (ALB)', address: 'Albany, NY' },
+    ];
+
+    // Check which airports already exist
+    const existingNames = new Set(locations.map(l => l.name));
+    const airportsToAdd = airports.filter(a => !existingNames.has(a.name));
+
+    if (airportsToAdd.length === 0) {
+      alert('All airports already exist in your locations.');
+      return;
+    }
+
+    if (!confirm(`Add ${airportsToAdd.length} airport location(s)?\n\n${airportsToAdd.map(a => `- ${a.name}`).join('\n')}`)) {
+      return;
+    }
+
+    try {
+      let createdCount = 0;
+      let errorCount = 0;
+
+      for (const airport of airportsToAdd) {
+        try {
+          await client.models.Location.create({
+            name: airport.name,
+            address: airport.address,
+            category: 'Airport',
+            description: `Airport code: ${airport.code}`,
+            isActive: true,
+            companyId: companyId!,
+          });
+          createdCount++;
+        } catch (error) {
+          console.error(`Error creating ${airport.code}:`, error);
+          errorCount++;
+        }
+      }
+
+      if (createdCount > 0) {
+        alert(`Successfully added ${createdCount} airport location(s)${errorCount > 0 ? `\n${errorCount} failed` : ''}.`);
+        onUpdate(); // Refresh the locations list
+      } else {
+        alert(`Failed to add airports. Please check the console for errors.`);
+      }
+    } catch (error) {
+      console.error('Error adding airports:', error);
+      alert('Failed to add airports. Please try again.');
+    }
+  };
+
   const activeLocations = locations.filter(l => l.isActive !== false);
 
   return (
@@ -157,6 +216,13 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
         <div className="location-actions">
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
             + Add Location
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleAddAirports}
+            title="Add default airports (BUF, ROC, SYR, ALB) as locations"
+          >
+            + Add Default Airports
           </button>
           {selectedLocations.size > 0 && (
             <button
