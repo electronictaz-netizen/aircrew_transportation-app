@@ -218,6 +218,7 @@ function DriverDashboard() {
                 Airport: {trip.airport === 'BUF' ? 'Buffalo Niagara International Airport (BUF)' :
                           trip.airport === 'ROC' ? 'Frederick Douglass Greater Rochester International Airport (ROC)' :
                           trip.airport === 'SYR' ? 'Syracuse Hancock International Airport (SYR)' :
+                          trip.airport === 'ALB' ? 'Albany International Airport (ALB)' :
                           trip.airport}
               </div>
             )}

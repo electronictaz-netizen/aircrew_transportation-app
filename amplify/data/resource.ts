@@ -8,6 +8,7 @@ const schema = a.schema({
       phone: a.string(),
       licenseNumber: a.string(),
       isActive: a.boolean().default(true),
+      notificationPreference: a.string(), // 'email', 'sms', or 'both'
       trips: a.hasMany('Trip', 'driverId'),
     })
     .authorization((allow) => [allow.authenticated()]),

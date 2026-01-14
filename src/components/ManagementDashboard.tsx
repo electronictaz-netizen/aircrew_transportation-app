@@ -7,6 +7,7 @@ import TripList from './TripList';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
+import { sendDailyAssignmentEmailsToAllDrivers } from '../utils/dailyAssignmentEmail';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -197,16 +198,18 @@ function ManagementDashboard() {
           console.log('Trip successfully created with ID:', result.data.id);
           
           // Send notification to driver if assigned
+          // Respect driver's notification preference
           if (tripData.driverId && result.data) {
             const assignedDriver = drivers.find(d => d.id === tripData.driverId);
             if (assignedDriver) {
+              const preference = assignedDriver.notificationPreference || 'both';
               await notifyDriver({
                 trip: result.data,
                 driver: assignedDriver,
                 isReassignment: false,
               }, {
-                email: true,
-                sms: false, // Set to true if SMS is configured
+                email: preference === 'email' || preference === 'both',
+                sms: preference === 'sms' || preference === 'both',
                 inApp: true,
               });
             }
@@ -493,19 +496,21 @@ function ManagementDashboard() {
       const updateResult = await client.models.Trip.update({ id: tripId, ...tripData });
       
       // Send notifications for driver assignment changes
+      // Respect each driver's notification preference
       if (updateResult.data) {
         // Notify new driver if assigned or reassigned
         if ((isNewAssignment || isDriverReassignment) && newDriverId) {
           const newDriver = drivers.find(d => d.id === newDriverId);
           if (newDriver) {
+            const preference = newDriver.notificationPreference || 'both';
             await notifyDriver({
               trip: updateResult.data,
               driver: newDriver,
               isReassignment: isDriverReassignment,
               previousDriver: previousDriverId ? drivers.find(d => d.id === previousDriverId) || null : null,
             }, {
-              email: true,
-              sms: false, // Set to true if SMS is configured
+              email: preference === 'email' || preference === 'both',
+              sms: preference === 'sms' || preference === 'both',
               inApp: true,
             });
           }
@@ -763,6 +768,75 @@ function ManagementDashboard() {
     loadDrivers();
   };
 
+  const handleSendDailyAssignmentEmails = async () => {
+    // Ask user which notification methods to use
+    // Note: Individual driver preferences will be respected automatically
+    const useEmail = confirm(
+      'Send daily assignment emails?\n\n' +
+      'Click OK for Email, Cancel to skip Email.\n\n' +
+      'Note: Only drivers with "Email" or "Both" preference will receive emails.'
+    );
+    
+    const useSMS = confirm(
+      'Send daily assignment SMS/text messages?\n\n' +
+      'Click OK for SMS, Cancel to skip SMS.\n\n' +
+      'Note: Only drivers with "SMS" or "Both" preference will receive SMS.\n' +
+      'SMS requires phone numbers and will open SMS apps. For production, backend API integration is needed.'
+    );
+    
+    if (!useEmail && !useSMS) {
+      alert('No notification methods selected. Operation cancelled.');
+      return;
+    }
+    
+    const confirmMessage = 
+      `This will send daily assignment notifications to all active drivers with trips scheduled for tomorrow.\n\n` +
+      `Notification methods enabled:\n` +
+      `${useEmail ? '✓ Email' : '✗ Email'}\n` +
+      `${useSMS ? '✓ SMS/Text' : '✗ SMS/Text'}\n\n` +
+      `Each driver will receive notifications based on their individual preference:\n` +
+      `- Email preference: Email only\n` +
+      `- SMS preference: SMS only\n` +
+      `- Both preference: Both email and SMS\n\n` +
+      `${useEmail ? 'Email clients will open for drivers with email preference.\n' : ''}` +
+      `${useSMS ? 'SMS apps will open for drivers with SMS preference (mobile devices).\n' : ''}` +
+      `Make sure pop-ups are allowed.\n\n` +
+      `Continue?`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    try {
+      const result = await sendDailyAssignmentEmailsToAllDrivers(undefined, {
+        email: useEmail,
+        sms: useSMS,
+      });
+      
+      let message = `Daily assignment notifications processed:\n\n`;
+      
+      if (useEmail) {
+        message += `📧 Email:\n`;
+        message += `  ✅ Sent: ${result.sent.email}\n`;
+        message += `  ❌ Failed: ${result.failed.email}\n\n`;
+      }
+      
+      if (useSMS) {
+        message += `📱 SMS:\n`;
+        message += `  ✅ Sent: ${result.sent.sms}\n`;
+        message += `  ❌ Failed: ${result.failed.sms}\n\n`;
+      }
+      
+      message += `⏭️ Skipped: ${result.skipped} (no trips scheduled or preference mismatch)\n\n`;
+      message += `Note: Notifications sent based on each driver's preference setting.`;
+      
+      alert(message);
+    } catch (error) {
+      console.error('Error sending daily assignment notifications:', error);
+      alert('Failed to send daily assignment notifications. Please check the console for details.');
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
@@ -793,6 +867,13 @@ function ManagementDashboard() {
             title="Delete all trips from the database"
           >
             Delete All Trips
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleSendDailyAssignmentEmails}
+            title="Send daily assignment emails to all drivers for tomorrow"
+          >
+            Send Daily Assignment Emails
           </button>
         </div>
       </div>

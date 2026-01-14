@@ -15,6 +15,7 @@ const AIRPORTS = [
   { code: 'BUF', name: 'Buffalo Niagara International Airport (BUF)' },
   { code: 'ROC', name: 'Frederick Douglass Greater Rochester International Airport (ROC)' },
   { code: 'SYR', name: 'Syracuse Hancock International Airport (SYR)' },
+  { code: 'ALB', name: 'Albany International Airport (ALB)' },
 ];
 
 function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {

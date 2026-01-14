@@ -39,6 +39,7 @@ function formatTripDetails(trip: Schema['Trip']['type']): string {
     ? (trip.airport === 'BUF' ? 'Buffalo Niagara International Airport (BUF)' :
        trip.airport === 'ROC' ? 'Frederick Douglass Greater Rochester International Airport (ROC)' :
        trip.airport === 'SYR' ? 'Syracuse Hancock International Airport (SYR)' :
+       trip.airport === 'ALB' ? 'Albany International Airport (ALB)' :
        trip.airport)
     : 'Airport TBD';
 
@@ -170,6 +171,7 @@ export async function sendInAppNotification(
 
 /**
  * Main function to send notifications to a driver
+ * Respects driver's notification preference
  */
 export async function notifyDriver(
   data: TripNotificationData,
@@ -178,22 +180,31 @@ export async function notifyDriver(
   const { trip, driver, isReassignment = false } = data;
 
   try {
-    // Send email notification
-    if (options.email && driver.email) {
+    // Get driver's notification preference (default to 'both' if not set)
+    const preference = driver.notificationPreference || 'both';
+    
+    // Send email notification if:
+    // - Email is enabled in options AND
+    // - Driver wants email (preference is 'email' or 'both') AND
+    // - Driver has email address
+    if (options.email && (preference === 'email' || preference === 'both') && driver.email) {
       sendEmailNotification(driver, trip, isReassignment);
     }
 
-    // Send SMS notification
-    if (options.sms && driver.phone) {
+    // Send SMS notification if:
+    // - SMS is enabled in options AND
+    // - Driver wants SMS (preference is 'sms' or 'both') AND
+    // - Driver has phone number
+    if (options.sms && (preference === 'sms' || preference === 'both') && driver.phone) {
       sendSMSNotification(driver, trip, isReassignment);
     }
 
-    // Send in-app notification
+    // Send in-app notification (always send if enabled, doesn't depend on preference)
     if (options.inApp) {
       await sendInAppNotification(driver, trip, isReassignment);
     }
 
-    console.log(`✅ Notifications sent to driver ${driver.name} for trip ${trip.flightNumber}`);
+    console.log(`✅ Notifications sent to driver ${driver.name} for trip ${trip.flightNumber} (preference: ${preference})`);
   } catch (error) {
     console.error('Error sending notifications:', error);
     // Don't throw - notifications are non-critical
@@ -202,20 +213,35 @@ export async function notifyDriver(
 
 /**
  * Notify previous driver when trip is reassigned
+ * Respects driver's notification preference
  */
 export async function notifyPreviousDriver(
   previousDriver: Schema['Driver']['type'] | null,
   trip: Schema['Trip']['type']
 ): Promise<void> {
-  if (!previousDriver || !previousDriver.email) {
+  if (!previousDriver) {
     return;
   }
 
-  const subject = `Trip Unassigned: Flight ${trip.flightNumber}`;
-  const body = `Hello ${previousDriver.name},\n\nYou have been unassigned from the following trip:\n\n${formatTripDetails(trip)}\n\nIf you have any questions, please contact management.\n\nThank you!`;
+  // Get driver's notification preference (default to 'both' if not set)
+  const preference = previousDriver.notificationPreference || 'both';
 
-  const mailtoLink = `mailto:${previousDriver.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.open(mailtoLink, '_blank');
+  // Send email if driver prefers email or both
+  if ((preference === 'email' || preference === 'both') && previousDriver.email) {
+    const subject = `Trip Unassigned: Flight ${trip.flightNumber}`;
+    const body = `Hello ${previousDriver.name},\n\nYou have been unassigned from the following trip:\n\n${formatTripDetails(trip)}\n\nIf you have any questions, please contact management.\n\nThank you!`;
 
-  console.log(`Notification sent to previous driver ${previousDriver.name}`);
+    const mailtoLink = `mailto:${previousDriver.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink, '_blank');
+    console.log(`Email notification sent to previous driver ${previousDriver.name}`);
+  }
+
+  // Send SMS if driver prefers SMS or both
+  if ((preference === 'sms' || preference === 'both') && previousDriver.phone) {
+    const message = `Trip Unassigned: Flight ${trip.flightNumber} on ${trip.pickupDate ? new Date(trip.pickupDate).toLocaleDateString() : 'TBD'}. Check your email for details.`;
+    const phoneNumber = previousDriver.phone.replace(/[^\d+]/g, '');
+    const smsLink = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+    window.open(smsLink);
+    console.log(`SMS notification sent to previous driver ${previousDriver.name}`);
+  }
 }

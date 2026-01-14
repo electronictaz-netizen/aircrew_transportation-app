@@ -21,6 +21,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     phone: '',
     licenseNumber: '',
     isActive: true,
+    notificationPreference: 'both' as 'email' | 'sms' | 'both',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,6 +51,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       phone: driver.phone || '',
       licenseNumber: driver.licenseNumber || '',
       isActive: driver.isActive ?? true,
+      notificationPreference: (driver.notificationPreference as 'email' | 'sms' | 'both') || 'both',
     });
     setShowForm(true);
   };
@@ -124,6 +126,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       phone: '',
       licenseNumber: '',
       isActive: true,
+      notificationPreference: 'both',
     });
     setEditingDriver(null);
     setShowForm(false);
@@ -208,6 +211,24 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
               </label>
             </div>
 
+            <div className="form-group">
+              <label htmlFor="notificationPreference">Notification Preference</label>
+              <select
+                id="notificationPreference"
+                value={formData.notificationPreference}
+                onChange={(e) => setFormData({ ...formData, notificationPreference: e.target.value as 'email' | 'sms' | 'both' })}
+              >
+                <option value="both">Both (Email & SMS)</option>
+                <option value="email">Email Only</option>
+                <option value="sms">SMS/Text Only</option>
+              </select>
+              <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
+                {formData.notificationPreference === 'email' && 'Driver will only receive email notifications'}
+                {formData.notificationPreference === 'sms' && 'Driver will only receive SMS/text notifications'}
+                {formData.notificationPreference === 'both' && 'Driver will receive both email and SMS notifications'}
+              </small>
+            </div>
+
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={resetForm}>
                 Cancel
@@ -239,6 +260,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
                   <th>Email</th>
                   <th>Phone</th>
                   <th>License Number</th>
+                  <th>Notification</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -257,6 +279,14 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
                     <td>{driver.email || '-'}</td>
                     <td>{driver.phone || '-'}</td>
                     <td>{driver.licenseNumber || '-'}</td>
+                    <td>
+                      <span className="notification-preference">
+                        {driver.notificationPreference === 'email' ? '📧 Email' :
+                         driver.notificationPreference === 'sms' ? '📱 SMS' :
+                         driver.notificationPreference === 'both' ? '📧📱 Both' :
+                         '📧📱 Both'}
+                      </span>
+                    </td>
                     <td>
                       <span className={driver.isActive ? 'status-active' : 'status-inactive'}>
                         {driver.isActive ? 'Active' : 'Inactive'}

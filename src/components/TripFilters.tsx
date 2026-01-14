@@ -420,6 +420,16 @@ function TripFilters({ trips, drivers, onFilterChange, onRefresh }: TripFiltersP
           >
             SYR
           </button>
+          <button
+            className={`quick-filter-btn ${airportFilter === 'ALB' ? 'active' : ''}`}
+            onClick={() => {
+              setAirportFilter('ALB');
+              setSortField('pickupDate');
+              setSortDirection('asc');
+            }}
+          >
+            ALB
+          </button>
         </div>
       </div>
 
