@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
+import { useCompany } from '../contexts/CompanyContext';
 import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
 import './DriverDashboard.css';
@@ -9,6 +10,7 @@ import './DriverDashboard.css';
 const client = generateClient<Schema>();
 
 function DriverDashboard() {
+  const { companyId } = useCompany();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [currentDriver, setCurrentDriver] = useState<Schema['Driver']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,19 +22,32 @@ function DriverDashboard() {
 
 
   const loadDriverAndTrips = async () => {
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const user = await getCurrentUser();
       const email = user.signInDetails?.loginId;
 
-      // Find driver by email
-      const { data: drivers } = await client.models.Driver.list();
+      // Find driver by email and company
+      const { data: drivers } = await client.models.Driver.list({
+        filter: { 
+          companyId: { eq: companyId },
+          email: { eq: email }
+        }
+      });
       const driver = drivers?.find((d: Schema['Driver']['type']) => d.email === email);
 
       if (driver) {
         setCurrentDriver(driver);
         // Load trips assigned to this driver
         const { data: tripsData } = await client.models.Trip.list({
-          filter: { driverId: { eq: driver.id } },
+          filter: { 
+            companyId: { eq: companyId },
+            driverId: { eq: driver.id } 
+          },
         });
         
         // Filter to only show trips scheduled for the next 2 days

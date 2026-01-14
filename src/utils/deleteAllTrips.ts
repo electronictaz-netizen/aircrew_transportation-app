@@ -12,12 +12,18 @@ import type { Schema } from '../../amplify/data/resource';
 
 const client = generateClient<Schema>();
 
-export async function deleteAllTrips(skipConfirmation: boolean = false): Promise<void> {
+export async function deleteAllTrips(skipConfirmation: boolean = false, companyId?: string): Promise<void> {
   console.log('=== DELETE ALL TRIPS ===\n');
   
   try {
-    // Load all trips
-    const tripListResult = await client.models.Trip.list();
+    // Load all trips for the company
+    const filter: any = {};
+    if (companyId) {
+      filter.companyId = { eq: companyId };
+    }
+    const tripListResult = await client.models.Trip.list({
+      filter: Object.keys(filter).length > 0 ? filter : undefined
+    });
     const allTrips = tripListResult.data;
     const loadErrors = tripListResult.errors;
     
@@ -106,7 +112,13 @@ export async function deleteAllTrips(skipConfirmation: boolean = false): Promise
     
     // Verify deletion
     console.log('\nVerifying deletion...');
-    const { data: remainingTrips } = await client.models.Trip.list();
+    const verifyFilter: any = {};
+    if (companyId) {
+      verifyFilter.companyId = { eq: companyId };
+    }
+    const { data: remainingTrips } = await client.models.Trip.list({
+      filter: Object.keys(verifyFilter).length > 0 ? verifyFilter : undefined
+    });
     const remainingCount = remainingTrips?.length || 0;
     
     if (remainingCount === 0) {

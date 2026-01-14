@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
+import { useCompany } from '../contexts/CompanyContext';
 import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
 import LocationManagement from './LocationManagement';
+import CompanyManagement from './CompanyManagement';
 import TripList from './TripList';
 import DriverSelectionDialog from './DriverSelectionDialog';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
@@ -15,12 +17,14 @@ import './ManagementDashboard.css';
 const client = generateClient<Schema>();
 
 function ManagementDashboard() {
+  const { companyId, loading: companyLoading } = useCompany();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
   const [showTripForm, setShowTripForm] = useState(false);
   const [showDriverManagement, setShowDriverManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
+  const [showCompanyManagement, setShowCompanyManagement] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Schema['Trip']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDriverDialog, setShowDriverDialog] = useState(false);
@@ -28,23 +32,29 @@ function ManagementDashboard() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTrips();
-    loadDrivers();
-    loadLocations();
-    // Generate upcoming recurring trips on load
-    generateUpcomingRecurringTrips().then(() => {
-      loadTrips(); // Reload trips after generating recurring ones
-    });
-  }, []);
+    if (companyId) {
+      loadTrips();
+      loadDrivers();
+      loadLocations();
+      // Generate upcoming recurring trips on load
+      generateUpcomingRecurringTrips(companyId || undefined).then(() => {
+        loadTrips(); // Reload trips after generating recurring ones
+      });
+    }
+  }, [companyId]);
 
-  const loadTrips = async (forceRefresh: boolean = false) => {
+      const loadTrips = async (forceRefresh: boolean = false) => {
+    if (!companyId) return;
+    
     try {
       console.log('Loading trips...', forceRefresh ? '(force refresh)' : '');
       // Add a small delay to ensure database consistency
       if (forceRefresh) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      const { data: tripsData, errors } = await client.models.Trip.list();
+      const { data: tripsData, errors } = await client.models.Trip.list({
+        filter: { companyId: { eq: companyId! } }
+      });
       
       if (errors && errors.length > 0) {
         console.error('Errors loading trips:', errors);
@@ -60,8 +70,12 @@ function ManagementDashboard() {
   };
 
   const loadDrivers = async () => {
+    if (!companyId) return;
+    
     try {
-      const { data: driversData } = await client.models.Driver.list();
+      const { data: driversData } = await client.models.Driver.list({
+        filter: { companyId: { eq: companyId! } }
+      });
       setDrivers(driversData as Array<Schema['Driver']['type']>);
     } catch (error) {
       console.error('Error loading drivers:', error);
@@ -69,8 +83,12 @@ function ManagementDashboard() {
   };
 
   const loadLocations = async () => {
+    if (!companyId) return;
+    
     try {
-      const { data: locationsData } = await client.models.Location.list();
+      const { data: locationsData } = await client.models.Location.list({
+        filter: { companyId: { eq: companyId! } }
+      });
       setLocations(locationsData as Array<Schema['Location']['type']>);
     } catch (error) {
       console.error('Error loading locations:', error);
@@ -78,6 +96,11 @@ function ManagementDashboard() {
   };
 
   const handleCreateTrip = async (tripData: any) => {
+    if (!companyId) {
+      alert('Company not found. Please contact support.');
+      return;
+    }
+
     try {
       console.log('Creating trip with data:', tripData);
       
@@ -87,8 +110,10 @@ function ManagementDashboard() {
         const newTripDateStart = new Date(newTripDate.getFullYear(), newTripDate.getMonth(), newTripDate.getDate());
         const flightNumber = tripData.flightNumber.trim().toUpperCase();
         
-        // Get all existing trips
-        const { data: allTrips } = await client.models.Trip.list();
+        // Get all existing trips for this company
+        const { data: allTrips } = await client.models.Trip.list({
+          filter: { companyId: { eq: companyId! } }
+        });
         
         // Check for duplicates: same flight number on the same day
         const duplicateTrips = allTrips?.filter((t: Schema['Trip']['type']) => {
@@ -131,6 +156,9 @@ function ManagementDashboard() {
         status: tripData.status || 'Unassigned',
       };
 
+      // Add companyId
+      tripWithStatus.companyId = companyId!;
+
       // Add airport if provided
       if (tripData.airport) {
         tripWithStatus.airport = tripData.airport;
@@ -168,6 +196,7 @@ function ManagementDashboard() {
             isRecurring: true,
             recurringPattern: tripData.recurringPattern,
             recurringEndDate: tripData.recurringEndDate,
+            companyId: companyId || undefined,
           });
           if (result) {
             console.log('Recurring trips generation completed:', result);
@@ -180,7 +209,10 @@ function ManagementDashboard() {
           console.error('Error details:', JSON.stringify(recurringError, null, 2));
           // Fallback: create as regular trip if recurring creation fails
           console.log('Falling back to creating single trip');
-          await client.models.Trip.create(tripWithStatus);
+          await client.models.Trip.create({
+            ...tripWithStatus,
+            companyId: companyId,
+          });
         }
       } else {
         // Regular one-time trip
@@ -200,7 +232,10 @@ function ManagementDashboard() {
         console.log('Final trip data being sent:', oneTimeTripData);
         
         try {
-          const result = await client.models.Trip.create(oneTimeTripData);
+          const result = await client.models.Trip.create({
+            ...oneTimeTripData,
+            companyId: companyId,
+          });
           console.log('Trip creation result:', result);
           
           if (result.errors && result.errors.length > 0) {
@@ -246,7 +281,9 @@ function ManagementDashboard() {
       console.log('Trips reloaded');
       
       // Verify trips were created
-      const { data: allTrips } = await client.models.Trip.list();
+      const { data: allTrips } = await client.models.Trip.list({
+        filter: { companyId: { eq: companyId! } }
+      });
       const totalTrips = allTrips?.length || 0;
       const parentTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.isRecurring === true).length || 0;
       const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId).length || 0;
@@ -316,7 +353,9 @@ function ManagementDashboard() {
       
       // If removing recurrence from a parent trip, delete ALL child trips (past and future)
       if (isParentRecurring && isRemovingRecurrence) {
-        const { data: allTrips } = await client.models.Trip.list();
+        const { data: allTrips } = await client.models.Trip.list({
+          filter: { companyId: { eq: companyId! } }
+        });
         const parentFlightNumber = trip.flightNumber;
         
         // Filter child trips by both parentTripId AND flight number to ensure we get the right ones
@@ -366,7 +405,9 @@ function ManagementDashboard() {
       if (isChildRecurring && isRemovingRecurrence) {
         const parentTripId = trip.parentTripId!;
         const currentFlightNumber = trip.flightNumber;
-        const { data: allTrips } = await client.models.Trip.list();
+        const { data: allTrips } = await client.models.Trip.list({
+          filter: { companyId: { eq: companyId! } }
+        });
         
         // Filter by both parentTripId AND flight number to ensure we get the right trips
         const allChildTrips = allTrips?.filter((t: Schema['Trip']['type']) => 
@@ -440,7 +481,9 @@ function ManagementDashboard() {
           }
           
           // Verify deletion by checking again
-          const { data: verifyTrips } = await client.models.Trip.list();
+          const { data: verifyTrips } = await client.models.Trip.list({
+            filter: { companyId: { eq: companyId! } }
+          });
           const remainingTrips = verifyTrips?.filter((t: Schema['Trip']['type']) => 
             t.parentTripId === parentTripId && 
             t.flightNumber === currentFlightNumber &&
@@ -509,8 +552,11 @@ function ManagementDashboard() {
       const isDriverReassignment = previousDriverId && newDriverId && previousDriverId !== newDriverId;
       const isNewAssignment = !previousDriverId && newDriverId;
       
-      // Update the trip
-      const updateResult = await client.models.Trip.update({ id: tripId, ...tripData });
+      // Update the trip - ensure companyId is preserved and never changed
+      const updateData = { ...tripData };
+      // Never allow companyId to be changed - always use the trip's existing companyId
+      delete updateData.companyId;
+      const updateResult = await client.models.Trip.update({ id: tripId, ...updateData });
       
       // Send notifications for driver assignment changes
       // Respect each driver's notification preference
@@ -546,7 +592,9 @@ function ManagementDashboard() {
       // If so, delete all future child trips - this is a fallback in case isRemovingRecurrence wasn't detected
       if (tripData.isRecurring === false && (isParentRecurring || isChildRecurring) && !isRemovingRecurrence) {
         console.log('Fallback: Detected recurrence removal that wasn\'t caught earlier');
-        const { data: allTrips } = await client.models.Trip.list();
+        const { data: allTrips } = await client.models.Trip.list({
+          filter: { companyId: { eq: companyId! } }
+        });
         let tripsToDelete: Array<Schema['Trip']['type']> = [];
         const flightNumber = trip.flightNumber;
         const now = new Date();
@@ -596,7 +644,9 @@ function ManagementDashboard() {
       // If updating a parent recurring trip with scope 2 or 3, update future child trips
       // BUT only if the trip is still recurring
       if (isParentRecurring && !isRemovingRecurrence && tripData.isRecurring !== false && tripData.updateScope && ['2', '3'].includes(tripData.updateScope)) {
-        const { data: allTrips } = await client.models.Trip.list();
+        const { data: allTrips } = await client.models.Trip.list({
+          filter: { companyId: { eq: companyId! } }
+        });
         const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId === tripId) || [];
         const now = new Date();
         
@@ -645,7 +695,7 @@ function ManagementDashboard() {
     }
     
     try {
-      await deleteAllTrips(true); // Skip the internal confirmation since we already asked
+      await deleteAllTrips(true, companyId || undefined); // Skip the internal confirmation since we already asked
       // Wait for database to sync
       await new Promise(resolve => setTimeout(resolve, 1000));
       await loadTrips(true); // Force refresh after deletion
@@ -835,7 +885,9 @@ function ManagementDashboard() {
     
     try {
       if (isParentRecurring && deleteScope !== 'single') {
-        const { data: allTrips } = await client.models.Trip.list();
+        const { data: allTrips } = await client.models.Trip.list({
+          filter: { companyId: { eq: companyId! } }
+        });
         const childTrips = allTrips?.filter((t: Schema['Trip']['type']) => t.parentTripId === tripId) || [];
         const now = new Date();
         
@@ -936,7 +988,7 @@ function ManagementDashboard() {
       const result = await sendDailyAssignmentEmailsToAllDrivers(undefined, {
         email: useEmail,
         sms: useSMS,
-      });
+      }, companyId || undefined);
       
       let message = `Daily assignment notifications processed:\n\n`;
       
@@ -961,6 +1013,21 @@ function ManagementDashboard() {
       alert('Failed to send daily assignment notifications. Please check the console for details.');
     }
   };
+
+  if (companyLoading) {
+    return <div className="loading">Loading company data...</div>;
+  }
+
+  if (!companyId) {
+    return (
+      <div className="management-dashboard">
+        <div className="error-state">
+          <h2>No Company Assigned</h2>
+          <p>Your account is not associated with a company. Please contact your administrator.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -991,6 +1058,12 @@ function ManagementDashboard() {
             onClick={() => setShowLocationManagement(true)}
           >
             Manage Locations
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowCompanyManagement(true)}
+          >
+            Company Settings
           </button>
           <button
             className="btn btn-danger"
@@ -1035,6 +1108,16 @@ function ManagementDashboard() {
           locations={locations}
           onClose={() => setShowLocationManagement(false)}
           onUpdate={handleLocationUpdate}
+        />
+      )}
+
+      {showCompanyManagement && (
+        <CompanyManagement
+          onClose={() => setShowCompanyManagement(false)}
+          onUpdate={() => {
+            // Refresh company context
+            window.location.reload();
+          }}
         />
       )}
 

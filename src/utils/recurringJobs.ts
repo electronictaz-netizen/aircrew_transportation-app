@@ -9,6 +9,7 @@ interface RecurringJobConfig {
   isRecurring: boolean;
   recurringPattern?: 'daily' | 'weekly' | 'monthly';
   recurringEndDate?: string;
+  companyId?: string;
 }
 
 /**
@@ -68,7 +69,13 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   const parentDateStart = new Date(parentDate.getFullYear(), parentDate.getMonth(), parentDate.getDate());
   const parentFlightNumber = tripData.flightNumber.trim().toUpperCase();
   
-  const { data: existingTrips } = await client.models.Trip.list();
+  const filter: any = {};
+  if (config.companyId) {
+    filter.companyId = { eq: config.companyId };
+  }
+  const { data: existingTrips } = await client.models.Trip.list({
+    filter: Object.keys(filter).length > 0 ? filter : undefined
+  });
   const duplicateParent = existingTrips?.find((existing: Schema['Trip']['type']) => {
     if (!existing.pickupDate || !existing.flightNumber) return false;
     
@@ -167,7 +174,13 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   console.log(`Generated ${tripsToCreate.length} child trips to create`);
 
   // Get all existing trips to check for duplicates
-  const { data: allExistingTrips } = await client.models.Trip.list();
+  const existingFilter: any = {};
+  if (config.companyId) {
+    existingFilter.companyId = { eq: config.companyId };
+  }
+  const { data: allExistingTrips } = await client.models.Trip.list({
+    filter: Object.keys(existingFilter).length > 0 ? existingFilter : undefined
+  });
   console.log(`Checking against ${allExistingTrips?.length || 0} existing trips for duplicates...`);
 
   // Create all child trips
@@ -256,12 +269,16 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
 /**
  * Check and generate upcoming recurring trips (call this periodically)
  */
-export async function generateUpcomingRecurringTrips(): Promise<void> {
+export async function generateUpcomingRecurringTrips(companyId?: string): Promise<void> {
   console.log('=== generateUpcomingRecurringTrips START ===');
   try {
-    // Get all active recurring trips
+    // Get all active recurring trips for the company
+    const filter: any = { isRecurring: { eq: true } };
+    if (companyId) {
+      filter.companyId = { eq: companyId };
+    }
     const { data: recurringTrips } = await client.models.Trip.list({
-      filter: { isRecurring: { eq: true } },
+      filter,
     });
 
     console.log(`Found ${recurringTrips?.length || 0} parent recurring trips`);
@@ -278,8 +295,12 @@ export async function generateUpcomingRecurringTrips(): Promise<void> {
       if (isBefore(endDate, now)) continue; // Recurring period has ended
 
       // Get existing child trips to see what's already been created
+      const childFilter: any = { parentTripId: { eq: trip.id } };
+      if (companyId) {
+        childFilter.companyId = { eq: companyId };
+      }
       const { data: childTrips } = await client.models.Trip.list({
-        filter: { parentTripId: { eq: trip.id } },
+        filter: childFilter,
       });
 
       const lastChildDate = childTrips && childTrips.length > 0

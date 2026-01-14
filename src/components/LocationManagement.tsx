@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
+import { useCompany } from '../contexts/CompanyContext';
 import './LocationManagement.css';
 
 const client = generateClient<Schema>();
@@ -12,6 +13,7 @@ interface LocationManagementProps {
 }
 
 function LocationManagement({ locations, onClose, onUpdate }: LocationManagementProps) {
+  const { companyId } = useCompany();
   const [showForm, setShowForm] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Schema['Location']['type'] | null>(null);
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
@@ -24,14 +26,25 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!companyId) {
+      alert('Company not found. Please contact support.');
+      return;
+    }
+
     try {
       if (editingLocation) {
+        // Ensure companyId is not changed - it's not in formData anyway
         await client.models.Location.update({
           id: editingLocation.id,
           ...formData,
         });
       } else {
-        await client.models.Location.create(formData);
+        const createData: any = {
+          ...formData,
+          companyId: companyId!,
+        };
+        await client.models.Location.create(createData);
       }
       onUpdate();
       resetForm();

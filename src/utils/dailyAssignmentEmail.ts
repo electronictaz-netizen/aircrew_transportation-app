@@ -192,11 +192,16 @@ export function sendDailyAssignmentEmail(data: DailyAssignmentData): void {
  */
 async function getDriverTripsForDate(
   driverId: string,
-  targetDate: Date
+  targetDate: Date,
+  companyId?: string
 ): Promise<Array<Schema['Trip']['type']>> {
   try {
+    const filter: any = { driverId: { eq: driverId } };
+    if (companyId) {
+      filter.companyId = { eq: companyId };
+    }
     const { data: allTrips } = await client.models.Trip.list({
-      filter: { driverId: { eq: driverId } },
+      filter,
     });
     
     if (!allTrips) return [];
@@ -220,7 +225,8 @@ async function getDriverTripsForDate(
  */
 export async function sendDailyAssignmentEmailsToAllDrivers(
   targetDate?: Date,
-  options: DailyAssignmentOptions = { email: true, sms: false }
+  options: DailyAssignmentOptions = { email: true, sms: false },
+  companyId?: string
 ): Promise<{ sent: { email: number; sms: number }; failed: { email: number; sms: number }; skipped: number }> {
   const tomorrow = targetDate || addDays(new Date(), 1);
   const dateStr = format(tomorrow, 'MMMM d, yyyy');
@@ -229,8 +235,14 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
   console.log(`Options: Email=${options.email}, SMS=${options.sms}`);
   
   try {
-    // Get all active drivers
-    const { data: drivers } = await client.models.Driver.list();
+    // Get all active drivers for the company
+    const driverFilter: any = {};
+    if (companyId) {
+      driverFilter.companyId = { eq: companyId };
+    }
+    const { data: drivers } = await client.models.Driver.list({
+      filter: Object.keys(driverFilter).length > 0 ? driverFilter : undefined
+    });
     
     // Filter drivers based on enabled notification methods AND their preferences
     const eligibleDrivers = (drivers || []).filter(d => {
@@ -270,7 +282,7 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
     for (const driver of eligibleDrivers) {
       try {
         // Get trips for tomorrow
-        const trips = await getDriverTripsForDate(driver.id, tomorrow);
+          const trips = await getDriverTripsForDate(driver.id, tomorrow, companyId);
         
         if (trips.length === 0) {
           console.log(`Skipping ${driver.name} - no trips scheduled for ${dateStr}`);
@@ -340,7 +352,8 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
 export async function sendDailyAssignmentToDriver(
   driverId: string,
   targetDate?: Date,
-  options: DailyAssignmentOptions = { email: true, sms: false }
+  options: DailyAssignmentOptions = { email: true, sms: false },
+  companyId?: string
 ): Promise<{ email: boolean; sms: boolean }> {
   try {
     const tomorrow = targetDate || addDays(new Date(), 1);
@@ -359,7 +372,7 @@ export async function sendDailyAssignmentToDriver(
     }
     
     // Get trips for tomorrow
-    const trips = await getDriverTripsForDate(driverId, tomorrow);
+    const trips = await getDriverTripsForDate(driverId, tomorrow, companyId);
     
     if (trips.length === 0) {
       console.log(`No trips scheduled for ${driver.name} on ${format(tomorrow, 'MMMM d, yyyy')}`);

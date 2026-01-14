@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
+import { useCompany } from '../contexts/CompanyContext';
 import './DriverManagement.css';
 
 const client = generateClient<Schema>();
@@ -12,6 +13,7 @@ interface DriverManagementProps {
 }
 
 function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps) {
+  const { companyId } = useCompany();
   const [showForm, setShowForm] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Schema['Driver']['type'] | null>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<Set<string>>(new Set());
@@ -26,14 +28,25 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!companyId) {
+      alert('Company not found. Please contact support.');
+      return;
+    }
+
     try {
       if (editingDriver) {
+        // Ensure companyId is not changed - it's not in formData anyway
         await client.models.Driver.update({
           id: editingDriver.id,
           ...formData,
         });
       } else {
-        await client.models.Driver.create(formData);
+        const createData: any = {
+          ...formData,
+          companyId: companyId!,
+        };
+        await client.models.Driver.create(createData);
       }
       onUpdate();
       resetForm();
