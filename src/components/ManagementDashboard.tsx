@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
+import { useAdminAccess } from '../utils/adminAccess';
+import { Link } from 'react-router-dom';
 import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
 import LocationManagement from './LocationManagement';
@@ -17,7 +19,8 @@ import './ManagementDashboard.css';
 const client = generateClient<Schema>();
 
 function ManagementDashboard() {
-  const { companyId, loading: companyLoading } = useCompany();
+  const { companyId, loading: companyLoading, company, isAdminOverride, setAdminSelectedCompany } = useCompany();
+  const hasAdminAccess = useAdminAccess();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
@@ -1023,20 +1026,39 @@ function ManagementDashboard() {
       <div className="management-dashboard">
         <div className="error-state">
           <h2>No Company Assigned</h2>
-          <p>Your account is not associated with a company. Please check the following:</p>
-          <ul style={{ textAlign: 'left', display: 'inline-block', marginTop: '1rem' }}>
-            <li>Check the browser console for detailed error messages</li>
-            <li>Ensure the schema has been deployed (Company model must exist)</li>
-            <li>Try refreshing the page</li>
-            <li>If the issue persists, run the migration script: <code>npx ts-node scripts/migrateToMultiTenant.ts</code></li>
-          </ul>
-          <button 
-            className="btn btn-primary" 
-            onClick={() => window.location.reload()}
-            style={{ marginTop: '1rem' }}
-          >
-            Refresh Page
-          </button>
+          {hasAdminAccess ? (
+            <>
+              <p>As a system admin, you can work with any company. Please select a company to manage:</p>
+              <Link 
+                to="/admin" 
+                className="btn btn-primary"
+                style={{ marginTop: '1rem', display: 'inline-block' }}
+              >
+                Go to Admin Dashboard to Select Company
+              </Link>
+              <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#666' }}>
+                In the Admin Dashboard, click "Work As" next to any company to manage it.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>Your account is not associated with a company. Please check the following:</p>
+              <ul style={{ textAlign: 'left', display: 'inline-block', marginTop: '1rem' }}>
+                <li>Check the browser console for detailed error messages</li>
+                <li>Ensure the schema has been deployed (Company model must exist)</li>
+                <li>Try refreshing the page</li>
+                <li>If the issue persists, run the migration script: <code>npx ts-node scripts/migrateToMultiTenant.ts</code></li>
+                <li>Contact your administrator to be added to a company</li>
+              </ul>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => window.location.reload()}
+                style={{ marginTop: '1rem' }}
+              >
+                Refresh Page
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -1049,7 +1071,27 @@ function ManagementDashboard() {
   return (
     <div className="management-dashboard">
       <div className="dashboard-header">
-        <h2>Management Dashboard</h2>
+        <div>
+          <h2>Management Dashboard</h2>
+          {isAdminOverride && (
+            <div style={{ 
+              marginTop: '0.5rem', 
+              fontSize: '0.875rem', 
+              color: '#3b82f6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <strong>Admin Mode:</strong> Working as "{company?.name}"
+              <Link 
+                to="/admin" 
+                style={{ marginLeft: '0.5rem', fontSize: '0.875rem' }}
+              >
+                (Change Company)
+              </Link>
+            </div>
+          )}
+        </div>
         <div className="header-actions">
           <button
             className="btn btn-primary"

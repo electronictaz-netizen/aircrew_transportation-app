@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
-import { useAdminAccess } from '../utils/adminAccess';
-import { Navigate } from 'react-router-dom';
+import { useAdminAccess, isSystemAdmin } from '../utils/adminAccess';
+import { Navigate, Link } from 'react-router-dom';
 import './AdminDashboard.css';
 
 const client = generateClient<Schema>();
@@ -13,7 +13,7 @@ type CompanyWithUsers = Schema['Company']['type'] & {
 };
 
 function AdminDashboard() {
-  const { company: _currentCompany } = useCompany(); // Reserved for future use
+  const { company: _currentCompany, setAdminSelectedCompany, isAdminOverride } = useCompany();
   const hasAdminAccess = useAdminAccess();
   const [companies, setCompanies] = useState<CompanyWithUsers[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -329,10 +329,36 @@ function AdminDashboard() {
     <div className="admin-dashboard">
       <div className="admin-header">
         <h1>Company Management</h1>
-        <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
-          + Create New Company
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {isAdminOverride && (
+            <Link to="/management" className="btn btn-secondary">
+              Manage Selected Company
+            </Link>
+          )}
+          <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
+            + Create New Company
+          </button>
+        </div>
       </div>
+      
+      {isAdminOverride && (
+        <div className="admin-notice" style={{ 
+          padding: '1rem', 
+          backgroundColor: '#dbeafe', 
+          border: '1px solid #3b82f6', 
+          borderRadius: '4px',
+          marginBottom: '1rem'
+        }}>
+          <strong>Admin Mode:</strong> You are currently working as "{_currentCompany?.name}". 
+          <button 
+            onClick={() => setAdminSelectedCompany(null)}
+            style={{ marginLeft: '1rem', padding: '0.25rem 0.75rem' }}
+            className="btn btn-sm"
+          >
+            Clear Selection
+          </button>
+        </div>
+      )}
 
       {showCreateForm && (
         <div className="modal-overlay" onClick={() => setShowCreateForm(false)}>
@@ -433,15 +459,26 @@ function AdminDashboard() {
                   </td>
                   <td>{company.userCount || 0}</td>
                   <td>
-                    <button
-                      className="btn btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedCompany(company as CompanyWithUsers);
-                      }}
-                    >
-                      Manage
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        className="btn btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCompany(company as CompanyWithUsers);
+                        }}
+                      >
+                        View Users
+                      </button>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAdminSelectedCompany(company.id);
+                        }}
+                      >
+                        Work As
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -495,13 +532,16 @@ function AdminDashboard() {
 
             <div className="company-users-section">
               <div className="section-header">
-                <h3>Users ({companyUsers.length})</h3>
+                <h3>Users ({companyUsers.filter(user => !isSystemAdmin(user.email, user.userId)).length})</h3>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => setShowInviteForm(selectedCompany.id)}
                 >
                   + Invite User
                 </button>
+              </div>
+              <div className="system-admin-note" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                Note: System admins are not shown in company user lists
               </div>
 
               {showInviteForm === selectedCompany.id && (
@@ -552,7 +592,9 @@ function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {companyUsers.map((user) => (
+                  {companyUsers
+                    .filter((user) => !isSystemAdmin(user.email, user.userId))
+                    .map((user) => (
                     <tr key={user.id}>
                       <td>{user.email}</td>
                       <td>

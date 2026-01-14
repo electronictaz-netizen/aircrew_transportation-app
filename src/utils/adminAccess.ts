@@ -88,6 +88,33 @@ export function useAdminAccess(): boolean {
 }
 
 /**
+ * Check if a specific user email or ID is a system admin
+ * Useful for filtering system admins from company user lists
+ */
+export function isSystemAdmin(email?: string | null, userId?: string | null): boolean {
+  if (!email && !userId) return false;
+
+  // Check email-based access
+  if (email && AUTHORIZED_ADMIN_EMAILS.length > 0) {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (AUTHORIZED_ADMIN_EMAILS.some(
+      adminEmail => adminEmail.toLowerCase().trim() === normalizedEmail
+    )) {
+      return true;
+    }
+  }
+
+  // Check user ID-based access
+  if (userId && AUTHORIZED_ADMIN_USER_IDS.length > 0) {
+    if (AUTHORIZED_ADMIN_USER_IDS.some(id => id === userId)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Get the current user's email for configuration purposes
  * Use this in the browser console to find your email/ID
  */

@@ -2,12 +2,15 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
+import { useAdminAccess, isSystemAdmin } from '../utils/adminAccess';
 
 interface CompanyContextType {
   company: Schema['Company']['type'] | null;
   companyId: string | null;
   loading: boolean;
   refreshCompany: () => Promise<void>;
+  setAdminSelectedCompany: (companyId: string | null) => void;
+  isAdminOverride: boolean;
 }
 
 const CompanyContext = createContext<CompanyContextType>({
@@ -15,14 +18,18 @@ const CompanyContext = createContext<CompanyContextType>({
   companyId: null,
   loading: true,
   refreshCompany: async () => {},
+  setAdminSelectedCompany: () => {},
+  isAdminOverride: false,
 });
 
 const client = generateClient<Schema>();
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthenticator();
+  const hasAdminAccess = useAdminAccess();
   const [company, setCompany] = useState<Schema['Company']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [adminSelectedCompanyId, setAdminSelectedCompanyId] = useState<string | null>(null);
 
   const loadUserCompany = async () => {
     if (!user?.userId) {
@@ -34,6 +41,18 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
+      // If system admin has manually selected a company, use that
+      if (hasAdminAccess && adminSelectedCompanyId) {
+        const { data: selectedCompany } = await client.models.Company.get({
+          id: adminSelectedCompanyId
+        });
+        if (selectedCompany) {
+          setCompany(selectedCompany);
+          setLoading(false);
+          return;
+        }
+      }
+      
       // Find CompanyUser record for this user
       // First check for active users
       let { data: companyUsers } = await client.models.CompanyUser.list({
@@ -42,6 +61,14 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
           isActive: { eq: true }
         }
       });
+      
+      // Filter out system admins from company user lookup
+      if (companyUsers && companyUsers.length > 0) {
+        const userEmail = user.signInDetails?.loginId || user.username || '';
+        companyUsers = companyUsers.filter(
+          cu => !isSystemAdmin(cu.email, cu.userId)
+        );
+      }
 
       // If no active user found, check for pending invitations by email
       if (!companyUsers || companyUsers.length === 0) {
@@ -241,9 +268,31 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setAdminSelectedCompany = (companyId: string | null) => {
+    setAdminSelectedCompanyId(companyId);
+    // Store in localStorage for persistence
+    if (companyId) {
+      localStorage.setItem('adminSelectedCompanyId', companyId);
+    } else {
+      localStorage.removeItem('adminSelectedCompanyId');
+    }
+    // Reload company
+    loadUserCompany();
+  };
+
+  useEffect(() => {
+    // Load admin-selected company from localStorage if system admin
+    if (hasAdminAccess) {
+      const stored = localStorage.getItem('adminSelectedCompanyId');
+      if (stored && !adminSelectedCompanyId) {
+        setAdminSelectedCompanyId(stored);
+      }
+    }
+  }, [hasAdminAccess]);
+
   useEffect(() => {
     loadUserCompany();
-  }, [user?.userId]);
+  }, [user?.userId, adminSelectedCompanyId]);
 
   return (
     <CompanyContext.Provider
@@ -252,6 +301,8 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         companyId: company?.id || null,
         loading,
         refreshCompany: loadUserCompany,
+        setAdminSelectedCompany,
+        isAdminOverride: hasAdminAccess && adminSelectedCompanyId !== null,
       }}
     >
       {children}
