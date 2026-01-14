@@ -206,6 +206,21 @@ function DriverDashboard() {
       <div className="trips-grid">
         {trips.map((trip) => (
           <div key={trip.id} className="trip-card">
+            {trip.airport && (
+              <div className="trip-airport" style={{ 
+                marginBottom: '0.75rem', 
+                padding: '0.5rem', 
+                backgroundColor: '#f3f4f6', 
+                borderRadius: '0.375rem',
+                fontWeight: '500',
+                fontSize: '0.875rem'
+              }}>
+                Airport: {trip.airport === 'BUF' ? 'Buffalo Niagara International Airport (BUF)' :
+                          trip.airport === 'ROC' ? 'Frederick Douglass Greater Rochester International Airport (ROC)' :
+                          trip.airport === 'SYR' ? 'Syracuse Hancock International Airport (SYR)' :
+                          trip.airport}
+              </div>
+            )}
             <div className="trip-header">
               <h3>Flight {trip.flightNumber}</h3>
               {flightStatuses[trip.id] ? (

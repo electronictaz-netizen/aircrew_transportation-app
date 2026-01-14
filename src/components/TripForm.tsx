@@ -10,8 +10,16 @@ interface TripFormProps {
   onCancel: () => void;
 }
 
+// Airport options
+const AIRPORTS = [
+  { code: 'BUF', name: 'Buffalo Niagara International Airport (BUF)' },
+  { code: 'ROC', name: 'Frederick Douglass Greater Rochester International Airport (ROC)' },
+  { code: 'SYR', name: 'Syracuse Hancock International Airport (SYR)' },
+];
+
 function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
   const [formData, setFormData] = useState({
+    airport: trip?.airport || '',
     pickupDate: trip?.pickupDate ? format(new Date(trip.pickupDate), "yyyy-MM-dd'T'HH:mm") : '',
     flightNumber: trip?.flightNumber || '',
     pickupLocation: trip?.pickupLocation || '',
@@ -25,12 +33,25 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
   });
   
   const [passengerInput, setPassengerInput] = useState(String(formData.numberOfPassengers));
+  
+  // Initialize location modes based on whether current values match airport names
+  const getInitialLocationMode = (location: string): 'text' | 'airport' => {
+    const airportNames = AIRPORTS.map(a => a.name);
+    return airportNames.includes(location) ? 'airport' : 'text';
+  };
+  
+  const [pickupLocationMode, setPickupLocationMode] = useState<'text' | 'airport'>(() => 
+    getInitialLocationMode(formData.pickupLocation)
+  );
+  const [dropoffLocationMode, setDropoffLocationMode] = useState<'text' | 'airport'>(() => 
+    getInitialLocationMode(formData.dropoffLocation)
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required fields
-    if (!formData.pickupDate || !formData.flightNumber || !formData.pickupLocation || !formData.dropoffLocation) {
+    if (!formData.airport || !formData.pickupDate || !formData.flightNumber || !formData.pickupLocation || !formData.dropoffLocation) {
       alert('Please fill in all required fields.');
       return;
     }
@@ -43,6 +64,7 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
 
     try {
       const submitData: any = {
+        airport: formData.airport || undefined,
         pickupDate: new Date(formData.pickupDate).toISOString(),
         flightNumber: formData.flightNumber.trim(),
         pickupLocation: formData.pickupLocation.trim(),
@@ -82,10 +104,28 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
     if (name === 'numberOfPassengers') {
       return; // Skip, handled by custom onChange
     }
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    // If airport changes and location modes are set to airport, update locations
+    if (name === 'airport' && value) {
+      const selectedAirport = AIRPORTS.find(a => a.code === value);
+      setFormData((prev) => {
+        const updates: any = { airport: value };
+        // Update pickup location if in airport mode
+        if (pickupLocationMode === 'airport' && selectedAirport) {
+          updates.pickupLocation = selectedAirport.name;
+        }
+        // Update dropoff location if in airport mode
+        if (dropoffLocationMode === 'airport' && selectedAirport) {
+          updates.dropoffLocation = selectedAirport.name;
+        }
+        return { ...prev, ...updates };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   return (
@@ -93,6 +133,24 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
       <div className="modal-content">
         <h3>{trip ? 'Edit Trip' : 'Create New Trip'}</h3>
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="airport">Airport *</label>
+            <select
+              id="airport"
+              name="airport"
+              value={formData.airport}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Airport</option>
+              {AIRPORTS.map((airport) => (
+                <option key={airport.code} value={airport.code}>
+                  {airport.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="form-group">
             <label htmlFor="pickupDate">Pickup Date and Time *</label>
             <input
@@ -120,28 +178,150 @@ function TripForm({ trip, drivers, onSubmit, onCancel }: TripFormProps) {
 
           <div className="form-group">
             <label htmlFor="pickupLocation">Pickup Location *</label>
-            <input
-              type="text"
-              id="pickupLocation"
-              name="pickupLocation"
-              value={formData.pickupLocation}
-              onChange={handleChange}
-              required
-              placeholder="e.g., Airport Terminal 1"
-            />
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPickupLocationMode('airport');
+                  if (formData.airport) {
+                    const selectedAirport = AIRPORTS.find(a => a.code === formData.airport);
+                    if (selectedAirport) {
+                      setFormData(prev => ({
+                        ...prev,
+                        pickupLocation: selectedAirport.name
+                      }));
+                    }
+                  }
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: pickupLocationMode === 'airport' ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                  backgroundColor: pickupLocationMode === 'airport' ? '#eff6ff' : 'white',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Use Airport
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPickupLocationMode('text');
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: pickupLocationMode === 'text' ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                  backgroundColor: pickupLocationMode === 'text' ? '#eff6ff' : 'white',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Enter Text
+              </button>
+            </div>
+            {pickupLocationMode === 'airport' ? (
+              <select
+                id="pickupLocation"
+                name="pickupLocation"
+                value={formData.pickupLocation}
+                onChange={handleChange}
+                required
+                disabled={!formData.airport}
+              >
+                <option value="">Select Airport</option>
+                {AIRPORTS.map((airport) => (
+                  <option key={airport.code} value={airport.name}>
+                    {airport.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                id="pickupLocation"
+                name="pickupLocation"
+                value={formData.pickupLocation}
+                onChange={handleChange}
+                required
+                placeholder="e.g., Airport Terminal 1"
+              />
+            )}
           </div>
 
           <div className="form-group">
             <label htmlFor="dropoffLocation">Dropoff Location *</label>
-            <input
-              type="text"
-              id="dropoffLocation"
-              name="dropoffLocation"
-              value={formData.dropoffLocation}
-              onChange={handleChange}
-              required
-              placeholder="e.g., Hotel Downtown"
-            />
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDropoffLocationMode('airport');
+                  if (formData.airport) {
+                    const selectedAirport = AIRPORTS.find(a => a.code === formData.airport);
+                    if (selectedAirport) {
+                      setFormData(prev => ({
+                        ...prev,
+                        dropoffLocation: selectedAirport.name
+                      }));
+                    }
+                  }
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: dropoffLocationMode === 'airport' ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                  backgroundColor: dropoffLocationMode === 'airport' ? '#eff6ff' : 'white',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Use Airport
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDropoffLocationMode('text');
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: dropoffLocationMode === 'text' ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                  backgroundColor: dropoffLocationMode === 'text' ? '#eff6ff' : 'white',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Enter Text
+              </button>
+            </div>
+            {dropoffLocationMode === 'airport' ? (
+              <select
+                id="dropoffLocation"
+                name="dropoffLocation"
+                value={formData.dropoffLocation}
+                onChange={handleChange}
+                required
+                disabled={!formData.airport}
+              >
+                <option value="">Select Airport</option>
+                {AIRPORTS.map((airport) => (
+                  <option key={airport.code} value={airport.name}>
+                    {airport.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                id="dropoffLocation"
+                name="dropoffLocation"
+                value={formData.dropoffLocation}
+                onChange={handleChange}
+                required
+                placeholder="e.g., Hotel Downtown"
+              />
+            )}
           </div>
 
           <div className="form-group">

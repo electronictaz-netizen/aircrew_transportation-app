@@ -14,6 +14,7 @@ const schema = a.schema({
 
   Trip: a
     .model({
+      airport: a.string(), // Airport code: BUF, ROC, or SYR
       pickupDate: a.datetime().required(),
       flightNumber: a.string().required(),
       pickupLocation: a.string().required(),

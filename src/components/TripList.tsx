@@ -216,6 +216,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
                 />
               </th>
             )}
+            <th>Airport</th>
             <th>Pickup Date</th>
             <th>Pickup Time</th>
             <th>Flight Number</th>
@@ -233,7 +234,7 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
         <tbody>
           {displayedTrips.length === 0 ? (
             <tr>
-              <td colSpan={onDeleteMultiple ? 13 : 12} className="no-results">
+              <td colSpan={onDeleteMultiple ? 14 : 13} className="no-results">
                 No trips match the current filters. Try adjusting your search criteria.
               </td>
             </tr>
@@ -249,6 +250,14 @@ function TripList({ trips, drivers, onEdit, onDelete, onDeleteMultiple, onUpdate
                   />
                 </td>
               )}
+              <td>
+                {trip.airport ? (
+                  trip.airport === 'BUF' ? 'BUF' :
+                  trip.airport === 'ROC' ? 'ROC' :
+                  trip.airport === 'SYR' ? 'SYR' :
+                  trip.airport
+                ) : 'N/A'}
+              </td>
               <td>
                 {trip.pickupDate
                   ? format(new Date(trip.pickupDate), 'MMM dd, yyyy')
