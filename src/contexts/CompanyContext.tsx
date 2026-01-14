@@ -35,12 +35,54 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       
       // Find CompanyUser record for this user
-      const { data: companyUsers } = await client.models.CompanyUser.list({
+      // First check for active users
+      let { data: companyUsers } = await client.models.CompanyUser.list({
         filter: { 
           userId: { eq: user.userId },
           isActive: { eq: true }
         }
       });
+
+      // If no active user found, check for pending invitations by email
+      if (!companyUsers || companyUsers.length === 0) {
+        const userEmail = user.signInDetails?.loginId || user.username;
+        if (userEmail) {
+          const { data: pendingInvites } = await client.models.CompanyUser.list({
+            filter: { 
+              email: { eq: userEmail.toLowerCase().trim() },
+              isActive: { eq: false }
+            }
+          });
+          
+          // Filter for pending invitations (userId is 'pending' or matches pattern)
+          const actualPending = pendingInvites?.filter(
+            invite => invite.userId === 'pending' || !invite.userId || invite.userId === ''
+          );
+
+          // If found pending invite, activate it and link user
+          if (actualPending && actualPending.length > 0) {
+            const invite = actualPending[0];
+            try {
+              await client.models.CompanyUser.update({
+                id: invite.id,
+                userId: user.userId,
+                isActive: true,
+              });
+              console.log('✅ Activated pending invitation for user');
+              // Reload to get the updated record
+              const { data: updated } = await client.models.CompanyUser.list({
+                filter: { 
+                  userId: { eq: user.userId },
+                  isActive: { eq: true }
+                }
+              });
+              companyUsers = updated;
+            } catch (error) {
+              console.error('Error activating invitation:', error);
+            }
+          }
+        }
+      }
 
       if (companyUsers && companyUsers.length > 0) {
         const companyUser = companyUsers[0];
