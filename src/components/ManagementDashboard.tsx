@@ -1177,6 +1177,7 @@ function ManagementDashboard() {
       {showFilterCategoryManagement && (
         <FilterCategoryManagement
           locations={locations}
+          trips={trips}
           onClose={() => setShowFilterCategoryManagement(false)}
           onUpdate={() => {
             // Refresh filters if needed

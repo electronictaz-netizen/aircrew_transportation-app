@@ -10,9 +10,10 @@ interface FilterCategoryManagementProps {
   onClose: () => void;
   onUpdate: () => void;
   locations?: Array<Schema['Location']['type']>;
+  trips?: Array<Schema['Trip']['type']>;
 }
 
-function FilterCategoryManagement({ onClose, onUpdate, locations = [] }: FilterCategoryManagementProps) {
+function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [] }: FilterCategoryManagementProps) {
   const { companyId } = useCompany();
   const [filterCategories, setFilterCategories] = useState<Array<Schema['FilterCategory']['type']>>([]);
   const [showForm, setShowForm] = useState(false);
@@ -216,16 +217,43 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [] }: FilterC
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={() => {
-                      // Auto-populate from location categories
+                    onClick={async () => {
+                      // Auto-populate from location categories and existing trips
                       const categories = new Set<string>();
+                      
+                      // First, get categories from saved locations
                       locations
                         .filter(l => l.isActive !== false && l.category)
                         .forEach(l => categories.add(l.category!));
+                      
+                      // Also check existing trips for airport/primaryLocationCategory values
+                      // This pulls in old hardcoded airports (BUF, ROC, SYR, ALB, etc.)
+                      trips.forEach(trip => {
+                        if (trip.primaryLocationCategory) {
+                          categories.add(trip.primaryLocationCategory);
+                        }
+                        if (trip.airport) {
+                          categories.add(trip.airport);
+                        }
+                        // Check pickup and dropoff locations if they match saved locations
+                        if (trip.pickupLocation) {
+                          const pickupLoc = locations.find(l => l.name === trip.pickupLocation && l.category);
+                          if (pickupLoc?.category) {
+                            categories.add(pickupLoc.category);
+                          }
+                        }
+                        if (trip.dropoffLocation) {
+                          const dropoffLoc = locations.find(l => l.name === trip.dropoffLocation && l.category);
+                          if (dropoffLoc?.category) {
+                            categories.add(dropoffLoc.category);
+                          }
+                        }
+                      });
+                      
                       const categoryArray = Array.from(categories).sort();
                       setFormData({ ...formData, values: categoryArray.join(', ') });
                     }}
-                    title="Auto-populate from existing location categories"
+                    title="Auto-populate from existing location categories and trips (includes old airport codes)"
                   >
                     Auto-fill
                   </button>
