@@ -3,13 +3,14 @@
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
   max-width: 100%;
+  overflow: visible;
 }
 
 .trips-table-wrapper {
   overflow-x: auto;
   width: 100%;
+  max-width: 100%;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -17,108 +18,127 @@
   width: 100%;
   border-collapse: collapse;
   display: table;
-  min-width: 1200px; /* Ensure minimum width for all columns */
-  table-layout: auto;
+  table-layout: fixed; /* Use fixed layout for better width control */
 }
 
 .trips-table th {
   background-color: #f9fafb;
-  padding: 0.75rem;
+  padding: 0.5rem 0.375rem;
   text-align: left;
   font-weight: 600;
   color: #374151;
   border-bottom: 2px solid #e5e7eb;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .trips-table td {
-  padding: 0.75rem;
+  padding: 0.5rem 0.375rem;
   border-bottom: 1px solid #e5e7eb;
   color: #1f2937;
-  font-size: 0.875rem;
-  white-space: nowrap;
+  font-size: 0.8125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
 }
 
-/* Column width optimizations */
-.trips-table th:nth-child(1),
-.trips-table td:nth-child(1) {
-  width: 40px;
+/* Column width optimizations - using percentages for better fit */
+/* Checkbox column */
+.trips-table th:first-child,
+.trips-table td:first-child {
+  width: 3%;
   text-align: center;
 }
 
+/* Category */
 .trips-table th:nth-child(2),
 .trips-table td:nth-child(2) {
-  width: 80px;
-  min-width: 80px;
+  width: 6%;
 }
 
+/* Pickup Date */
 .trips-table th:nth-child(3),
 .trips-table td:nth-child(3) {
-  width: 100px;
-  min-width: 100px;
+  width: 7%;
+  white-space: nowrap;
 }
 
+/* Pickup Time */
 .trips-table th:nth-child(4),
 .trips-table td:nth-child(4) {
-  width: 120px;
-  min-width: 120px;
+  width: 5%;
+  white-space: nowrap;
 }
 
+/* Flight Number */
 .trips-table th:nth-child(5),
 .trips-table td:nth-child(5) {
-  width: 130px;
-  min-width: 130px;
+  width: 7%;
+  white-space: nowrap;
 }
 
+/* Flight Status */
 .trips-table th:nth-child(6),
 .trips-table td:nth-child(6) {
-  width: 180px;
-  min-width: 180px;
+  width: 8%;
 }
 
+/* Pickup Location */
 .trips-table th:nth-child(7),
 .trips-table td:nth-child(7) {
-  width: 180px;
-  min-width: 180px;
+  width: 12%;
 }
 
+/* Dropoff Location */
 .trips-table th:nth-child(8),
 .trips-table td:nth-child(8) {
-  width: 100px;
-  min-width: 100px;
+  width: 12%;
 }
 
+/* Passengers */
 .trips-table th:nth-child(9),
 .trips-table td:nth-child(9) {
-  width: 120px;
-  min-width: 120px;
+  width: 5%;
+  text-align: center;
 }
 
+/* Driver */
 .trips-table th:nth-child(10),
 .trips-table td:nth-child(10) {
-  width: 120px;
-  min-width: 120px;
+  width: 10%;
 }
 
+/* Status */
 .trips-table th:nth-child(11),
 .trips-table td:nth-child(11) {
-  width: 150px;
-  min-width: 150px;
+  width: 7%;
 }
 
+/* Actual Pickup */
 .trips-table th:nth-child(12),
 .trips-table td:nth-child(12) {
-  width: 150px;
-  min-width: 150px;
+  width: 8%;
+  white-space: nowrap;
+  font-size: 0.75rem;
 }
 
+/* Actual Dropoff */
 .trips-table th:nth-child(13),
 .trips-table td:nth-child(13) {
-  width: 100px;
-  min-width: 100px;
+  width: 8%;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+
+/* Actions */
+.trips-table th:last-child,
+.trips-table td:last-child {
+  width: 6%;
+  text-align: center;
 }
 
 /* Mobile: Card view instead of table */
