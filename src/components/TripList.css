@@ -28,12 +28,13 @@
   font-weight: 600;
   color: #374151;
   border-bottom: 2px solid #e5e7eb;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.03em;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.3;
+  vertical-align: top;
 }
 
 .trips-table td {
@@ -57,7 +58,7 @@
 /* Category */
 .trips-table th:nth-child(2),
 .trips-table td:nth-child(2) {
-  width: 6%;
+  width: 7%;
 }
 
 /* Pickup Date */
@@ -84,7 +85,7 @@
 /* Flight Status */
 .trips-table th:nth-child(6),
 .trips-table td:nth-child(6) {
-  width: 8%;
+  width: 9%;
 }
 
 /* Pickup Location */
@@ -121,17 +122,17 @@
 /* Actual Pickup */
 .trips-table th:nth-child(12),
 .trips-table td:nth-child(12) {
-  width: 8%;
+  width: 6%;
   white-space: nowrap;
-  font-size: 0.75rem;
+  text-align: center;
 }
 
 /* Actual Dropoff */
 .trips-table th:nth-child(13),
 .trips-table td:nth-child(13) {
-  width: 8%;
+  width: 6%;
   white-space: nowrap;
-  font-size: 0.75rem;
+  text-align: center;
 }
 
 /* Actions */

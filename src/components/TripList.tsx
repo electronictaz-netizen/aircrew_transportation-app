@@ -246,17 +246,17 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
               </th>
             )}
             <th>Category</th>
-            <th>Pickup Date</th>
-            <th>Pickup Time</th>
-            <th>Flight Number</th>
-            <th>Flight Status</th>
-            <th>Pickup Location</th>
-            <th>Dropoff Location</th>
+            <th>Pickup<br />Date</th>
+            <th>Pickup<br />Time</th>
+            <th>Flight<br />Number</th>
+            <th>Flight<br />Status</th>
+            <th>Pickup<br />Location</th>
+            <th>Dropoff<br />Location</th>
             <th>Passengers</th>
             <th>Driver</th>
             <th>Status</th>
-            <th>Actual Pickup</th>
-            <th>Actual Dropoff</th>
+            <th>Actual<br />Pickup</th>
+            <th>Actual<br />Dropoff</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -352,12 +352,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
               </td>
               <td>
                 {trip.actualPickupTime
-                  ? format(new Date(trip.actualPickupTime), 'MMM dd, yyyy HH:mm')
+                  ? format(new Date(trip.actualPickupTime), 'HH:mm')
                   : '-'}
               </td>
               <td>
                 {trip.actualDropoffTime
-                  ? format(new Date(trip.actualDropoffTime), 'MMM dd, yyyy HH:mm')
+                  ? format(new Date(trip.actualDropoffTime), 'HH:mm')
                   : '-'}
               </td>
               <td onClick={(e) => e.stopPropagation()}>
