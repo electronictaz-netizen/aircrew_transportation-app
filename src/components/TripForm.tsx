@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
+import { useCompany } from '../contexts/CompanyContext';
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
 import { validateFlightNumber, validateLocation, validatePassengers, validateFutureDate, validateRecurringEndDate, MAX_LENGTHS } from '../utils/validation';
@@ -18,10 +19,15 @@ interface TripFormProps {
 }
 
 function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFormProps) {
+  const { companyId } = useCompany();
   const { notification, showError, hideNotification } = useNotification();
   
+  // Filter locations to ensure only locations for the current company are shown
+  // This is a defensive measure to prevent cross-company data leakage
+  const companyLocations = companyId ? locations.filter(l => l.companyId === companyId) : locations;
+  
   // Get active locations grouped by category
-  const activeLocations = locations.filter(l => l.isActive !== false);
+  const activeLocations = companyLocations.filter(l => l.isActive !== false);
   const locationsByCategory = activeLocations.reduce((acc, loc) => {
     const category = loc.category || 'Other';
     if (!acc[category]) acc[category] = [];

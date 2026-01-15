@@ -21,6 +21,10 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
   const { companyId } = useCompany();
   const { notification, showSuccess, showError, hideNotification } = useNotification();
   const { confirmState, confirm, handleCancel } = useConfirm();
+  
+  // Filter locations to ensure only locations for the current company are used
+  // This is a defensive measure to prevent cross-company data leakage
+  const companyLocations = companyId ? locations.filter(l => l.companyId === companyId) : locations;
   const [filterCategories, setFilterCategories] = useState<Array<Schema['FilterCategory']['type']>>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Schema['FilterCategory']['type'] | null>(null);
@@ -276,7 +280,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                       if (formData.field === 'locationCategory' || formData.field === 'primaryLocationCategory') {
                         // Get all locations with categories
                         const locationsByCategory = new Map<string, Set<string>>();
-                        locations
+                        companyLocations
                           .filter(l => l.isActive !== false && l.category)
                           .forEach(l => {
                             const cat = l.category!;
@@ -299,7 +303,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                         });
                       } else {
                         // For other fields, get categories from saved locations
-                        locations
+                        companyLocations
                           .filter(l => l.isActive !== false && l.category)
                           .forEach(l => values.add(l.category!));
                       }
@@ -315,7 +319,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                         }
                         // Check pickup and dropoff locations if they match saved locations
                         if (trip.pickupLocation) {
-                          const pickupLoc = locations.find(l => l.name === trip.pickupLocation && l.category);
+                          const pickupLoc = companyLocations.find(l => l.name === trip.pickupLocation && l.category);
                           if (pickupLoc?.category) {
                             // Extract airport code if available
                             const airportCodeMatch = pickupLoc.name.match(/\(([A-Z]{3})\)/);
@@ -327,7 +331,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                           }
                         }
                         if (trip.dropoffLocation) {
-                          const dropoffLoc = locations.find(l => l.name === trip.dropoffLocation && l.category);
+                          const dropoffLoc = companyLocations.find(l => l.name === trip.dropoffLocation && l.category);
                           if (dropoffLoc?.category) {
                             // Extract airport code if available
                             const airportCodeMatch = dropoffLoc.name.match(/\(([A-Z]{3})\)/);

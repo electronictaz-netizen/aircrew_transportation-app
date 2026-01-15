@@ -141,10 +141,10 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
   };
 
   const handleSelectAll = () => {
-    if (selectedLocations.size === locations.length) {
+    if (selectedLocations.size === companyLocations.length) {
       setSelectedLocations(new Set());
     } else {
-      setSelectedLocations(new Set(locations.map(l => l.id)));
+      setSelectedLocations(new Set(companyLocations.map(l => l.id)));
     }
   };
 
@@ -215,8 +215,8 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
       { code: 'ALB', name: 'Albany International Airport (ALB)', address: 'Albany, NY' },
     ];
 
-    // Check which airports already exist
-    const existingNames = new Set(locations.map(l => l.name));
+    // Check which airports already exist (only for current company)
+    const existingNames = new Set(companyLocations.map(l => l.name));
     const airportsToAdd = airports.filter(a => !existingNames.has(a.name));
 
     if (airportsToAdd.length === 0) {
@@ -267,7 +267,22 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     }
   };
 
-  const activeLocations = locations.filter(l => l.isActive !== false);
+  // Filter locations to ensure only locations for the current company are shown
+  // This is a defensive measure to prevent cross-company data leakage
+  const companyLocations = locations.filter(l => l.companyId === companyId);
+  const activeLocations = companyLocations.filter(l => l.isActive !== false);
+  
+  // Log warning if locations from other companies are detected (for debugging)
+  if (companyId && locations.length > companyLocations.length) {
+    const otherCompanyLocations = locations.filter(l => l.companyId !== companyId);
+    logger.warn('Location data isolation issue detected:', {
+      currentCompanyId: companyId,
+      totalLocations: locations.length,
+      companyLocations: companyLocations.length,
+      otherCompanyLocations: otherCompanyLocations.length,
+      otherCompanyIds: [...new Set(otherCompanyLocations.map(l => l.companyId))],
+    });
+  }
 
   return (
     <div className="modal-overlay">
@@ -393,8 +408,8 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
         )}
 
         <div className="locations-list">
-          <h4>Locations ({activeLocations.length} active, {locations.length} total)</h4>
-          {locations.length === 0 ? (
+          <h4>Locations ({activeLocations.length} active, {companyLocations.length} total)</h4>
+          {companyLocations.length === 0 ? (
             <p className="empty-message">No locations added yet. Add locations to make them available in trip forms.</p>
           ) : (
             <table className="locations-table">
@@ -403,7 +418,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                   <th>
                     <input
                       type="checkbox"
-                      checked={selectedLocations.size === locations.length && locations.length > 0}
+                      checked={selectedLocations.size === companyLocations.length && companyLocations.length > 0}
                       onChange={handleSelectAll}
                       title="Select all"
                     />
@@ -417,7 +432,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                 </tr>
               </thead>
               <tbody>
-                {locations.map((location) => (
+                {companyLocations.map((location) => (
                   <tr key={location.id} className={selectedLocations.has(location.id) ? 'selected' : ''}>
                     <td>
                       <input
