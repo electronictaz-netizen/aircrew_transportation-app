@@ -4,12 +4,14 @@ import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { useAdminAccess } from '../utils/adminAccess';
 import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
 import TripForm from './TripForm';
 import DriverManagement from './DriverManagement';
 import LocationManagement from './LocationManagement';
 import FilterCategoryManagement from './FilterCategoryManagement';
 import CompanyManagement from './CompanyManagement';
 import TripList from './TripList';
+import TripCalendar from './TripCalendar';
 import DriverSelectionDialog from './DriverSelectionDialog';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
@@ -35,6 +37,8 @@ function ManagementDashboard() {
   const [showDriverDialog, setShowDriverDialog] = useState(false);
   const [tripsToAssign, setTripsToAssign] = useState<string[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
 
   useEffect(() => {
     if (companyId) {
@@ -1143,6 +1147,26 @@ function ManagementDashboard() {
             Send Daily Assignment Emails
           </button>
         </div>
+
+        {/* View Toggle */}
+        <div className="view-toggle-container">
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+              title="List View"
+            >
+              📋 List
+            </button>
+            <button
+              className={`view-toggle-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+              onClick={() => setViewMode('calendar')}
+              title="Calendar View"
+            >
+              📅 Calendar
+            </button>
+          </div>
+        </div>
       </div>
 
       {showTripForm && (
@@ -1196,16 +1220,107 @@ function ManagementDashboard() {
         />
       )}
 
-      <TripList
-        trips={trips}
-        drivers={drivers}
-        locations={locations}
-        onEdit={handleEditTrip}
-        onDelete={handleDeleteTrip}
-        onDeleteMultiple={handleDeleteMultipleTrips}
-        onAssignMultiple={handleAssignMultipleTrips}
-        onUpdate={loadTrips}
-      />
+      {viewMode === 'list' ? (
+        <TripList
+          trips={trips}
+          drivers={drivers}
+          locations={locations}
+          onEdit={handleEditTrip}
+          onDelete={handleDeleteTrip}
+          onDeleteMultiple={handleDeleteMultipleTrips}
+          onAssignMultiple={handleAssignMultipleTrips}
+          onUpdate={loadTrips}
+        />
+      ) : (
+        <TripCalendar
+          trips={trips}
+          onDateClick={(date, dateTrips) => {
+            setSelectedDateTrips({ date, trips: dateTrips });
+          }}
+        />
+      )}
+
+      {/* Date Trips Modal */}
+      {selectedDateTrips && (
+        <div className="modal-overlay" onClick={() => setSelectedDateTrips(null)}>
+          <div className="modal-content date-trips-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Trips on {format(selectedDateTrips.date, 'MMMM d, yyyy')}</h3>
+              <button className="close-btn" onClick={() => setSelectedDateTrips(null)}>×</button>
+            </div>
+            <div className="date-trips-list">
+              {selectedDateTrips.trips.length === 0 ? (
+                <p className="empty-message">No trips scheduled for this date.</p>
+              ) : (
+                <div className="trips-list">
+                  {selectedDateTrips.trips.map((trip) => {
+                    const driver = drivers.find(d => d.id === trip.driverId);
+                    return (
+                      <div key={trip.id} className="trip-card">
+                        <div className="trip-card-header">
+                          <div className="trip-flight">
+                            <strong>{trip.flightNumber}</strong>
+                            {trip.primaryLocationCategory && (
+                              <span className="trip-location-category">{trip.primaryLocationCategory}</span>
+                            )}
+                          </div>
+                          <span className={`status-badge ${trip.status === 'Completed' ? 'status-completed' : trip.status === 'Assigned' ? 'status-assigned' : trip.status === 'InProgress' ? 'status-in-progress' : 'status-unassigned'}`}>
+                            {trip.status}
+                          </span>
+                        </div>
+                        <div className="trip-card-details">
+                          <div className="trip-detail">
+                            <span className="detail-label">Time:</span>
+                            <span>{trip.pickupDate ? format(new Date(trip.pickupDate), 'h:mm a') : 'TBD'}</span>
+                          </div>
+                          <div className="trip-detail">
+                            <span className="detail-label">Pickup:</span>
+                            <span>{trip.pickupLocation || 'TBD'}</span>
+                          </div>
+                          <div className="trip-detail">
+                            <span className="detail-label">Dropoff:</span>
+                            <span>{trip.dropoffLocation || 'TBD'}</span>
+                          </div>
+                          <div className="trip-detail">
+                            <span className="detail-label">Driver:</span>
+                            <span>{driver?.name || 'Unassigned'}</span>
+                          </div>
+                          <div className="trip-detail">
+                            <span className="detail-label">Passengers:</span>
+                            <span>{trip.numberOfPassengers || 1}</span>
+                          </div>
+                        </div>
+                        <div className="trip-card-actions">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => {
+                              handleEditTrip(trip);
+                              setSelectedDateTrips(null);
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this trip?')) {
+                                handleDeleteTrip(trip.id);
+                                setSelectedDateTrips(null);
+                              }
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <DriverSelectionDialog
         isOpen={showDriverDialog}
