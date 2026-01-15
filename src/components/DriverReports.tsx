@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import { extractAirlineCode, getAirlineName, groupTripsByAirline } from '../utils/airlineCode';

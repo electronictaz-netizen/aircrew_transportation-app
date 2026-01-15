@@ -51,7 +51,6 @@ export function getAirlineName(code: string): string {
     'YX': 'Republic Airways',
     'MQ': 'Envoy Air',
     'OH': 'PSA Airlines',
-    'YX': 'Republic Airways',
     '9E': 'Endeavor Air',
     'YV': 'Mesa Airlines',
     'OO': 'SkyWest Airlines',
