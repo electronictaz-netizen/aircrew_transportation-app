@@ -65,6 +65,10 @@ const schema = a.schema({
       driver: a.belongsTo('Driver', 'driverId'),
       actualPickupTime: a.datetime(),
       actualDropoffTime: a.datetime(),
+      startLocationLat: a.float(), // GPS latitude when trip started
+      startLocationLng: a.float(), // GPS longitude when trip started
+      completeLocationLat: a.float(), // GPS latitude when trip completed
+      completeLocationLng: a.float(), // GPS longitude when trip completed
       flightStatus: a.string(),
       flightStatusLastUpdated: a.datetime(),
       // Recurring job fields

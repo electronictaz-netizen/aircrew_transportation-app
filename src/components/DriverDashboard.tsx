@@ -5,16 +5,22 @@ import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
+import { getCurrentLocation, getLocationErrorMessage, formatCoordinates, isGeolocationAvailable } from '../utils/gpsLocation';
+import { useNotification } from './Notification';
+import NotificationComponent from './Notification';
+import { logger } from '../utils/logger';
 import './DriverDashboard.css';
 
 const client = generateClient<Schema>();
 
 function DriverDashboard() {
   const { companyId } = useCompany();
+  const { notification, showSuccess, showError, showWarning, hideNotification } = useNotification();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [currentDriver, setCurrentDriver] = useState<Schema['Driver']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
+  const [gpsLoading, setGpsLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadDriverAndTrips();
@@ -79,32 +85,126 @@ function DriverDashboard() {
 
 
   const handlePickup = async (tripId: string) => {
+    setGpsLoading(prev => ({ ...prev, [tripId]: true }));
+    
     try {
       const now = new Date().toISOString();
+      let gpsData: { startLocationLat?: number; startLocationLng?: number } = {};
+
+      // Try to get GPS location
+      if (isGeolocationAvailable()) {
+        try {
+          const location = await getCurrentLocation({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0, // Always get fresh location
+          });
+          
+          gpsData = {
+            startLocationLat: location.latitude,
+            startLocationLng: location.longitude,
+          };
+          
+          logger.debug('GPS location captured for pickup:', {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+          });
+        } catch (gpsError: any) {
+          // GPS failed, but continue with pickup recording
+          logger.warn('Failed to get GPS location for pickup:', gpsError);
+          const errorMessage = getLocationErrorMessage(gpsError);
+          
+          // Show warning but allow pickup to proceed
+          showWarning(`Pickup recorded, but GPS location unavailable: ${errorMessage}`);
+        }
+      } else {
+        logger.warn('Geolocation not available in this browser');
+        showWarning('GPS location not available in this browser. Pickup recorded without location.');
+      }
+
+      // Update trip with pickup time and GPS (if available)
       await client.models.Trip.update({
         id: tripId,
         actualPickupTime: now,
         status: 'InProgress',
+        ...gpsData,
       });
+      
       await loadDriverAndTrips();
+      
+      if (gpsData.startLocationLat && gpsData.startLocationLng) {
+        showSuccess(`Pickup recorded with GPS location: ${formatCoordinates(gpsData.startLocationLat, gpsData.startLocationLng)}`);
+      } else {
+        showSuccess('Pickup recorded successfully.');
+      }
     } catch (error) {
-      console.error('Error recording pickup:', error);
-      alert('Failed to record pickup time. Please try again.');
+      logger.error('Error recording pickup:', error);
+      showError('Failed to record pickup time. Please try again.');
+    } finally {
+      setGpsLoading(prev => ({ ...prev, [tripId]: false }));
     }
   };
 
   const handleDropoff = async (tripId: string) => {
+    setGpsLoading(prev => ({ ...prev, [tripId]: true }));
+    
     try {
       const now = new Date().toISOString();
+      let gpsData: { completeLocationLat?: number; completeLocationLng?: number } = {};
+
+      // Try to get GPS location
+      if (isGeolocationAvailable()) {
+        try {
+          const location = await getCurrentLocation({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0, // Always get fresh location
+          });
+          
+          gpsData = {
+            completeLocationLat: location.latitude,
+            completeLocationLng: location.longitude,
+          };
+          
+          logger.debug('GPS location captured for dropoff:', {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+          });
+        } catch (gpsError: any) {
+          // GPS failed, but continue with dropoff recording
+          logger.warn('Failed to get GPS location for dropoff:', gpsError);
+          const errorMessage = getLocationErrorMessage(gpsError);
+          
+          // Show warning but allow dropoff to proceed
+          showWarning(`Dropoff recorded, but GPS location unavailable: ${errorMessage}`);
+        }
+      } else {
+        logger.warn('Geolocation not available in this browser');
+        showWarning('GPS location not available in this browser. Dropoff recorded without location.');
+      }
+
+      // Update trip with dropoff time and GPS (if available)
       await client.models.Trip.update({
         id: tripId,
         actualDropoffTime: now,
         status: 'Completed',
+        ...gpsData,
       });
+      
       await loadDriverAndTrips();
+      
+      if (gpsData.completeLocationLat && gpsData.completeLocationLng) {
+        showSuccess(`Dropoff recorded with GPS location: ${formatCoordinates(gpsData.completeLocationLat, gpsData.completeLocationLng)}`);
+      } else {
+        showSuccess('Dropoff recorded successfully.');
+      }
     } catch (error) {
-      console.error('Error recording dropoff:', error);
-      alert('Failed to record dropoff time. Please try again.');
+      logger.error('Error recording dropoff:', error);
+      showError('Failed to record dropoff time. Please try again.');
+    } finally {
+      setGpsLoading(prev => ({ ...prev, [tripId]: false }));
     }
   };
 
@@ -296,6 +396,24 @@ function DriverDashboard() {
                   </span>
                 </div>
               )}
+
+              {trip.startLocationLat && trip.startLocationLng && (
+                <div className="detail-row">
+                  <span className="label">Pickup GPS:</span>
+                  <span className="value" style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                    📍 {formatCoordinates(trip.startLocationLat, trip.startLocationLng)}
+                  </span>
+                </div>
+              )}
+
+              {trip.completeLocationLat && trip.completeLocationLng && (
+                <div className="detail-row">
+                  <span className="label">Dropoff GPS:</span>
+                  <span className="value" style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                    📍 {formatCoordinates(trip.completeLocationLat, trip.completeLocationLng)}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="trip-actions">
@@ -303,16 +421,22 @@ function DriverDashboard() {
                 <button
                   className="btn btn-pickup"
                   onClick={() => handlePickup(trip.id)}
+                  disabled={gpsLoading[trip.id]}
+                  aria-busy={gpsLoading[trip.id]}
+                  title="Record pickup time and GPS location"
                 >
-                  Record Pickup
+                  {gpsLoading[trip.id] ? 'Getting Location...' : '📍 Record Pickup'}
                 </button>
               )}
               {trip.actualPickupTime && !trip.actualDropoffTime && (
                 <button
                   className="btn btn-dropoff"
                   onClick={() => handleDropoff(trip.id)}
+                  disabled={gpsLoading[trip.id]}
+                  aria-busy={gpsLoading[trip.id]}
+                  title="Record dropoff time and GPS location"
                 >
-                  Record Dropoff
+                  {gpsLoading[trip.id] ? 'Getting Location...' : '📍 Record Dropoff'}
                 </button>
               )}
               {trip.actualDropoffTime && (
@@ -322,6 +446,7 @@ function DriverDashboard() {
           </div>
         ))}
       </div>
+      {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
     </div>
   );
 }
