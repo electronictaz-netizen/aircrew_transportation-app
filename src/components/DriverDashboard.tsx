@@ -23,8 +23,21 @@ function DriverDashboard() {
   const [gpsLoading, setGpsLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    loadDriverAndTrips();
-  }, []);
+    if (companyId) {
+      loadDriverAndTrips();
+    }
+  }, [companyId]);
+
+  // Auto-refresh trips every 30 seconds to catch new assignments
+  useEffect(() => {
+    if (!companyId) return;
+    
+    const interval = setInterval(() => {
+      loadDriverAndTrips();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [companyId]);
 
 
   const loadDriverAndTrips = async () => {
@@ -289,7 +302,29 @@ function DriverDashboard() {
   if (trips.length === 0) {
     return (
       <div className="driver-dashboard">
-        <h2>Driver Dashboard</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2>Driver Dashboard</h2>
+          <button
+            onClick={() => loadDriverAndTrips()}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+            aria-label="Refresh trips"
+          >
+            <span>🔄</span>
+            Refresh
+          </button>
+        </div>
         {currentDriver && (
           <div className="driver-info">
             <p>
@@ -309,7 +344,29 @@ function DriverDashboard() {
 
   return (
     <div className="driver-dashboard">
-      <h2>My Assigned Jobs</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h2>My Assigned Jobs</h2>
+        <button
+          onClick={() => loadDriverAndTrips()}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+          aria-label="Refresh trips"
+        >
+          <span>🔄</span>
+          Refresh
+        </button>
+      </div>
       {currentDriver && (
         <div className="driver-info">
           <p>

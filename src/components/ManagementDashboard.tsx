@@ -557,7 +557,11 @@ function ManagementDashboard() {
       }
       
       const previousDriverId = trip.driverId;
+      // Check if driverId is explicitly in tripData (even if undefined/empty)
+      const hasDriverIdField = 'driverId' in tripData;
       const newDriverId = tripData.driverId;
+      // Unassigning: previous driver exists AND (no driverId field OR empty/undefined value)
+      const isUnassigning = previousDriverId && (hasDriverIdField && (!newDriverId || newDriverId === '' || newDriverId === undefined));
       const isDriverReassignment = previousDriverId && newDriverId && previousDriverId !== newDriverId;
       const isNewAssignment = !previousDriverId && newDriverId;
       
@@ -565,6 +569,22 @@ function ManagementDashboard() {
       const updateData = { ...tripData };
       // Never allow companyId to be changed - always use the trip's existing companyId
       delete updateData.companyId;
+      
+      // Explicitly handle unassignment: set driverId to null and status to Unassigned
+      if (isUnassigning) {
+        updateData.driverId = null;
+        updateData.status = 'Unassigned';
+      } else if (newDriverId && !previousDriverId) {
+        // New assignment: ensure status is Assigned
+        updateData.status = 'Assigned';
+      } else if (newDriverId && previousDriverId && newDriverId !== previousDriverId) {
+        // Reassignment: ensure status is Assigned
+        updateData.status = 'Assigned';
+      } else if (hasDriverIdField && newDriverId && previousDriverId === newDriverId) {
+        // Driver unchanged but field was explicitly set - ensure status is Assigned
+        updateData.status = 'Assigned';
+      }
+      
       const updateResult = await client.models.Trip.update({ id: tripId, ...updateData });
       
       // Send notifications for driver assignment changes
@@ -588,8 +608,8 @@ function ManagementDashboard() {
           }
         }
         
-        // Notify previous driver if reassigned
-        if (isDriverReassignment && previousDriverId) {
+        // Notify previous driver if reassigned or unassigned
+        if ((isDriverReassignment || isUnassigning) && previousDriverId) {
           const previousDriver = drivers.find(d => d.id === previousDriverId);
           if (previousDriver) {
             await notifyPreviousDriver(previousDriver, updateResult.data);
@@ -672,8 +692,22 @@ function ManagementDashboard() {
             if (tripData.pickupLocation !== undefined) updateData.pickupLocation = tripData.pickupLocation;
             if (tripData.dropoffLocation !== undefined) updateData.dropoffLocation = tripData.dropoffLocation;
             if (tripData.numberOfPassengers !== undefined) updateData.numberOfPassengers = tripData.numberOfPassengers;
-            if (tripData.driverId !== undefined) updateData.driverId = tripData.driverId;
-            if (tripData.status !== undefined) updateData.status = tripData.status;
+            // Handle driver assignment/unassignment for child trips
+            if (tripData.driverId !== undefined) {
+              if (!tripData.driverId || tripData.driverId === '') {
+                // Unassigning: set to null and status to Unassigned
+                updateData.driverId = null;
+                updateData.status = 'Unassigned';
+              } else {
+                // Assigning: set driverId and status to Assigned
+                updateData.driverId = tripData.driverId;
+                updateData.status = 'Assigned';
+              }
+            }
+            if (tripData.status !== undefined && tripData.driverId === undefined) {
+              // Only update status if driverId wasn't changed (to avoid conflicts)
+              updateData.status = tripData.status;
+            }
             
             if (Object.keys(updateData).length > 0) {
               await client.models.Trip.update({ id: childTrip.id, ...updateData });
