@@ -8,7 +8,11 @@ interface DriverSelectionDialogProps {
   onSelectDriver: (driverId: string | null) => void;
   onConfirm: () => void;
   onCancel: () => void;
-  tripCount: number;
+  tripCount?: number;
+  title?: string;
+  confirmText?: string;
+  description?: string;
+  allowUnassigned?: boolean;
 }
 
 function DriverSelectionDialog({
@@ -19,16 +23,30 @@ function DriverSelectionDialog({
   onConfirm,
   onCancel,
   tripCount,
+  title,
+  confirmText,
+  description,
+  allowUnassigned = true,
 }: DriverSelectionDialogProps) {
   if (!isOpen) return null;
 
   const activeDrivers = drivers.filter(d => d.isActive !== false);
+  
+  const defaultTitle = tripCount !== undefined 
+    ? `Assign ${tripCount} Trip${tripCount > 1 ? 's' : ''} to Driver`
+    : 'Select Driver';
+  
+  const defaultDescription = tripCount !== undefined
+    ? `Select a driver to assign ${tripCount} selected trip${tripCount > 1 ? 's' : ''} to:`
+    : 'Select a driver:';
+  
+  const defaultConfirmText = 'Assign';
 
   return (
     <div className="dialog-overlay" onClick={onCancel}>
       <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
-          <h3>Assign {tripCount} Trip{tripCount > 1 ? 's' : ''} to Driver</h3>
+          <h3>{title || defaultTitle}</h3>
           <button className="dialog-close" onClick={onCancel} aria-label="Close">
             ×
           </button>
@@ -36,23 +54,25 @@ function DriverSelectionDialog({
         
         <div className="dialog-body">
           <p className="dialog-description">
-            Select a driver to assign {tripCount} selected trip{tripCount > 1 ? 's' : ''} to:
+            {description || defaultDescription}
           </p>
           
           <div className="driver-selection-list">
-            <label className="driver-option">
-              <input
-                type="radio"
-                name="driver"
-                value=""
-                checked={selectedDriverId === null}
-                onChange={() => onSelectDriver(null)}
-              />
-              <span className="driver-option-label">
-                <strong>Unassigned</strong>
-                <span className="driver-option-description">Remove assignment</span>
-              </span>
-            </label>
+            {allowUnassigned && (
+              <label className="driver-option">
+                <input
+                  type="radio"
+                  name="driver"
+                  value=""
+                  checked={selectedDriverId === null}
+                  onChange={() => onSelectDriver(null)}
+                />
+                <span className="driver-option-label">
+                  <strong>Unassigned</strong>
+                  <span className="driver-option-description">Remove assignment</span>
+                </span>
+              </label>
+            )}
             
             {activeDrivers.length === 0 ? (
               <p className="no-drivers">No active drivers available. Please add drivers first.</p>
@@ -90,7 +110,7 @@ function DriverSelectionDialog({
             onClick={onConfirm}
             disabled={selectedDriverId === null && activeDrivers.length > 0}
           >
-            Assign
+            {confirmText || defaultConfirmText}
           </button>
         </div>
       </div>

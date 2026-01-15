@@ -18,7 +18,7 @@ import TripReports from './TripReports';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
-import { sendDailyAssignmentEmailsToAllDrivers } from '../utils/dailyAssignmentEmail';
+import { sendDailyAssignmentEmailsToAllDrivers, sendDailyAssignmentToDriver } from '../utils/dailyAssignmentEmail';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -41,6 +41,8 @@ function ManagementDashboard() {
   const [showDriverDialog, setShowDriverDialog] = useState(false);
   const [tripsToAssign, setTripsToAssign] = useState<string[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [showEmailDriverDialog, setShowEmailDriverDialog] = useState(false);
+  const [selectedEmailDriverId, setSelectedEmailDriverId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
 
@@ -992,7 +994,22 @@ function ManagementDashboard() {
     loadLocations();
   };
 
-  const handleSendDailyAssignmentEmails = async () => {
+  const handleSendDailyAssignmentEmails = () => {
+    // Ask if user wants to send to all drivers or a specific driver
+    const sendToAll = confirm(
+      'Send daily assignment emails?\n\n' +
+      'Click OK to send to ALL drivers, or Cancel to select a specific driver.'
+    );
+    
+    if (sendToAll) {
+      handleSendToAllDrivers();
+    } else {
+      setShowEmailDriverDialog(true);
+      setSelectedEmailDriverId(null);
+    }
+  };
+
+  const handleSendToAllDrivers = async () => {
     // Ask user which notification methods to use
     // Note: Individual driver preferences will be respected automatically
     const useEmail = confirm(
@@ -1055,6 +1072,79 @@ function ManagementDashboard() {
       message += `Note: Notifications sent based on each driver's preference setting.`;
       
       alert(message);
+    } catch (error) {
+      console.error('Error sending daily assignment notifications:', error);
+      alert('Failed to send daily assignment notifications. Please check the console for details.');
+    }
+  };
+
+  const handleConfirmEmailDriver = async () => {
+    if (!selectedEmailDriverId) {
+      alert('Please select a driver.');
+      return;
+    }
+
+    const driver = drivers.find(d => d.id === selectedEmailDriverId);
+    if (!driver) {
+      alert('Driver not found.');
+      return;
+    }
+
+    // Ask user which notification methods to use
+    const useEmail = confirm(
+      `Send daily assignment email to ${driver.name}?\n\n` +
+      'Click OK for Email, Cancel to skip Email.\n\n' +
+      `Note: ${driver.email ? 'Driver has email address.' : 'Driver has no email address - email will be skipped.'}`
+    );
+    
+    const useSMS = confirm(
+      `Send daily assignment SMS to ${driver.name}?\n\n` +
+      'Click OK for SMS, Cancel to skip SMS.\n\n' +
+      `Note: ${driver.phone ? 'Driver has phone number.' : 'Driver has no phone number - SMS will be skipped.'}\n` +
+      'SMS requires phone numbers and will open SMS apps. For production, backend API integration is needed.'
+    );
+    
+    if (!useEmail && !useSMS) {
+      alert('No notification methods selected. Operation cancelled.');
+      return;
+    }
+
+    try {
+      const result = await sendDailyAssignmentToDriver(
+        selectedEmailDriverId,
+        undefined,
+        {
+          email: useEmail,
+          sms: useSMS,
+        },
+        companyId || undefined
+      );
+
+      let message = `Daily assignment notifications for ${driver.name}:\n\n`;
+      
+      if (useEmail) {
+        if (result.email) {
+          message += `📧 Email: ✅ Sent\n`;
+        } else {
+          message += `📧 Email: ❌ Failed (${driver.email ? 'error occurred' : 'no email address'})\n`;
+        }
+      }
+      
+      if (useSMS) {
+        if (result.sms) {
+          message += `📱 SMS: ✅ Sent\n`;
+        } else {
+          message += `📱 SMS: ❌ Failed (${driver.phone ? 'error occurred' : 'no phone number'})\n`;
+        }
+      }
+
+      if (!result.email && !result.sms) {
+        message += `\nNote: Driver may have no trips scheduled for tomorrow, or missing contact information.`;
+      }
+
+      alert(message);
+      setShowEmailDriverDialog(false);
+      setSelectedEmailDriverId(null);
     } catch (error) {
       console.error('Error sending daily assignment notifications:', error);
       alert('Failed to send daily assignment notifications. Please check the console for details.');
@@ -1413,6 +1503,22 @@ function ManagementDashboard() {
           setSelectedDriverId(null);
         }}
         tripCount={tripsToAssign.length}
+      />
+
+      <DriverSelectionDialog
+        isOpen={showEmailDriverDialog}
+        drivers={drivers}
+        selectedDriverId={selectedEmailDriverId}
+        onSelectDriver={setSelectedEmailDriverId}
+        onConfirm={handleConfirmEmailDriver}
+        onCancel={() => {
+          setShowEmailDriverDialog(false);
+          setSelectedEmailDriverId(null);
+        }}
+        title="Select Driver for Daily Assignment Email"
+        confirmText="Continue"
+        description="Select a driver to send daily assignment notifications to:"
+        allowUnassigned={false}
       />
     </div>
   );
