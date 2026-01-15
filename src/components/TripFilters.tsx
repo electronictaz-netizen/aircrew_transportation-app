@@ -139,23 +139,49 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
         try {
           // Filter based on the category's field
           if (category.field === 'locationCategory') {
-            // Check both pickup and dropoff locations for the category
+            // Check both pickup and dropoff locations for the category or airport code
             filtered = filtered.filter((item) => {
               const trip = item.trip;
-              // Get category from pickup location
-              const pickupCategory = locationCategoryMap.get(trip.pickupLocation || '') || 
-                                    (trip.primaryLocationCategory || trip.airport || '');
-              // Get category from dropoff location
-              const dropoffCategory = locationCategoryMap.get(trip.dropoffLocation || '') || '';
-              // Match if either pickup or dropoff has the category
-              return pickupCategory === filterValue || dropoffCategory === filterValue;
+              
+              // Helper to extract airport code from location name
+              const getAirportCode = (locationName: string | null | undefined): string | null => {
+                if (!locationName) return null;
+                const match = locationName.match(/\(([A-Z]{3})\)/);
+                return match ? match[1] : null;
+              };
+              
+              // Helper to check if location matches filter value
+              const locationMatches = (locationName: string | null | undefined): boolean => {
+                if (!locationName) return false;
+                // Check if location name contains the filter value (for airport codes)
+                if (locationName.includes(`(${filterValue})`)) return true;
+                // Check if the location's category matches
+                const locCategory = locationCategoryMap.get(locationName);
+                if (locCategory === filterValue) return true;
+                // Check if airport code matches
+                const airportCode = getAirportCode(locationName);
+                if (airportCode === filterValue) return true;
+                return false;
+              };
+              
+              // Check pickup location
+              const pickupMatches = locationMatches(trip.pickupLocation) ||
+                                   (trip.primaryLocationCategory === filterValue) ||
+                                   (trip.airport === filterValue);
+              
+              // Check dropoff location
+              const dropoffMatches = locationMatches(trip.dropoffLocation);
+              
+              return pickupMatches || dropoffMatches;
             });
           } else if (category.field === 'primaryLocationCategory') {
             // Only check pickup location category (backward compatibility)
             filtered = filtered.filter((item) => {
               const trip = item.trip;
+              // Check airport code in location name
+              const pickupAirportCode = trip.pickupLocation?.match(/\(([A-Z]{3})\)/)?.[1];
               const categoryValue = trip.primaryLocationCategory || trip.airport || '';
-              return categoryValue === filterValue;
+              return categoryValue === filterValue || pickupAirportCode === filterValue;
             });
           } else if (category.field === 'pickupLocation') {
             filtered = filtered.filter((item) => item.trip.pickupLocation === filterValue);
@@ -465,24 +491,67 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
               values = category.values.split(',').map(v => v.trim()).filter(v => v);
             }
           } else {
-            // Auto-generate from trips if no values specified
+            // Auto-generate from trips and locations if no values specified
             if (category.field === 'locationCategory' || category.field === 'primaryLocationCategory') {
-              const uniqueCategories = new Set<string>();
+              const uniqueValues = new Set<string>();
+              
+              // First, get airport codes from locations
+              locations
+                .filter(l => l.isActive !== false && l.category)
+                .forEach(loc => {
+                  // Extract airport code from location name (e.g., "Buffalo Niagara International Airport (BUF)" -> "BUF")
+                  const airportCodeMatch = loc.name.match(/\(([A-Z]{3})\)/);
+                  if (airportCodeMatch) {
+                    uniqueValues.add(airportCodeMatch[1]);
+                  } else {
+                    // If no airport code, use the category name
+                    if (loc.category) {
+                      uniqueValues.add(loc.category);
+                    }
+                  }
+                });
+              
+              // Also check trips for airport/primaryLocationCategory values
               trips.forEach(trip => {
                 // For locationCategory, check both pickup and dropoff
                 if (category.field === 'locationCategory') {
-                  const pickupCat = locationCategoryMap.get(trip.pickupLocation || '') || 
-                                    trip.primaryLocationCategory || trip.airport || '';
-                  const dropoffCat = locationCategoryMap.get(trip.dropoffLocation || '') || '';
-                  if (pickupCat) uniqueCategories.add(pickupCat);
-                  if (dropoffCat) uniqueCategories.add(dropoffCat);
+                  // Extract airport codes from location names
+                  if (trip.pickupLocation) {
+                    const pickupCodeMatch = trip.pickupLocation.match(/\(([A-Z]{3})\)/);
+                    if (pickupCodeMatch) {
+                      uniqueValues.add(pickupCodeMatch[1]);
+                    } else {
+                      const pickupCat = locationCategoryMap.get(trip.pickupLocation) || 
+                                        trip.primaryLocationCategory || trip.airport || '';
+                      if (pickupCat) uniqueValues.add(pickupCat);
+                    }
+                  }
+                  if (trip.dropoffLocation) {
+                    const dropoffCodeMatch = trip.dropoffLocation.match(/\(([A-Z]{3})\)/);
+                    if (dropoffCodeMatch) {
+                      uniqueValues.add(dropoffCodeMatch[1]);
+                    } else {
+                      const dropoffCat = locationCategoryMap.get(trip.dropoffLocation) || '';
+                      if (dropoffCat) uniqueValues.add(dropoffCat);
+                    }
+                  }
+                  // Also add legacy airport codes
+                  if (trip.airport) uniqueValues.add(trip.airport);
+                  if (trip.primaryLocationCategory) uniqueValues.add(trip.primaryLocationCategory);
                 } else {
                   // For primaryLocationCategory, only check pickup
+                  if (trip.pickupLocation) {
+                    const pickupCodeMatch = trip.pickupLocation.match(/\(([A-Z]{3})\)/);
+                    if (pickupCodeMatch) {
+                      uniqueValues.add(pickupCodeMatch[1]);
+                    }
+                  }
                   const cat = trip.primaryLocationCategory || trip.airport;
-                  if (cat) uniqueCategories.add(cat);
+                  if (cat) uniqueValues.add(cat);
                 }
               });
-              values = Array.from(uniqueCategories).sort();
+              
+              values = Array.from(uniqueValues).sort();
             } else {
               values = [];
             }

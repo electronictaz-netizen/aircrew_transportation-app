@@ -219,39 +219,78 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                     className="btn btn-secondary"
                     onClick={async () => {
                       // Auto-populate from location categories and existing trips
-                      const categories = new Set<string>();
+                      const values = new Set<string>();
                       
-                      // First, get categories from saved locations
-                      locations
-                        .filter(l => l.isActive !== false && l.category)
-                        .forEach(l => categories.add(l.category!));
+                      // If filtering by locationCategory, get the actual location values (not just category names)
+                      if (formData.field === 'locationCategory' || formData.field === 'primaryLocationCategory') {
+                        // Get all locations with categories
+                        const locationsByCategory = new Map<string, Set<string>>();
+                        locations
+                          .filter(l => l.isActive !== false && l.category)
+                          .forEach(l => {
+                            const cat = l.category!;
+                            if (!locationsByCategory.has(cat)) {
+                              locationsByCategory.set(cat, new Set());
+                            }
+                            // Extract airport code from location name (e.g., "Buffalo Niagara International Airport (BUF)" -> "BUF")
+                            const airportCodeMatch = l.name.match(/\(([A-Z]{3})\)/);
+                            if (airportCodeMatch) {
+                              locationsByCategory.get(cat)!.add(airportCodeMatch[1]);
+                            } else {
+                              // If no airport code, use the category name itself
+                              locationsByCategory.get(cat)!.add(cat);
+                            }
+                          });
+                        
+                        // For each category, add its values
+                        locationsByCategory.forEach((locationValues, category) => {
+                          locationValues.forEach(value => values.add(value));
+                        });
+                      } else {
+                        // For other fields, get categories from saved locations
+                        locations
+                          .filter(l => l.isActive !== false && l.category)
+                          .forEach(l => values.add(l.category!));
+                      }
                       
                       // Also check existing trips for airport/primaryLocationCategory values
                       // This pulls in old hardcoded airports (BUF, ROC, SYR, ALB, etc.)
                       trips.forEach(trip => {
                         if (trip.primaryLocationCategory) {
-                          categories.add(trip.primaryLocationCategory);
+                          values.add(trip.primaryLocationCategory);
                         }
                         if (trip.airport) {
-                          categories.add(trip.airport);
+                          values.add(trip.airport);
                         }
                         // Check pickup and dropoff locations if they match saved locations
                         if (trip.pickupLocation) {
                           const pickupLoc = locations.find(l => l.name === trip.pickupLocation && l.category);
                           if (pickupLoc?.category) {
-                            categories.add(pickupLoc.category);
+                            // Extract airport code if available
+                            const airportCodeMatch = pickupLoc.name.match(/\(([A-Z]{3})\)/);
+                            if (airportCodeMatch) {
+                              values.add(airportCodeMatch[1]);
+                            } else {
+                              values.add(pickupLoc.category);
+                            }
                           }
                         }
                         if (trip.dropoffLocation) {
                           const dropoffLoc = locations.find(l => l.name === trip.dropoffLocation && l.category);
                           if (dropoffLoc?.category) {
-                            categories.add(dropoffLoc.category);
+                            // Extract airport code if available
+                            const airportCodeMatch = dropoffLoc.name.match(/\(([A-Z]{3})\)/);
+                            if (airportCodeMatch) {
+                              values.add(airportCodeMatch[1]);
+                            } else {
+                              values.add(dropoffLoc.category);
+                            }
                           }
                         }
                       });
                       
-                      const categoryArray = Array.from(categories).sort();
-                      setFormData({ ...formData, values: categoryArray.join(', ') });
+                      const valuesArray = Array.from(values).sort();
+                      setFormData({ ...formData, values: valuesArray.join(', ') });
                     }}
                     title="Auto-populate from existing location categories and trips (includes old airport codes)"
                   >
