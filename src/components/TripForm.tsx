@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
 import { validateFlightNumber, validateLocation, validatePassengers, validateFutureDate, validateRecurringEndDate, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
+import { formatCoordinates } from '../utils/gpsLocation';
+import { reverseGeocode } from '../utils/reverseGeocoding';
 import './TripForm.css';
 
 interface TripFormProps {
@@ -60,6 +62,47 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
   const [passengerInput, setPassengerInput] = useState(String(formData.numberOfPassengers));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  
+  // GPS address states
+  const [pickupAddress, setPickupAddress] = useState<string | null>(null);
+  const [dropoffAddress, setDropoffAddress] = useState<string | null>(null);
+  const [loadingPickupAddress, setLoadingPickupAddress] = useState(false);
+  const [loadingDropoffAddress, setLoadingDropoffAddress] = useState(false);
+
+  // Load addresses for GPS coordinates when trip is loaded or changes
+  useEffect(() => {
+    const loadAddresses = async () => {
+      // Load pickup address
+      if (trip?.startLocationLat && trip?.startLocationLng) {
+        setLoadingPickupAddress(true);
+        const result = await reverseGeocode(trip.startLocationLat, trip.startLocationLng);
+        if (result.success && result.address) {
+          setPickupAddress(result.address);
+        } else {
+          setPickupAddress(null);
+        }
+        setLoadingPickupAddress(false);
+      } else {
+        setPickupAddress(null);
+      }
+
+      // Load dropoff address
+      if (trip?.completeLocationLat && trip?.completeLocationLng) {
+        setLoadingDropoffAddress(true);
+        const result = await reverseGeocode(trip.completeLocationLat, trip.completeLocationLng);
+        if (result.success && result.address) {
+          setDropoffAddress(result.address);
+        } else {
+          setDropoffAddress(null);
+        }
+        setLoadingDropoffAddress(false);
+      } else {
+        setDropoffAddress(null);
+      }
+    };
+
+    loadAddresses();
+  }, [trip?.startLocationLat, trip?.startLocationLng, trip?.completeLocationLat, trip?.completeLocationLng]);
   
   // Initialize location modes based on whether current values match saved locations
   const getInitialLocationMode = (location: string): 'text' | 'location' => {
@@ -614,6 +657,77 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 {errors.recurringEndDate && <span id="recurringEndDate-error" className="error-message" role="alert">{errors.recurringEndDate}</span>}
               </div>
             </>
+          )}
+
+          {/* GPS Location Information (only shown when editing existing trip with GPS data) */}
+          {trip && (trip.startLocationLat || trip.completeLocationLat) && (
+            <div className="form-group" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+              <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>GPS Location Information</h4>
+              
+              {trip.startLocationLat && trip.startLocationLng && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                    Pickup Location GPS
+                  </label>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                    📍 Coordinates: {formatCoordinates(trip.startLocationLat, trip.startLocationLng)}
+                  </div>
+                  {loadingPickupAddress ? (
+                    <div style={{ fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic' }}>
+                      Loading address...
+                    </div>
+                  ) : pickupAddress ? (
+                    <div style={{ fontSize: '0.875rem', color: '#1f2937', marginTop: '0.25rem' }}>
+                      🏠 Address: {pickupAddress}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.875rem', color: '#9ca3af', fontStyle: 'italic' }}>
+                      Address not available
+                    </div>
+                  )}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${trip.startLocationLat},${trip.startLocationLng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '0.875rem', color: '#3b82f6', textDecoration: 'none', marginTop: '0.25rem', display: 'inline-block' }}
+                  >
+                    View on Map ↗
+                  </a>
+                </div>
+              )}
+
+              {trip.completeLocationLat && trip.completeLocationLng && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                    Dropoff Location GPS
+                  </label>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                    📍 Coordinates: {formatCoordinates(trip.completeLocationLat, trip.completeLocationLng)}
+                  </div>
+                  {loadingDropoffAddress ? (
+                    <div style={{ fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic' }}>
+                      Loading address...
+                    </div>
+                  ) : dropoffAddress ? (
+                    <div style={{ fontSize: '0.875rem', color: '#1f2937', marginTop: '0.25rem' }}>
+                      🏠 Address: {dropoffAddress}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.875rem', color: '#9ca3af', fontStyle: 'italic' }}>
+                      Address not available
+                    </div>
+                  )}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${trip.completeLocationLat},${trip.completeLocationLng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '0.875rem', color: '#3b82f6', textDecoration: 'none', marginTop: '0.25rem', display: 'inline-block' }}
+                  >
+                    View on Map ↗
+                  </a>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="form-actions">

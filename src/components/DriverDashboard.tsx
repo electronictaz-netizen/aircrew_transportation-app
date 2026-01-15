@@ -454,23 +454,6 @@ function DriverDashboard() {
                 </div>
               )}
 
-              {trip.startLocationLat && trip.startLocationLng && (
-                <div className="detail-row">
-                  <span className="label">Pickup GPS:</span>
-                  <span className="value" style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                    📍 {formatCoordinates(trip.startLocationLat, trip.startLocationLng)}
-                  </span>
-                </div>
-              )}
-
-              {trip.completeLocationLat && trip.completeLocationLng && (
-                <div className="detail-row">
-                  <span className="label">Dropoff GPS:</span>
-                  <span className="value" style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                    📍 {formatCoordinates(trip.completeLocationLat, trip.completeLocationLng)}
-                  </span>
-                </div>
-              )}
             </div>
 
             <div className="trip-actions">

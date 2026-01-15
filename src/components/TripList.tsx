@@ -257,9 +257,22 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
             </tr>
           ) : (
             displayedTrips.map((trip) => (
-            <tr key={trip.id} className={selectedTrips.has(trip.id) ? 'selected' : ''}>
+            <tr 
+              key={trip.id} 
+              className={selectedTrips.has(trip.id) ? 'selected' : ''}
+              onClick={(e) => {
+                // Don't trigger if clicking on checkbox, button, or link
+                const target = e.target as HTMLElement;
+                if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.closest('button') || target.closest('a')) {
+                  return;
+                }
+                onEdit(trip);
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Click to view/edit trip details"
+            >
               {onDeleteMultiple && (
-                <td>
+                <td onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedTrips.has(trip.id)}
@@ -267,7 +280,14 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   />
                 </td>
               )}
-              <td>
+              <td
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(trip);
+                }}
+                style={{ cursor: 'pointer', fontWeight: '500', color: '#3b82f6' }}
+                title="Click to view/edit trip"
+              >
                 {trip.primaryLocationCategory || trip.airport || 'N/A'}
               </td>
               <td>
@@ -326,7 +346,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   ? format(new Date(trip.actualDropoffTime), 'MMM dd, yyyy HH:mm')
                   : '-'}
               </td>
-              <td>
+              <td onClick={(e) => e.stopPropagation()}>
                 <div className="action-buttons">
                   <button
                     className="btn-icon btn-edit"
@@ -362,6 +382,16 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
             <div
               key={trip.id}
               className={`trip-card-mobile ${selectedTrips.has(trip.id) ? 'selected' : ''}`}
+              onClick={(e) => {
+                // Don't trigger if clicking on checkbox, button, or link
+                const target = e.target as HTMLElement;
+                if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.closest('button') || target.closest('a')) {
+                  return;
+                }
+                onEdit(trip);
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Click to view/edit trip details"
             >
               <div className="trip-card-header">
                 <div className="trip-card-title">
@@ -371,6 +401,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                       className="trip-card-checkbox"
                       checked={selectedTrips.has(trip.id)}
                       onChange={() => handleSelectTrip(trip.id)}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   )}
                   <span>
@@ -382,7 +413,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                     )}
                   </span>
                 </div>
-                <div className="action-buttons">
+                <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
                   <button
                     className="btn-icon btn-edit"
                     onClick={() => onEdit(trip)}
@@ -401,9 +432,17 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
               </div>
               
               {(trip.primaryLocationCategory || trip.airport) && (
-                <div className="trip-card-field">
+                <div 
+                  className="trip-card-field"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(trip);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                  title="Click to view/edit trip"
+                >
                   <span className="trip-card-label">Category</span>
-                  <span className="trip-card-value">
+                  <span className="trip-card-value" style={{ color: '#3b82f6', fontWeight: '500' }}>
                     {trip.primaryLocationCategory || trip.airport}
                   </span>
                 </div>
