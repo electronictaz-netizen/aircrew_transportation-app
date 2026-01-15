@@ -13,6 +13,7 @@ import CompanyManagement from './CompanyManagement';
 import TripList from './TripList';
 import TripCalendar from './TripCalendar';
 import DriverSelectionDialog from './DriverSelectionDialog';
+import DriverReports from './DriverReports';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
@@ -32,6 +33,7 @@ function ManagementDashboard() {
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
   const [showCompanyManagement, setShowCompanyManagement] = useState(false);
+  const [showDriverReports, setShowDriverReports] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Schema['Trip']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDriverDialog, setShowDriverDialog] = useState(false);
@@ -1167,6 +1169,13 @@ function ManagementDashboard() {
             Company Settings
           </button>
           <button
+            className="btn btn-secondary"
+            onClick={() => setShowDriverReports(true)}
+            title="View driver reports and statistics"
+          >
+            📊 Driver Reports
+          </button>
+          <button
             className="btn btn-danger"
             onClick={handleDeleteAllTrips}
             title="Delete all trips from the database"
@@ -1250,6 +1259,19 @@ function ManagementDashboard() {
           onUpdate={() => {
             // Refresh company context
             window.location.reload();
+          }}
+        />
+      )}
+
+      {showDriverReports && (
+        <DriverReports
+          trips={trips}
+          drivers={drivers}
+          onClose={() => setShowDriverReports(false)}
+          onEdit={(trip) => {
+            setEditingTrip(trip);
+            setShowTripForm(true);
+            setShowDriverReports(false);
           }}
         />
       )}
