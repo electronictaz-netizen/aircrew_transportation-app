@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 import { extractAirlineCode, getAirlineName, groupTripsByAirline } from '../utils/airlineCode';
 import { useNotification } from './Notification';
 import './DriverReports.css';
@@ -196,76 +197,124 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
 
   const handleExport = () => {
     try {
-      let exportData: any = {};
+      const workbook = XLSX.utils.book_new();
+      const dateStr = new Date().toISOString().split('T')[0];
 
       if (viewMode === 'summary') {
-        exportData = {
-          reportType: 'Driver Summary Report',
-          generatedAt: new Date().toISOString(),
-          dateRange: {
-            start: dateFilterStart || 'All',
-            end: dateFilterEnd || 'All',
-          },
-          drivers: driverStats.map(stat => ({
-            driverName: stat.driverName,
-            totalTrips: stat.totalTrips,
-            completedTrips: stat.completedTrips,
-            assignedTrips: stat.assignedTrips,
-            inProgressTrips: stat.inProgressTrips,
-            tripsByAirline: Object.fromEntries(stat.tripsByAirline),
-          })),
-        };
+        // Summary sheet with driver statistics
+        const summaryData = driverStats.map(stat => {
+          const airlineBreakdown = Array.from(stat.tripsByAirline.entries())
+            .map(([airline, count]) => `${getAirlineName(airline)}: ${count}`)
+            .join('; ');
+          
+          return {
+            'Driver Name': stat.driverName,
+            'Total Trips': stat.totalTrips,
+            'Completed': stat.completedTrips,
+            'Assigned': stat.assignedTrips,
+            'In Progress': stat.inProgressTrips,
+            'Unassigned': stat.unassignedTrips,
+            'Trips by Airline': airlineBreakdown,
+            'Date Range Start': stat.dateRange.earliest ? format(stat.dateRange.earliest, 'MMM d, yyyy') : '',
+            'Date Range End': stat.dateRange.latest ? format(stat.dateRange.latest, 'MMM d, yyyy') : '',
+          };
+        });
+
+        const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Driver Summary');
+
+        // Add metadata sheet
+        const metadata = [
+          { 'Report Type': 'Driver Summary Report' },
+          { 'Generated At': new Date().toLocaleString() },
+          { 'Date Range Start': dateFilterStart || 'All' },
+          { 'Date Range End': dateFilterEnd || 'All' },
+          { 'Total Trips': filteredTrips.length },
+        ];
+        const metadataSheet = XLSX.utils.json_to_sheet(metadata);
+        XLSX.utils.book_append_sheet(workbook, metadataSheet, 'Report Info');
+
       } else if (viewMode === 'driver' && selectedDriverId) {
         const driver = drivers.find(d => d.id === selectedDriverId);
-        exportData = {
-          reportType: 'Driver Detail Report',
-          generatedAt: new Date().toISOString(),
-          driver: {
-            name: driver?.name || 'Unknown',
-            email: driver?.email || '',
-            phone: driver?.phone || '',
-          },
-          statistics: driverStats.find(s => s.driverId === selectedDriverId),
-          trips: selectedDriverTrips.map(trip => ({
-            pickupDate: trip.pickupDate,
-            flightNumber: trip.flightNumber,
-            airline: extractAirlineCode(trip.flightNumber),
-            pickupLocation: trip.pickupLocation,
-            dropoffLocation: trip.dropoffLocation,
-            status: trip.status,
-            numberOfPassengers: trip.numberOfPassengers,
-          })),
-        };
+        const driverStat = driverStats.find(s => s.driverId === selectedDriverId);
+
+        // Driver info sheet
+        const driverInfo = [
+          { 'Field': 'Driver Name', 'Value': driver?.name || 'Unknown' },
+          { 'Field': 'Email', 'Value': driver?.email || '' },
+          { 'Field': 'Phone', 'Value': driver?.phone || '' },
+          { 'Field': 'Total Trips', 'Value': driverStat?.totalTrips || 0 },
+          { 'Field': 'Completed Trips', 'Value': driverStat?.completedTrips || 0 },
+          { 'Field': 'Assigned Trips', 'Value': driverStat?.assignedTrips || 0 },
+          { 'Field': 'In Progress Trips', 'Value': driverStat?.inProgressTrips || 0 },
+          { 'Field': 'Unassigned Trips', 'Value': driverStat?.unassignedTrips || 0 },
+        ];
+        const driverInfoSheet = XLSX.utils.json_to_sheet(driverInfo);
+        XLSX.utils.book_append_sheet(workbook, driverInfoSheet, 'Driver Info');
+
+        // Trips sheet
+        const tripsData = selectedDriverTrips.map(trip => ({
+          'Pickup Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
+          'Flight Number': trip.flightNumber || '',
+          'Airline': getAirlineName(extractAirlineCode(trip.flightNumber)),
+          'Pickup Location': trip.pickupLocation || '',
+          'Dropoff Location': trip.dropoffLocation || '',
+          'Passengers': trip.numberOfPassengers || 1,
+          'Status': trip.status || 'Unassigned',
+          'Actual Pickup': trip.actualPickupTime ? format(new Date(trip.actualPickupTime), 'MMM d, yyyy HH:mm') : '',
+          'Actual Dropoff': trip.actualDropoffTime ? format(new Date(trip.actualDropoffTime), 'MMM d, yyyy HH:mm') : '',
+        }));
+
+        const tripsSheet = XLSX.utils.json_to_sheet(tripsData);
+        XLSX.utils.book_append_sheet(workbook, tripsSheet, 'Trips');
+
+        // Airline breakdown sheet
+        const airlineBreakdown = Array.from(tripsByAirline.entries())
+          .map(([airlineCode, airlineTrips]) => ({
+            'Airline': getAirlineName(airlineCode),
+            'Airline Code': airlineCode,
+            'Trip Count': airlineTrips.length,
+          }))
+          .sort((a, b) => b['Trip Count'] - a['Trip Count']);
+
+        const airlineSheet = XLSX.utils.json_to_sheet(airlineBreakdown);
+        XLSX.utils.book_append_sheet(workbook, airlineSheet, 'By Airline');
+
       } else if (viewMode === 'airline' && selectedAirline) {
-        exportData = {
-          reportType: 'Airline Report',
-          generatedAt: new Date().toISOString(),
-          airline: {
-            code: selectedAirline,
-            name: getAirlineName(selectedAirline),
-          },
-          trips: airlineTrips.map(trip => ({
-            pickupDate: trip.pickupDate,
-            flightNumber: trip.flightNumber,
-            driver: drivers.find(d => d.id === trip.driverId)?.name || 'Unassigned',
-            pickupLocation: trip.pickupLocation,
-            dropoffLocation: trip.dropoffLocation,
-            status: trip.status,
-            numberOfPassengers: trip.numberOfPassengers,
-          })),
-        };
+        // Airline info sheet
+        const airlineInfo = [
+          { 'Field': 'Airline Code', 'Value': selectedAirline },
+          { 'Field': 'Airline Name', 'Value': getAirlineName(selectedAirline) },
+          { 'Field': 'Total Trips', 'Value': airlineTrips.length },
+        ];
+        const airlineInfoSheet = XLSX.utils.json_to_sheet(airlineInfo);
+        XLSX.utils.book_append_sheet(workbook, airlineInfoSheet, 'Airline Info');
+
+        // Trips sheet
+        const tripsData = airlineTrips.map(trip => {
+          const driver = drivers.find(d => d.id === trip.driverId);
+          return {
+            'Pickup Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
+            'Flight Number': trip.flightNumber || '',
+            'Driver': driver?.name || 'Unassigned',
+            'Driver Email': driver?.email || '',
+            'Driver Phone': driver?.phone || '',
+            'Pickup Location': trip.pickupLocation || '',
+            'Dropoff Location': trip.dropoffLocation || '',
+            'Passengers': trip.numberOfPassengers || 1,
+            'Status': trip.status || 'Unassigned',
+            'Actual Pickup': trip.actualPickupTime ? format(new Date(trip.actualPickupTime), 'MMM d, yyyy HH:mm') : '',
+            'Actual Dropoff': trip.actualDropoffTime ? format(new Date(trip.actualDropoffTime), 'MMM d, yyyy HH:mm') : '',
+          };
+        });
+
+        const tripsSheet = XLSX.utils.json_to_sheet(tripsData);
+        XLSX.utils.book_append_sheet(workbook, tripsSheet, 'Trips');
       }
 
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `driver-report-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Generate Excel file
+      const fileName = `driver-report-${dateStr}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
 
       showNotification('Report exported successfully!', 'success');
     } catch (error) {
@@ -344,9 +393,9 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
             <button
               className="btn btn-secondary"
               onClick={handleExport}
-              title="Export report as JSON"
+              title="Export report as Excel (.xlsx)"
             >
-              📥 Export
+              📥 Export Excel
             </button>
             <button
               className="btn btn-secondary"
