@@ -243,7 +243,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                           });
                         
                         // For each category, add its values
-                        locationsByCategory.forEach((locationValues, category) => {
+                        locationsByCategory.forEach((locationValues) => {
                           locationValues.forEach(value => values.add(value));
                         });
                       } else {
