@@ -27,10 +27,26 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     return acc;
   }, {} as Record<string, typeof activeLocations>);
 
+  // Determine trip type based on existing flight number format
+  // If it looks like a flight number (e.g., AA1234, UA123), assume Airport Trip
+  // Otherwise, assume Standard Trip (for backward compatibility, default to Airport Trip if empty)
+  const getInitialTripType = (flightNumber: string | undefined): 'Airport Trip' | 'Standard Trip' => {
+    if (!flightNumber) return 'Airport Trip'; // Default for new trips
+    // Simple heuristic: if it matches flight number pattern, it's an airport trip
+    // Otherwise, it's a standard trip
+    const flightNumberPattern = /^[A-Z]{2,3}\d{1,4}[A-Z]?$/i;
+    return flightNumberPattern.test(flightNumber.trim()) ? 'Airport Trip' : 'Standard Trip';
+  };
+
+  const initialTripType = trip?.flightNumber ? getInitialTripType(trip.flightNumber) : 'Airport Trip';
+  const isInitialAirportTrip = initialTripType === 'Airport Trip';
+
   const [formData, setFormData] = useState({
+    tripType: initialTripType,
     primaryLocationCategory: trip?.primaryLocationCategory || trip?.airport || '',
     pickupDate: trip?.pickupDate ? format(new Date(trip.pickupDate), "yyyy-MM-dd'T'HH:mm") : '',
-    flightNumber: trip?.flightNumber || '',
+    flightNumber: isInitialAirportTrip ? (trip?.flightNumber || '') : '',
+    standardTripIdentifier: !isInitialAirportTrip ? (trip?.flightNumber || '') : '',
     pickupLocation: trip?.pickupLocation || '',
     dropoffLocation: trip?.dropoffLocation || '',
     numberOfPassengers: trip?.numberOfPassengers || 1,
@@ -75,10 +91,17 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       }
     }
     
-    // Validate flight number
-    const flightValidation = validateFlightNumber(formData.flightNumber);
-    if (!flightValidation.isValid) {
-      newErrors.flightNumber = flightValidation.error || 'Invalid flight number';
+    // Validate flight number or standard trip identifier based on trip type
+    if (formData.tripType === 'Airport Trip') {
+      const flightValidation = validateFlightNumber(formData.flightNumber);
+      if (!flightValidation.isValid) {
+        newErrors.flightNumber = flightValidation.error || 'Invalid flight number';
+      }
+    } else {
+      // Standard Trip: just check that something is entered
+      if (!formData.standardTripIdentifier || formData.standardTripIdentifier.trim() === '') {
+        newErrors.standardTripIdentifier = 'Job number, PO number, or identifier is required';
+      }
     }
     
     // Validate pickup location
@@ -129,16 +152,25 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       }
       
       // Sanitize inputs
-      const flightValidation = validateFlightNumber(formData.flightNumber);
       const pickupValidation = validateLocation(formData.pickupLocation);
       const dropoffValidation = validateLocation(formData.dropoffLocation);
       const passengerValidation = validatePassengers(formData.numberOfPassengers);
+      
+      // Get the identifier value based on trip type
+      let identifierValue: string;
+      if (formData.tripType === 'Airport Trip') {
+        const flightValidation = validateFlightNumber(formData.flightNumber);
+        identifierValue = flightValidation.sanitized;
+      } else {
+        // Standard Trip: use the standard trip identifier, trimmed
+        identifierValue = formData.standardTripIdentifier.trim();
+      }
       
       const submitData: any = {
         primaryLocationCategory: primaryCategory || undefined,
         airport: primaryCategory || undefined, // Keep for backward compatibility (use category if available)
         pickupDate: new Date(formData.pickupDate).toISOString(),
-        flightNumber: flightValidation.sanitized,
+        flightNumber: identifierValue, // Store in flightNumber field regardless of trip type
         pickupLocation: pickupValidation.sanitized,
         dropoffLocation: dropoffValidation.sanitized,
         numberOfPassengers: passengerValidation.value,
@@ -174,6 +206,11 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     const { name, value } = e.target;
     // numberOfPassengers is handled separately in its own onChange
     if (name === 'numberOfPassengers') {
+      return; // Skip, handled by custom onChange
+    }
+    
+    // Trip type is handled separately in its own onChange
+    if (name === 'tripType') {
       return; // Skip, handled by custom onChange
     }
     
@@ -220,24 +257,71 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
           </div>
 
           <div className="form-group">
-            <label htmlFor="flightNumber">Flight Number *</label>
-            <input
-              type="text"
-              id="flightNumber"
-              name="flightNumber"
-              value={formData.flightNumber}
+            <label htmlFor="tripType">Trip Type *</label>
+            <select
+              id="tripType"
+              name="tripType"
+              value={formData.tripType}
               onChange={(e) => {
-                handleChange(e);
-                if (errors.flightNumber) setErrors({ ...errors, flightNumber: '' });
+                const newTripType = e.target.value as 'Airport Trip' | 'Standard Trip';
+                setFormData((prev) => ({
+                  ...prev,
+                  tripType: newTripType,
+                  // Clear the other field when switching types
+                  flightNumber: newTripType === 'Airport Trip' ? prev.flightNumber : '',
+                  standardTripIdentifier: newTripType === 'Standard Trip' ? prev.standardTripIdentifier : '',
+                }));
+                // Clear errors when switching
+                setErrors({});
               }}
               required
-              placeholder="e.g., AA1234"
-              maxLength={MAX_LENGTHS.FLIGHT_NUMBER}
-              aria-invalid={!!errors.flightNumber}
-              aria-describedby={errors.flightNumber ? 'flightNumber-error' : undefined}
-            />
-            {errors.flightNumber && <span id="flightNumber-error" className="error-message" role="alert">{errors.flightNumber}</span>}
+            >
+              <option value="Airport Trip">Airport Trip</option>
+              <option value="Standard Trip">Standard Trip</option>
+            </select>
           </div>
+
+          {formData.tripType === 'Airport Trip' ? (
+            <div className="form-group">
+              <label htmlFor="flightNumber">Flight Number *</label>
+              <input
+                type="text"
+                id="flightNumber"
+                name="flightNumber"
+                value={formData.flightNumber}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (errors.flightNumber) setErrors({ ...errors, flightNumber: '' });
+                }}
+                required
+                placeholder="e.g., AA1234"
+                maxLength={MAX_LENGTHS.FLIGHT_NUMBER}
+                aria-invalid={!!errors.flightNumber}
+                aria-describedby={errors.flightNumber ? 'flightNumber-error' : undefined}
+              />
+              {errors.flightNumber && <span id="flightNumber-error" className="error-message" role="alert">{errors.flightNumber}</span>}
+            </div>
+          ) : (
+            <div className="form-group">
+              <label htmlFor="standardTripIdentifier">Job Number / PO Number / Identifier *</label>
+              <input
+                type="text"
+                id="standardTripIdentifier"
+                name="standardTripIdentifier"
+                value={formData.standardTripIdentifier}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (errors.standardTripIdentifier) setErrors({ ...errors, standardTripIdentifier: '' });
+                }}
+                required
+                placeholder="Enter job number, PO number, or any identifier"
+                maxLength={MAX_LENGTHS.FLIGHT_NUMBER} // Use same max length as flight number
+                aria-invalid={!!errors.standardTripIdentifier}
+                aria-describedby={errors.standardTripIdentifier ? 'standardTripIdentifier-error' : undefined}
+              />
+              {errors.standardTripIdentifier && <span id="standardTripIdentifier-error" className="error-message" role="alert">{errors.standardTripIdentifier}</span>}
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="pickupLocation">Pickup Location *</label>
