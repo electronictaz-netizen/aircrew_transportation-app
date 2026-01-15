@@ -102,6 +102,13 @@
   color: #6b7280;
 }
 
+.error-message {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .location-management {

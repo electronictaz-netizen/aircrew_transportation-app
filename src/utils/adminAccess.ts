@@ -5,6 +5,7 @@
  */
 
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import { logger } from './logger';
 
 /**
  * List of authorized admin emails
@@ -32,7 +33,7 @@ export function useAdminAccess(): boolean {
   const { user } = useAuthenticator();
   
   if (!user) {
-    console.log('[AdminAccess] No user found');
+    logger.debug('[AdminAccess] No user found');
     return false;
   }
 
@@ -44,8 +45,8 @@ export function useAdminAccess(): boolean {
   
   const userId = user.userId || '';
 
-  // Log for debugging (remove in production if needed)
-  console.log('[AdminAccess] Checking access for:', {
+  // Log for debugging (dev only)
+  logger.debug('[AdminAccess] Checking access for:', {
     email: userEmail,
     userId: userId,
     authorizedEmails: AUTHORIZED_ADMIN_EMAILS,
@@ -54,7 +55,7 @@ export function useAdminAccess(): boolean {
 
   // STRICT: If no authorized emails/IDs are configured, deny access
   if (AUTHORIZED_ADMIN_EMAILS.length === 0 && AUTHORIZED_ADMIN_USER_IDS.length === 0) {
-    console.log('[AdminAccess] No authorized admins configured - denying access');
+    logger.warn('[AdminAccess] No authorized admins configured - denying access');
     return false;
   }
 
@@ -65,10 +66,10 @@ export function useAdminAccess(): boolean {
       email => email.toLowerCase().trim() === normalizedUserEmail
     );
     if (emailMatch) {
-      console.log('[AdminAccess] Email match found - granting access');
+      logger.debug('[AdminAccess] Email match found - granting access');
       return true;
     }
-    console.log('[AdminAccess] Email does not match:', normalizedUserEmail, 'vs', AUTHORIZED_ADMIN_EMAILS);
+    logger.debug('[AdminAccess] Email does not match:', normalizedUserEmail, 'vs', AUTHORIZED_ADMIN_EMAILS);
   }
 
   // Check user ID-based access
@@ -77,13 +78,13 @@ export function useAdminAccess(): boolean {
       id => id === userId
     );
     if (idMatch) {
-      console.log('[AdminAccess] User ID match found - granting access');
+      logger.debug('[AdminAccess] User ID match found - granting access');
       return true;
     }
-    console.log('[AdminAccess] User ID does not match');
+    logger.debug('[AdminAccess] User ID does not match');
   }
 
-  console.log('[AdminAccess] Access denied - no match found');
+  logger.debug('[AdminAccess] Access denied - no match found');
   return false;
 }
 

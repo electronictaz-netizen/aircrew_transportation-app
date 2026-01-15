@@ -373,3 +373,53 @@ export function formatPhoneNumber(phone: string): string {
   // Return as-is if not standard format
   return validated.sanitized;
 }
+
+/**
+ * Validate URL (for logo URLs, etc.)
+ */
+export function validateUrl(url: string | null | undefined): {
+  isValid: boolean;
+  sanitized: string;
+  error?: string;
+} {
+  if (!url) {
+    return { isValid: true, sanitized: '' }; // URL is optional
+  }
+  
+  const sanitized = sanitizeString(url, 2048); // Max URL length
+  
+  if (sanitized.length === 0) {
+    return { isValid: true, sanitized: '' }; // Empty URL is valid (optional field)
+  }
+  
+  // Basic URL pattern validation
+  try {
+    const urlObj = new URL(sanitized);
+    
+    // Only allow http and https protocols
+    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+      return {
+        isValid: false,
+        sanitized,
+        error: 'URL must use http:// or https:// protocol',
+      };
+    }
+    
+    // Check for suspicious patterns (basic XSS prevention)
+    if (sanitized.includes('javascript:') || sanitized.includes('data:') || sanitized.includes('vbscript:')) {
+      return {
+        isValid: false,
+        sanitized: '',
+        error: 'Invalid URL format',
+      };
+    }
+    
+    return { isValid: true, sanitized };
+  } catch {
+    return {
+      isValid: false,
+      sanitized,
+      error: 'Please enter a valid URL (e.g., https://example.com/logo.png)',
+    };
+  }
+}

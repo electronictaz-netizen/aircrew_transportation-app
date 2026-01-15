@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
+import { useNotification, useConfirm, ConfirmDialog } from './Notification';
+import NotificationComponent from './Notification';
+import { validateName, sanitizeString, MAX_LENGTHS } from '../utils/validation';
+import { logger } from '../utils/logger';
 import './FilterCategoryManagement.css';
 
 const client = generateClient<Schema>();
@@ -15,6 +19,8 @@ interface FilterCategoryManagementProps {
 
 function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [] }: FilterCategoryManagementProps) {
   const { companyId } = useCompany();
+  const { notification, showSuccess, showError, hideNotification } = useNotification();
+  const { confirmState, confirm, handleCancel } = useConfirm();
   const [filterCategories, setFilterCategories] = useState<Array<Schema['FilterCategory']['type']>>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Schema['FilterCategory']['type'] | null>(null);
@@ -25,6 +31,8 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
     displayOrder: 0,
     isActive: true,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadFilterCategories();
@@ -39,7 +47,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
       });
       setFilterCategories((data || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
     } catch (error) {
-      console.error('Error loading filter categories:', error);
+      logger.error('Error loading filter categories:', error);
     }
   };
 
@@ -47,9 +55,30 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
     e.preventDefault();
     
     if (!companyId) {
-      alert('Company not found. Please contact support.');
+      showError('Company not found. Please contact support.');
       return;
     }
+
+    // Validate inputs
+    const newErrors: Record<string, string> = {};
+    
+    const nameValidation = validateName(formData.name);
+    if (!nameValidation.isValid) {
+      newErrors.name = nameValidation.error || 'Invalid name';
+    }
+    
+    if (formData.displayOrder < 0 || formData.displayOrder > 1000) {
+      newErrors.displayOrder = 'Display order must be between 0 and 1000';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showError('Please fix the errors in the form');
+      return;
+    }
+    
+    setErrors({});
+    setLoading(true);
 
     try {
       // Parse values as JSON array
@@ -66,31 +95,39 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
         }
       }
 
+      // Sanitize inputs
+      const nameValidation = validateName(formData.name);
+      const sanitizedValues = valuesArray.map(v => sanitizeString(v, 100));
+
       if (editingCategory) {
         await client.models.FilterCategory.update({
           id: editingCategory.id,
-          name: formData.name,
+          name: nameValidation.sanitized,
           field: formData.field,
-          values: JSON.stringify(valuesArray),
+          values: JSON.stringify(sanitizedValues),
           displayOrder: formData.displayOrder,
           isActive: formData.isActive,
         });
+        showSuccess('Filter category updated successfully!');
       } else {
         await client.models.FilterCategory.create({
-          name: formData.name,
+          name: nameValidation.sanitized,
           field: formData.field,
-          values: JSON.stringify(valuesArray),
+          values: JSON.stringify(sanitizedValues),
           displayOrder: formData.displayOrder,
           isActive: formData.isActive,
           companyId: companyId!,
         });
+        showSuccess('Filter category created successfully!');
       }
       onUpdate();
       resetForm();
       loadFilterCategories();
     } catch (error) {
-      console.error('Error saving filter category:', error);
-      alert('Failed to save filter category. Please try again.');
+      logger.error('Error saving filter category:', error);
+      showError('Failed to save filter category. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,14 +155,21 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
   };
 
   const handleDelete = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this filter category?')) return;
+    const confirmed = await confirm(
+      'Are you sure you want to delete this filter category?',
+      'Delete Filter Category',
+      'danger'
+    );
+    if (!confirmed) return;
+    
     try {
       await client.models.FilterCategory.delete({ id: categoryId });
+      showSuccess('Filter category deleted successfully!');
       loadFilterCategories();
       onUpdate();
     } catch (error) {
-      console.error('Error deleting filter category:', error);
-      alert('Failed to delete filter category. Please try again.');
+      logger.error('Error deleting filter category:', error);
+      showError('Failed to delete filter category. Please try again.');
     }
   };
 
@@ -174,10 +218,17 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                 type="text"
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) setErrors({ ...errors, name: '' });
+                }}
                 required
                 placeholder="e.g., Airports, Service Type, Region"
+                maxLength={MAX_LENGTHS.NAME}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'name-error' : undefined}
               />
+              {errors.name && <span id="name-error" className="error-message" role="alert">{errors.name}</span>}
             </div>
 
             <div className="form-group">
@@ -311,10 +362,17 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                 type="number"
                 id="displayOrder"
                 value={formData.displayOrder}
-                onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                onChange={(e) => {
+                  setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 });
+                  if (errors.displayOrder) setErrors({ ...errors, displayOrder: '' });
+                }}
                 min="0"
+                max="1000"
+                aria-invalid={!!errors.displayOrder}
+                aria-describedby={errors.displayOrder ? 'displayOrder-error' : undefined}
               />
               <small>Lower numbers appear first</small>
+              {errors.displayOrder && <span id="displayOrder-error" className="error-message" role="alert">{errors.displayOrder}</span>}
             </div>
 
             <div className="form-group">
@@ -329,11 +387,11 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
             </div>
 
             <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={resetForm}>
+              <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={loading}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
-                {editingCategory ? 'Update' : 'Create'} Category
+              <button type="submit" className="btn btn-primary" disabled={loading} aria-busy={loading}>
+                {loading ? 'Saving...' : editingCategory ? 'Update' : 'Create'} Category
               </button>
             </div>
           </form>
@@ -402,6 +460,19 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
           )}
         </div>
       </div>
+      {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        type={confirmState.type}
+        onConfirm={() => {
+          if (confirmState.onConfirm) confirmState.onConfirm();
+        }}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

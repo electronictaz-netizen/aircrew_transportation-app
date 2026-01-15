@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
+import { useNotification, useConfirm, ConfirmDialog } from './Notification';
+import NotificationComponent from './Notification';
+import { validateName, sanitizeString, MAX_LENGTHS } from '../utils/validation';
+import { logger } from '../utils/logger';
 import './LocationManagement.css';
 
 const client = generateClient<Schema>();
@@ -14,6 +18,8 @@ interface LocationManagementProps {
 
 function LocationManagement({ locations, onClose, onUpdate }: LocationManagementProps) {
   const { companyId } = useCompany();
+  const { notification, showSuccess, showError, showWarning, showInfo, hideNotification } = useNotification();
+  const { confirmState, confirm, handleCancel } = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Schema['Location']['type'] | null>(null);
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
@@ -24,34 +30,73 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     category: '',
     isActive: true,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!companyId) {
-      alert('Company not found. Please contact support.');
+      showError('Company not found. Please contact support.');
       return;
     }
 
+    // Validate inputs
+    const newErrors: Record<string, string> = {};
+    
+    const nameValidation = validateName(formData.name);
+    if (!nameValidation.isValid) {
+      newErrors.name = nameValidation.error || 'Invalid name';
+    }
+    
+    if (formData.address && formData.address.length > MAX_LENGTHS.LOCATION) {
+      newErrors.address = `Address must be no more than ${MAX_LENGTHS.LOCATION} characters`;
+    }
+    
+    if (formData.category && formData.category.length > 50) {
+      newErrors.category = 'Category must be no more than 50 characters';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showError('Please fix the errors in the form');
+      return;
+    }
+    
+    setErrors({});
+    setLoading(true);
+
     try {
+      // Sanitize inputs
+      const nameValidation = validateName(formData.name);
+      const locationData = {
+        name: nameValidation.sanitized,
+        address: sanitizeString(formData.address, MAX_LENGTHS.LOCATION) || undefined,
+        description: sanitizeString(formData.description, 500) || undefined,
+        category: sanitizeString(formData.category, 50) || undefined,
+        isActive: formData.isActive,
+      };
+      
       if (editingLocation) {
-        // Ensure companyId is not changed - it's not in formData anyway
         await client.models.Location.update({
           id: editingLocation.id,
-          ...formData,
+          ...locationData,
         });
+        showSuccess('Location updated successfully!');
       } else {
-        const createData: any = {
-          ...formData,
+        await client.models.Location.create({
+          ...locationData,
           companyId: companyId!,
-        };
-        await client.models.Location.create(createData);
+        });
+        showSuccess('Location created successfully!');
       }
       onUpdate();
       resetForm();
     } catch (error) {
-      console.error('Error saving location:', error);
-      alert('Failed to save location. Please try again.');
+      logger.error('Error saving location:', error);
+      showError('Failed to save location. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,13 +113,20 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
   };
 
   const handleDelete = async (locationId: string) => {
-    if (!confirm('Are you sure you want to delete this location?')) return;
+    const confirmed = await confirm(
+      'Are you sure you want to delete this location?',
+      'Delete Location',
+      'danger'
+    );
+    if (!confirmed) return;
+    
     try {
       await client.models.Location.delete({ id: locationId });
+      showSuccess('Location deleted successfully!');
       onUpdate();
     } catch (error) {
-      console.error('Error deleting location:', error);
-      alert('Failed to delete location. Please try again.');
+      logger.error('Error deleting location:', error);
+      showError('Failed to delete location. Please try again.');
     }
   };
 
@@ -100,8 +152,14 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     if (selectedLocations.size === 0) return;
     
     const count = selectedLocations.size;
-    if (!confirm(`Are you sure you want to delete ${count} location${count > 1 ? 's' : ''}?`)) return;
+    const confirmed = await confirm(
+      `Are you sure you want to delete ${count} location${count > 1 ? 's' : ''}?`,
+      'Delete Locations',
+      'danger'
+    );
+    if (!confirmed) return;
     
+    setLoading(true);
     try {
       let successCount = 0;
       let failCount = 0;
@@ -111,7 +169,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
           await client.models.Location.delete({ id: locationId });
           successCount++;
         } catch (error) {
-          console.error(`Error deleting location ${locationId}:`, error);
+          logger.error(`Error deleting location ${locationId}:`, error);
           failCount++;
         }
       }
@@ -120,13 +178,15 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
       onUpdate();
       
       if (failCount > 0) {
-        alert(`Deleted ${successCount} location${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
+        showWarning(`Deleted ${successCount} location${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
       } else {
-        alert(`Successfully deleted ${successCount} location${successCount > 1 ? 's' : ''}.`);
+        showSuccess(`Successfully deleted ${successCount} location${successCount > 1 ? 's' : ''}.`);
       }
     } catch (error) {
-      console.error('Error deleting locations:', error);
-      alert('Failed to delete some locations. Please try again.');
+      logger.error('Error deleting locations:', error);
+      showError('Failed to delete some locations. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,7 +204,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
 
   const handleAddAirports = async () => {
     if (!companyId) {
-      alert('Company not found. Please contact support.');
+      showError('Company not found. Please contact support.');
       return;
     }
 
@@ -160,14 +220,18 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     const airportsToAdd = airports.filter(a => !existingNames.has(a.name));
 
     if (airportsToAdd.length === 0) {
-      alert('All airports already exist in your locations.');
+      showInfo('All airports already exist in your locations.');
       return;
     }
 
-    if (!confirm(`Add ${airportsToAdd.length} airport location(s)?\n\n${airportsToAdd.map(a => `- ${a.name}`).join('\n')}`)) {
-      return;
-    }
+    const confirmed = await confirm(
+      `Add ${airportsToAdd.length} airport location(s)?\n\n${airportsToAdd.map(a => `- ${a.name}`).join('\n')}`,
+      'Add Default Airports',
+      'info'
+    );
+    if (!confirmed) return;
 
+    setLoading(true);
     try {
       let createdCount = 0;
       let errorCount = 0;
@@ -184,20 +248,22 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
           });
           createdCount++;
         } catch (error) {
-          console.error(`Error creating ${airport.code}:`, error);
+          logger.error(`Error creating ${airport.code}:`, error);
           errorCount++;
         }
       }
 
       if (createdCount > 0) {
-        alert(`Successfully added ${createdCount} airport location(s)${errorCount > 0 ? `\n${errorCount} failed` : ''}.`);
+        showSuccess(`Successfully added ${createdCount} airport location(s)${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`);
         onUpdate(); // Refresh the locations list
       } else {
-        alert(`Failed to add airports. Please check the console for errors.`);
+        showError('Failed to add airports. Please check the console for errors.');
       }
     } catch (error) {
-      console.error('Error adding airports:', error);
-      alert('Failed to add airports. Please try again.');
+      logger.error('Error adding airports:', error);
+      showError('Failed to add airports. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -243,10 +309,17 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                 type="text"
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) setErrors({ ...errors, name: '' });
+                }}
                 required
                 placeholder="e.g., Downtown Office, Hotel Lobby"
+                maxLength={MAX_LENGTHS.NAME}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'name-error' : undefined}
               />
+              {errors.name && <span id="name-error" className="error-message" role="alert">{errors.name}</span>}
             </div>
 
             <div className="form-group">
@@ -255,9 +328,16 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                 type="text"
                 id="address"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, address: e.target.value });
+                  if (errors.address) setErrors({ ...errors, address: '' });
+                }}
                 placeholder="e.g., 123 Main St, City, State 12345"
+                maxLength={MAX_LENGTHS.LOCATION}
+                aria-invalid={!!errors.address}
+                aria-describedby={errors.address ? 'address-error' : undefined}
               />
+              {errors.address && <span id="address-error" className="error-message" role="alert">{errors.address}</span>}
             </div>
 
             <div className="form-group">
@@ -277,10 +357,17 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                 type="text"
                 id="category"
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, category: e.target.value });
+                  if (errors.category) setErrors({ ...errors, category: '' });
+                }}
                 placeholder="e.g., Airport, Hotel, Office, Warehouse"
+                maxLength={50}
+                aria-invalid={!!errors.category}
+                aria-describedby={errors.category ? 'category-error' : undefined}
               />
               <small>Used for filtering and organization (optional)</small>
+              {errors.category && <span id="category-error" className="error-message" role="alert">{errors.category}</span>}
             </div>
 
             <div className="form-group">
@@ -295,11 +382,11 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
             </div>
 
             <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={resetForm}>
+              <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={loading}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
-                {editingLocation ? 'Update' : 'Create'} Location
+              <button type="submit" className="btn btn-primary" disabled={loading} aria-busy={loading}>
+                {loading ? 'Saving...' : editingLocation ? 'Update' : 'Create'} Location
               </button>
             </div>
           </form>
@@ -373,6 +460,19 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
           )}
         </div>
       </div>
+      {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        type={confirmState.type}
+        onConfirm={() => {
+          if (confirmState.onConfirm) confirmState.onConfirm();
+        }}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
+import { useNotification } from './Notification';
+import NotificationComponent from './Notification';
+import { validateFlightNumber, validateLocation, validatePassengers, validateFutureDate, validateRecurringEndDate, MAX_LENGTHS } from '../utils/validation';
+import { logger } from '../utils/logger';
 import './TripForm.css';
 
 interface TripFormProps {
@@ -12,6 +16,8 @@ interface TripFormProps {
 }
 
 function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFormProps) {
+  const { notification, showError, hideNotification } = useNotification();
+  
   // Get active locations grouped by category
   const activeLocations = locations.filter(l => l.isActive !== false);
   const locationsByCategory = activeLocations.reduce((acc, loc) => {
@@ -36,6 +42,8 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
   });
   
   const [passengerInput, setPassengerInput] = useState(String(formData.numberOfPassengers));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
   
   // Initialize location modes based on whether current values match saved locations
   const getInitialLocationMode = (location: string): 'text' | 'location' => {
@@ -51,20 +59,66 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     getInitialLocationMode(formData.dropoffLocation)
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
-    if (!formData.pickupDate || !formData.flightNumber || !formData.pickupLocation || !formData.dropoffLocation) {
-      alert('Please fill in all required fields.');
-      return;
+    // Validate all fields
+    const newErrors: Record<string, string> = {};
+    
+    // Validate pickup date
+    if (!formData.pickupDate) {
+      newErrors.pickupDate = 'Pickup date is required';
+    } else {
+      const dateValidation = validateFutureDate(formData.pickupDate);
+      if (!dateValidation.isValid) {
+        newErrors.pickupDate = dateValidation.error || 'Invalid pickup date';
+      }
     }
-
+    
+    // Validate flight number
+    const flightValidation = validateFlightNumber(formData.flightNumber);
+    if (!flightValidation.isValid) {
+      newErrors.flightNumber = flightValidation.error || 'Invalid flight number';
+    }
+    
+    // Validate pickup location
+    const pickupValidation = validateLocation(formData.pickupLocation);
+    if (!pickupValidation.isValid) {
+      newErrors.pickupLocation = pickupValidation.error || 'Invalid pickup location';
+    }
+    
+    // Validate dropoff location
+    const dropoffValidation = validateLocation(formData.dropoffLocation);
+    if (!dropoffValidation.isValid) {
+      newErrors.dropoffLocation = dropoffValidation.error || 'Invalid dropoff location';
+    }
+    
+    // Validate passengers
+    const passengerValidation = validatePassengers(formData.numberOfPassengers);
+    if (!passengerValidation.isValid) {
+      newErrors.numberOfPassengers = passengerValidation.error || 'Invalid passenger count';
+    }
+    
     // Validate recurring job fields if recurring is checked
-    if (formData.isRecurring && !formData.recurringEndDate) {
-      alert('Please provide an end date for recurring jobs.');
+    if (formData.isRecurring) {
+      if (!formData.recurringEndDate) {
+        newErrors.recurringEndDate = 'Recurring end date is required';
+      } else {
+        const endDateValidation = validateRecurringEndDate(formData.pickupDate, formData.recurringEndDate);
+        if (!endDateValidation.isValid) {
+          newErrors.recurringEndDate = endDateValidation.error || 'Invalid recurring end date';
+        }
+      }
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showError('Please fix the errors in the form');
       return;
     }
+    
+    setErrors({});
+    setLoading(true);
 
     try {
       // Determine primary location category from pickup location
@@ -74,16 +128,20 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
         primaryCategory = selectedLocation?.category || '';
       }
       
+      // Sanitize inputs
+      const flightValidation = validateFlightNumber(formData.flightNumber);
+      const pickupValidation = validateLocation(formData.pickupLocation);
+      const dropoffValidation = validateLocation(formData.dropoffLocation);
+      const passengerValidation = validatePassengers(formData.numberOfPassengers);
+      
       const submitData: any = {
         primaryLocationCategory: primaryCategory || undefined,
         airport: primaryCategory || undefined, // Keep for backward compatibility (use category if available)
         pickupDate: new Date(formData.pickupDate).toISOString(),
-        flightNumber: formData.flightNumber.trim(),
-        pickupLocation: formData.pickupLocation.trim(),
-        dropoffLocation: formData.dropoffLocation.trim(),
-        numberOfPassengers: typeof formData.numberOfPassengers === 'number' 
-          ? formData.numberOfPassengers 
-          : (parseInt(String(formData.numberOfPassengers)) || 1),
+        flightNumber: flightValidation.sanitized,
+        pickupLocation: pickupValidation.sanitized,
+        dropoffLocation: dropoffValidation.sanitized,
+        numberOfPassengers: passengerValidation.value,
         driverId: formData.driverId || undefined,
         status: formData.driverId ? 'Assigned' : 'Unassigned',
         isRecurring: formData.isRecurring === true,
@@ -102,11 +160,13 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
         submitData.parentTripId = undefined;
       }
 
-      console.log('TripForm submitting data:', submitData);
-      onSubmit(submitData);
+      logger.debug('TripForm submitting data:', submitData);
+      await onSubmit(submitData);
     } catch (error) {
-      console.error('Error preparing trip data:', error);
-      alert('Error preparing trip data. Please check your input and try again.');
+      logger.error('Error preparing trip data:', error);
+      showError('Error preparing trip data. Please check your input and try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -148,9 +208,15 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
               id="pickupDate"
               name="pickupDate"
               value={formData.pickupDate}
-              onChange={handleChange}
+              onChange={(e) => {
+                handleChange(e);
+                if (errors.pickupDate) setErrors({ ...errors, pickupDate: '' });
+              }}
               required
+              aria-invalid={!!errors.pickupDate}
+              aria-describedby={errors.pickupDate ? 'pickupDate-error' : undefined}
             />
+            {errors.pickupDate && <span id="pickupDate-error" className="error-message" role="alert">{errors.pickupDate}</span>}
           </div>
 
           <div className="form-group">
@@ -160,10 +226,17 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
               id="flightNumber"
               name="flightNumber"
               value={formData.flightNumber}
-              onChange={handleChange}
+              onChange={(e) => {
+                handleChange(e);
+                if (errors.flightNumber) setErrors({ ...errors, flightNumber: '' });
+              }}
               required
               placeholder="e.g., AA1234"
+              maxLength={MAX_LENGTHS.FLIGHT_NUMBER}
+              aria-invalid={!!errors.flightNumber}
+              aria-describedby={errors.flightNumber ? 'flightNumber-error' : undefined}
             />
+            {errors.flightNumber && <span id="flightNumber-error" className="error-message" role="alert">{errors.flightNumber}</span>}
           </div>
 
           <div className="form-group">
@@ -209,8 +282,13 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 id="pickupLocation"
                 name="pickupLocation"
                 value={formData.pickupLocation}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (errors.pickupLocation) setErrors({ ...errors, pickupLocation: '' });
+                }}
                 required
+                aria-invalid={!!errors.pickupLocation}
+                aria-describedby={errors.pickupLocation ? 'pickupLocation-error' : undefined}
               >
                 <option value="">Select Saved Location</option>
                 {Object.entries(locationsByCategory).map(([category, locs]) => (
@@ -229,11 +307,18 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 id="pickupLocation"
                 name="pickupLocation"
                 value={formData.pickupLocation}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (errors.pickupLocation) setErrors({ ...errors, pickupLocation: '' });
+                }}
                 required
                 placeholder="Enter pickup location"
+                maxLength={MAX_LENGTHS.LOCATION}
+                aria-invalid={!!errors.pickupLocation}
+                aria-describedby={errors.pickupLocation ? 'pickupLocation-error' : undefined}
               />
             )}
+            {errors.pickupLocation && <span id="pickupLocation-error" className="error-message" role="alert">{errors.pickupLocation}</span>}
           </div>
 
           <div className="form-group">
@@ -279,8 +364,13 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 id="dropoffLocation"
                 name="dropoffLocation"
                 value={formData.dropoffLocation}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (errors.dropoffLocation) setErrors({ ...errors, dropoffLocation: '' });
+                }}
                 required
+                aria-invalid={!!errors.dropoffLocation}
+                aria-describedby={errors.dropoffLocation ? 'dropoffLocation-error' : undefined}
               >
                 <option value="">Select Saved Location</option>
                 {Object.entries(locationsByCategory).map(([category, locs]) => (
@@ -299,11 +389,18 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 id="dropoffLocation"
                 name="dropoffLocation"
                 value={formData.dropoffLocation}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (errors.dropoffLocation) setErrors({ ...errors, dropoffLocation: '' });
+                }}
                 required
                 placeholder="Enter dropoff location"
+                maxLength={MAX_LENGTHS.LOCATION}
+                aria-invalid={!!errors.dropoffLocation}
+                aria-describedby={errors.dropoffLocation ? 'dropoffLocation-error' : undefined}
               />
             )}
+            {errors.dropoffLocation && <span id="dropoffLocation-error" className="error-message" role="alert">{errors.dropoffLocation}</span>}
           </div>
 
           <div className="form-group">
@@ -337,9 +434,13 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                   ...formData,
                   numberOfPassengers: finalValue,
                 });
+                if (errors.numberOfPassengers) setErrors({ ...errors, numberOfPassengers: '' });
               }}
               placeholder="Enter number"
+              aria-invalid={!!errors.numberOfPassengers}
+              aria-describedby={errors.numberOfPassengers ? 'numberOfPassengers-error' : undefined}
             />
+            {errors.numberOfPassengers && <span id="numberOfPassengers-error" className="error-message" role="alert">{errors.numberOfPassengers}</span>}
           </div>
 
           <div className="form-group">
@@ -415,26 +516,33 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                   id="recurringEndDate"
                   name="recurringEndDate"
                   value={formData.recurringEndDate}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    handleChange(e);
+                    if (errors.recurringEndDate) setErrors({ ...errors, recurringEndDate: '' });
+                  }}
                   required={formData.isRecurring}
+                  aria-invalid={!!errors.recurringEndDate}
+                  aria-describedby={errors.recurringEndDate ? 'recurringEndDate-error' : undefined}
                 />
                 <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
                   Jobs will be automatically created until this date
                 </small>
+                {errors.recurringEndDate && <span id="recurringEndDate-error" className="error-message" role="alert">{errors.recurringEndDate}</span>}
               </div>
             </>
           )}
 
           <div className="form-actions">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              {trip ? 'Update' : 'Create'} Trip
+            <button type="submit" className="btn btn-primary" disabled={loading} aria-busy={loading}>
+              {loading ? 'Saving...' : trip ? 'Update' : 'Create'} Trip
             </button>
           </div>
         </form>
       </div>
+      {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
     </div>
   );
 }

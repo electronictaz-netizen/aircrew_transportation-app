@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
+import { useNotification } from './Notification';
+import NotificationComponent from './Notification';
+import { validateUrl, sanitizeString, MAX_LENGTHS } from '../utils/validation';
+import { logger } from '../utils/logger';
 import './CompanyManagement.css';
 
 const client = generateClient<Schema>();
@@ -13,6 +17,7 @@ interface CompanyManagementProps {
 
 function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
   const { company, refreshCompany } = useCompany();
+  const { notification, showSuccess, showError, hideNotification } = useNotification();
   const [formData, setFormData] = useState({
     name: '',
     displayName: '',
@@ -21,6 +26,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
     subscriptionTier: 'premium' as 'free' | 'basic' | 'premium',
     subscriptionStatus: 'active' as 'active' | 'suspended' | 'cancelled',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -49,17 +55,56 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
     e.preventDefault();
     
     if (!company) {
-      alert('No company found. Please contact support.');
+      showError('No company found. Please contact support.');
       return;
     }
 
+    // Validate inputs
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Company name is required';
+    } else if (formData.name.length > MAX_LENGTHS.NAME) {
+      newErrors.name = `Company name must be no more than ${MAX_LENGTHS.NAME} characters`;
+    }
+    
+    if (formData.displayName && formData.displayName.length > MAX_LENGTHS.NAME) {
+      newErrors.displayName = `Display name must be no more than ${MAX_LENGTHS.NAME} characters`;
+    }
+    
+    if (formData.logoUrl) {
+      const urlValidation = validateUrl(formData.logoUrl);
+      if (!urlValidation.isValid) {
+        newErrors.logoUrl = urlValidation.error || 'Invalid URL';
+      }
+    }
+    
+    if (!formData.subdomain.trim()) {
+      newErrors.subdomain = 'Subdomain is required';
+    } else if (formData.subdomain.length < 3) {
+      newErrors.subdomain = 'Subdomain must be at least 3 characters';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showError('Please fix the errors in the form');
+      return;
+    }
+    
+    setErrors({});
     setLoading(true);
+    
     try {
+      // Sanitize inputs
+      const sanitizedName = sanitizeString(formData.name, MAX_LENGTHS.NAME);
+      const sanitizedDisplayName = sanitizeString(formData.displayName, MAX_LENGTHS.NAME);
+      const logoUrlValidation = validateUrl(formData.logoUrl);
+      
       await client.models.Company.update({
         id: company.id,
-        name: formData.name,
-        displayName: formData.displayName,
-        logoUrl: formData.logoUrl,
+        name: sanitizedName,
+        displayName: sanitizedDisplayName || undefined,
+        logoUrl: logoUrlValidation.isValid ? logoUrlValidation.sanitized : undefined,
         subdomain: formData.subdomain,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
@@ -67,14 +112,17 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
 
       await refreshCompany();
       onUpdate();
-      alert('Company information updated successfully!');
-      onClose();
+      showSuccess('Company information updated successfully!');
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (error: any) {
-      console.error('Error updating company:', error);
+      logger.error('Error updating company:', error);
       if (error.errors?.[0]?.message?.includes('unique')) {
-        alert('This subdomain is already taken. Please choose another.');
+        showError('This subdomain is already taken. Please choose another.');
+        setErrors({ subdomain: 'This subdomain is already taken' });
       } else {
-        alert('Failed to update company information. Please try again.');
+        showError('Failed to update company information. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -113,10 +161,17 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
               type="text"
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: '' });
+              }}
               required
               placeholder="Company Name"
+              maxLength={MAX_LENGTHS.NAME}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'name-error' : undefined}
             />
+            {errors.name && <span id="name-error" className="error-message" role="alert">{errors.name}</span>}
           </div>
 
           <div className="form-group">
@@ -125,10 +180,17 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
               type="text"
               id="displayName"
               value={formData.displayName}
-              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, displayName: e.target.value });
+                if (errors.displayName) setErrors({ ...errors, displayName: '' });
+              }}
               placeholder="Name displayed in the app (defaults to Company Name)"
+              maxLength={MAX_LENGTHS.NAME}
+              aria-invalid={!!errors.displayName}
+              aria-describedby={errors.displayName ? 'displayName-error' : undefined}
             />
             <small>This name will be displayed at the top of the app. Leave empty to use Company Name.</small>
+            {errors.displayName && <span id="displayName-error" className="error-message" role="alert">{errors.displayName}</span>}
           </div>
 
           <div className="form-group">
@@ -137,17 +199,25 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
               type="url"
               id="logoUrl"
               value={formData.logoUrl}
-              onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, logoUrl: e.target.value });
+                if (errors.logoUrl) setErrors({ ...errors, logoUrl: '' });
+              }}
               placeholder="https://example.com/logo.png"
+              maxLength={2048}
+              aria-invalid={!!errors.logoUrl}
+              aria-describedby={errors.logoUrl ? 'logoUrl-error' : undefined}
             />
             <small>Enter a URL to your company logo. The logo will appear to the right of the display name.</small>
-            {formData.logoUrl && (
+            {errors.logoUrl && <span id="logoUrl-error" className="error-message" role="alert">{errors.logoUrl}</span>}
+            {formData.logoUrl && !errors.logoUrl && (
               <div className="logo-preview">
                 <img 
                   src={formData.logoUrl} 
                   alt="Logo preview" 
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
+                    showError('Failed to load logo image. Please check the URL.');
                   }}
                 />
               </div>
@@ -201,12 +271,13 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
             <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+            <button type="submit" className="btn btn-primary" disabled={loading} aria-busy={loading}>
               {loading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>
       </div>
+      {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
     </div>
   );
 }

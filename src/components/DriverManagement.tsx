@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
+import { useNotification, useConfirm, ConfirmDialog } from './Notification';
+import NotificationComponent from './Notification';
+import { validateName, validateEmail, validatePhone, sanitizeString, MAX_LENGTHS } from '../utils/validation';
+import { logger } from '../utils/logger';
 import './DriverManagement.css';
 
 const client = generateClient<Schema>();
@@ -14,6 +18,8 @@ interface DriverManagementProps {
 
 function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps) {
   const { companyId } = useCompany();
+  const { notification, showSuccess, showError, showWarning, hideNotification } = useNotification();
+  const { confirmState, confirm, handleCancel } = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Schema['Driver']['type'] | null>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<Set<string>>(new Set());
@@ -25,34 +31,87 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     isActive: true,
     notificationPreference: 'both' as 'email' | 'sms' | 'both',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!companyId) {
-      alert('Company not found. Please contact support.');
+      showError('Company not found. Please contact support.');
       return;
     }
 
+    // Validate inputs
+    const newErrors: Record<string, string> = {};
+    
+    const nameValidation = validateName(formData.name);
+    if (!nameValidation.isValid) {
+      newErrors.name = nameValidation.error || 'Invalid name';
+    }
+    
+    if (formData.email) {
+      const emailValidation = validateEmail(formData.email);
+      if (!emailValidation.isValid) {
+        newErrors.email = emailValidation.error || 'Invalid email';
+      }
+    }
+    
+    if (formData.phone) {
+      const phoneValidation = validatePhone(formData.phone);
+      if (!phoneValidation.isValid) {
+        newErrors.phone = phoneValidation.error || 'Invalid phone number';
+      }
+    }
+    
+    if (formData.licenseNumber && formData.licenseNumber.length > MAX_LENGTHS.LICENSE_NUMBER) {
+      newErrors.licenseNumber = `License number must be no more than ${MAX_LENGTHS.LICENSE_NUMBER} characters`;
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showError('Please fix the errors in the form');
+      return;
+    }
+    
+    setErrors({});
+    setLoading(true);
+
     try {
+      // Sanitize inputs
+      const nameValidation = validateName(formData.name);
+      const emailValidation = formData.email ? validateEmail(formData.email) : { isValid: true, sanitized: '' };
+      const phoneValidation = formData.phone ? validatePhone(formData.phone) : { isValid: true, sanitized: '' };
+      
+      const driverData = {
+        name: nameValidation.sanitized,
+        email: emailValidation.sanitized || undefined,
+        phone: phoneValidation.sanitized || undefined,
+        licenseNumber: sanitizeString(formData.licenseNumber, MAX_LENGTHS.LICENSE_NUMBER) || undefined,
+        isActive: formData.isActive,
+        notificationPreference: formData.notificationPreference,
+      };
+      
       if (editingDriver) {
-        // Ensure companyId is not changed - it's not in formData anyway
         await client.models.Driver.update({
           id: editingDriver.id,
-          ...formData,
+          ...driverData,
         });
+        showSuccess('Driver updated successfully!');
       } else {
-        const createData: any = {
-          ...formData,
+        await client.models.Driver.create({
+          ...driverData,
           companyId: companyId!,
-        };
-        await client.models.Driver.create(createData);
+        });
+        showSuccess('Driver created successfully!');
       }
       onUpdate();
       resetForm();
     } catch (error) {
-      console.error('Error saving driver:', error);
-      alert('Failed to save driver. Please try again.');
+      logger.error('Error saving driver:', error);
+      showError('Failed to save driver. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,13 +129,20 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
   };
 
   const handleDelete = async (driverId: string) => {
-    if (!confirm('Are you sure you want to delete this driver?')) return;
+    const confirmed = await confirm(
+      'Are you sure you want to delete this driver?',
+      'Delete Driver',
+      'danger'
+    );
+    if (!confirmed) return;
+    
     try {
       await client.models.Driver.delete({ id: driverId });
+      showSuccess('Driver deleted successfully!');
       onUpdate();
     } catch (error) {
-      console.error('Error deleting driver:', error);
-      alert('Failed to delete driver. Please try again.');
+      logger.error('Error deleting driver:', error);
+      showError('Failed to delete driver. Please try again.');
     }
   };
 
@@ -102,8 +168,14 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     if (selectedDrivers.size === 0) return;
     
     const count = selectedDrivers.size;
-    if (!confirm(`Are you sure you want to delete ${count} driver${count > 1 ? 's' : ''}?`)) return;
+    const confirmed = await confirm(
+      `Are you sure you want to delete ${count} driver${count > 1 ? 's' : ''}?`,
+      'Delete Drivers',
+      'danger'
+    );
+    if (!confirmed) return;
     
+    setLoading(true);
     try {
       let successCount = 0;
       let failCount = 0;
@@ -113,7 +185,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
           await client.models.Driver.delete({ id: driverId });
           successCount++;
         } catch (error) {
-          console.error(`Error deleting driver ${driverId}:`, error);
+          logger.error(`Error deleting driver ${driverId}:`, error);
           failCount++;
         }
       }
@@ -122,13 +194,15 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       onUpdate();
       
       if (failCount > 0) {
-        alert(`Deleted ${successCount} driver${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
+        showWarning(`Deleted ${successCount} driver${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
       } else {
-        alert(`Successfully deleted ${successCount} driver${successCount > 1 ? 's' : ''}.`);
+        showSuccess(`Successfully deleted ${successCount} driver${successCount > 1 ? 's' : ''}.`);
       }
     } catch (error) {
-      console.error('Error deleting drivers:', error);
-      alert('Failed to delete some drivers. Please try again.');
+      logger.error('Error deleting drivers:', error);
+      showError('Failed to delete some drivers. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -178,9 +252,16 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
                 type="text"
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) setErrors({ ...errors, name: '' });
+                }}
                 required
+                maxLength={MAX_LENGTHS.NAME}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'name-error' : undefined}
               />
+              {errors.name && <span id="name-error" className="error-message" role="alert">{errors.name}</span>}
             </div>
 
             <div className="form-group">
@@ -189,8 +270,15 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
                 type="email"
                 id="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  if (errors.email) setErrors({ ...errors, email: '' });
+                }}
+                maxLength={MAX_LENGTHS.EMAIL}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'email-error' : undefined}
               />
+              {errors.email && <span id="email-error" className="error-message" role="alert">{errors.email}</span>}
             </div>
 
             <div className="form-group">
@@ -199,8 +287,15 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
                 type="tel"
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, phone: e.target.value });
+                  if (errors.phone) setErrors({ ...errors, phone: '' });
+                }}
+                maxLength={MAX_LENGTHS.PHONE}
+                aria-invalid={!!errors.phone}
+                aria-describedby={errors.phone ? 'phone-error' : undefined}
               />
+              {errors.phone && <span id="phone-error" className="error-message" role="alert">{errors.phone}</span>}
             </div>
 
             <div className="form-group">
@@ -243,11 +338,11 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
             </div>
 
             <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={resetForm}>
+              <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={loading}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
-                {editingDriver ? 'Update' : 'Create'} Driver
+              <button type="submit" className="btn btn-primary" disabled={loading} aria-busy={loading}>
+                {loading ? 'Saving...' : editingDriver ? 'Update' : 'Create'} Driver
               </button>
             </div>
           </form>
@@ -330,6 +425,19 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
           )}
         </div>
       </div>
+      {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        type={confirmState.type}
+        onConfirm={() => {
+          if (confirmState.onConfirm) confirmState.onConfirm();
+        }}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }
