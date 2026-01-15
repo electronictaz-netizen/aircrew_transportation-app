@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
+import { useCompany } from '../contexts/CompanyContext';
 import TripFilters from './TripFilters';
 import './TripList.css';
 
@@ -17,6 +18,7 @@ interface TripListProps {
 }
 
 function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onUpdate }: TripListProps) {
+  const { company } = useCompany();
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
@@ -72,62 +74,72 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
   };
 
   const handleCheckFlightStatus = async (trip: Schema['Trip']['type']) => {
-    // Show cost warning
-    const warningMessage = 
-      '⚠️ COST WARNING ⚠️\n\n' +
-      'Checking flight status uses external API services that may incur costs.\n\n' +
-      'Excessive use of this feature will lead to increased costs for API services.\n\n' +
-      'Each check counts toward your API quota/limit.\n\n' +
-      'Do you want to proceed with checking flight status?';
-    
-    if (!confirm(warningMessage)) {
-      return; // User cancelled
-    }
-
-    // Only check for current day trips
-    if (!trip.pickupDate) {
-      alert('Cannot check flight status: Trip has no pickup date.');
-      return;
-    }
-
-    const tripDate = new Date(trip.pickupDate);
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
-    
-    if (tripDate < todayStart || tripDate > todayEnd) {
-      alert('Flight status can only be checked for trips scheduled today.');
-      return;
-    }
-
     if (!trip.flightNumber) {
       alert('Cannot check flight status: Trip has no flight number.');
       return;
     }
 
-    // Set loading state
-    setFlightStatuses(prev => ({
-      ...prev,
-      [trip.id]: { status: 'Checking...', loading: true }
-    }));
+    // Check if company is premium tier
+    const isPremium = company?.subscriptionTier === 'premium';
 
-    try {
-      const flightStatus = await fetchFlightStatus(
-        trip.flightNumber,
-        trip.pickupDate ? new Date(trip.pickupDate) : undefined
-      );
+    if (isPremium) {
+      // Premium tier: Use API with cost warning
+      const warningMessage = 
+        '⚠️ COST WARNING ⚠️\n\n' +
+        'Checking flight status uses external API services that may incur costs.\n\n' +
+        'Excessive use of this feature will lead to increased costs for API services.\n\n' +
+        'Each check counts toward your API quota/limit.\n\n' +
+        'Do you want to proceed with checking flight status?';
       
+      if (!confirm(warningMessage)) {
+        return; // User cancelled
+      }
+
+      // Only check for current day trips
+      if (!trip.pickupDate) {
+        alert('Cannot check flight status: Trip has no pickup date.');
+        return;
+      }
+
+      const tripDate = new Date(trip.pickupDate);
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+      
+      if (tripDate < todayStart || tripDate > todayEnd) {
+        alert('Flight status can only be checked for trips scheduled today.');
+        return;
+      }
+
+      // Set loading state
       setFlightStatuses(prev => ({
         ...prev,
-        [trip.id]: { status: flightStatus.status, loading: false }
+        [trip.id]: { status: 'Checking...', loading: true }
       }));
-    } catch (error) {
-      console.error('Error fetching flight status:', error);
-      setFlightStatuses(prev => ({
-        ...prev,
-        [trip.id]: { status: 'Error', loading: false }
-      }));
-      alert('Failed to fetch flight status. Please try again later.');
+
+      try {
+        const flightStatus = await fetchFlightStatus(
+          trip.flightNumber,
+          trip.pickupDate ? new Date(trip.pickupDate) : undefined
+        );
+        
+        setFlightStatuses(prev => ({
+          ...prev,
+          [trip.id]: { status: flightStatus.status, loading: false }
+        }));
+      } catch (error) {
+        console.error('Error fetching flight status:', error);
+        setFlightStatuses(prev => ({
+          ...prev,
+          [trip.id]: { status: 'Error', loading: false }
+        }));
+        alert('Failed to fetch flight status. Please try again later.');
+      }
+    } else {
+      // Non-premium tier: Open FlightRadar24 in new tab
+      const flightNumber = trip.flightNumber.trim().toUpperCase();
+      const flightradar24Url = `https://www.flightradar24.com/data/flights/${encodeURIComponent(flightNumber)}`;
+      window.open(flightradar24Url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -321,7 +333,9 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   <button
                     className="btn btn-small btn-secondary"
                     onClick={() => handleCheckFlightStatus(trip)}
-                    title="Check flight status (may incur API costs)"
+                    title={company?.subscriptionTier === 'premium' 
+                      ? "Check flight status (may incur API costs)" 
+                      : "Open FlightRadar24 to check flight status"}
                   >
                     Check Status
                   </button>
@@ -472,7 +486,9 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                     <button
                       className="btn btn-small btn-secondary"
                       onClick={() => handleCheckFlightStatus(trip)}
-                      title="Check flight status (may incur API costs)"
+                      title={company?.subscriptionTier === 'premium' 
+                        ? "Check flight status (may incur API costs)" 
+                        : "Open FlightRadar24 to check flight status"}
                     >
                       Check Status
                     </button>
