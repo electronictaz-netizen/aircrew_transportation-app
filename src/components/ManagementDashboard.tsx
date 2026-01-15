@@ -14,6 +14,7 @@ import TripList from './TripList';
 import TripCalendar from './TripCalendar';
 import DriverSelectionDialog from './DriverSelectionDialog';
 import DriverReports from './DriverReports';
+import TripReports from './TripReports';
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
@@ -34,6 +35,7 @@ function ManagementDashboard() {
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
   const [showCompanyManagement, setShowCompanyManagement] = useState(false);
   const [showDriverReports, setShowDriverReports] = useState(false);
+  const [showTripReports, setShowTripReports] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Schema['Trip']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDriverDialog, setShowDriverDialog] = useState(false);
@@ -1176,6 +1178,13 @@ function ManagementDashboard() {
             📊 Driver Reports
           </button>
           <button
+            className="btn btn-secondary"
+            onClick={() => setShowTripReports(true)}
+            title="View trip reports and statistics"
+          >
+            📋 Trip Reports
+          </button>
+          <button
             className="btn btn-danger"
             onClick={handleDeleteAllTrips}
             title="Delete all trips from the database"
@@ -1272,6 +1281,20 @@ function ManagementDashboard() {
             setEditingTrip(trip);
             setShowTripForm(true);
             setShowDriverReports(false);
+          }}
+        />
+      )}
+
+      {showTripReports && (
+        <TripReports
+          trips={trips}
+          drivers={drivers}
+          locations={locations}
+          onClose={() => setShowTripReports(false)}
+          onEdit={(trip) => {
+            setEditingTrip(trip);
+            setShowTripForm(true);
+            setShowTripReports(false);
           }}
         />
       )}
