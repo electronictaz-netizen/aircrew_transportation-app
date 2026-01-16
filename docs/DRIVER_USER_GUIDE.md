@@ -93,13 +93,27 @@ Click on any trip card to see full details including:
 
 Each trip card displays important information:
 
-### Airport
+### Trip Type
 
-The airport where you'll pick up or drop off. The airport name and code will be displayed on each trip card. Your company may use one or more airports depending on your service area.
+Trips can be one of two types:
 
-### Flight Number
+- **Airport Trip**: Standard airport transportation with a flight number (e.g., UA1234, DL5678)
+- **Standard Trip**: Non-airport transportation with a job number, PO number, or other identifier
 
-The airline and flight number (e.g., UA1234, DL5678)
+The trip type is indicated on the trip card, and flight numbers are only shown for Airport Trips.
+
+### Airport/Category
+
+For Airport Trips: The airport where you'll pick up or drop off. The airport name and code will be displayed on each trip card.
+
+For Standard Trips: The category or location type (e.g., "Office", "Hotel", "Other").
+
+Your company may use one or more airports depending on your service area.
+
+### Flight Number / Trip Identifier
+
+- **Airport Trips**: The airline and flight number (e.g., UA1234, DL5678)
+- **Standard Trips**: A job number, PO number, or other identifier (e.g., "PO-12345", "Job-2025-001")
 
 ### Pickup Date & Time
 
@@ -266,9 +280,23 @@ Flights can be delayed, cancelled, or arrive early. Checking flight status helps
    - Actual/Estimated arrival time
    - Gate information (if available)
 
+### Flight Status Checking Methods
+
+The method used depends on your company's subscription tier:
+
+**Premium Tier Companies:**
+- Uses the flight status API
+- Shows real-time flight information directly in the app
+- ⚠️ **Cost Warning**: Excessive use may incur additional costs for your company
+
+**Standard Tier Companies:**
+- Opens FlightRadar24 website in a new tab
+- You can check flight status on the external website
+- No additional costs for your company
+
 ### Important Notes
 
-⚠️ **Cost Warning**: Excessive use of flight status checks may incur additional costs for your company. Only check when necessary.
+⚠️ **Cost Warning** (Premium Tier Only): Excessive use of flight status checks may incur additional costs for your company. Only check when necessary.
 
 **When to check:**
 - Before leaving for pickup (especially for early morning flights)
@@ -295,6 +323,46 @@ Flights can be delayed, cancelled, or arrive early. Checking flight status helps
 2. **Do not proceed to the airport**
 3. **Wait for instructions** on whether to pick up the passenger on a later flight
 4. **Update your schedule** accordingly
+
+---
+
+## Recording Trip Start and Completion
+
+### Starting a Trip
+
+When you begin a trip:
+
+1. **Click "Start Trip"** on the trip card
+2. **Allow location access** when prompted (if not already allowed)
+   - The app needs your location to record where you started the trip
+   - This helps with trip tracking and reporting
+3. **Trip status changes** to "In Progress"
+4. **GPS location is automatically recorded** when you click the button
+
+**Note**: You must allow location access in your browser for GPS recording to work. The app will prompt you if location access is not enabled.
+
+### Completing a Trip
+
+When you finish a trip:
+
+1. **Click "Complete Trip"** on the trip card
+2. **Allow location access** if prompted
+3. **Trip status changes** to "Completed"
+4. **GPS location is automatically recorded** when you click the button
+
+**Privacy**: Your GPS location is only recorded when you explicitly click "Start Trip" or "Complete Trip". The app does not track your location continuously.
+
+### Location Access Issues
+
+**If location access is denied:**
+- The trip will still be marked as started/completed
+- GPS coordinates will not be recorded
+- Contact your manager if you need help enabling location access
+
+**To enable location access:**
+- **Chrome/Edge**: Click the lock icon in address bar → Site settings → Location → Allow
+- **Safari**: Safari → Preferences → Websites → Location → Allow
+- **Mobile**: Settings → App permissions → Location → Allow
 
 ---
 
@@ -375,15 +443,33 @@ The app works on mobile devices and can be installed like a native app:
 **Problem**: Can't check flight status or getting errors
 
 **Possible causes**:
-- Flight number entered incorrectly
+- Flight number entered incorrectly (for Airport Trips)
 - Flight not found in the system
 - Temporary service issue
+- Company is on standard tier (opens external website instead)
 
 **Solution**:
-1. Verify the flight number is correct
-2. Try checking again in a few minutes
-3. Contact your manager if the issue persists
-4. Check the airline's website directly as a backup
+1. Verify the flight number is correct (for Airport Trips)
+2. If your company uses standard tier, the button opens FlightRadar24 - check there
+3. Try checking again in a few minutes
+4. Contact your manager if the issue persists
+5. Check the airline's website directly as a backup
+
+### Location/GPS Not Working
+
+**Problem**: GPS location not being recorded when starting/completing trips
+
+**Possible causes**:
+- Location access denied in browser
+- GPS not available on device
+- Browser doesn't support geolocation
+
+**Solution**:
+1. Allow location access when prompted
+2. Check browser settings to enable location permissions
+3. Ensure you're using a device with GPS capability
+4. Try a different browser if issues persist
+5. The trip will still be marked as started/completed even without GPS
 
 ### App Not Loading
 
@@ -581,6 +667,15 @@ For emergencies:
 
 - **App Version**: 1.0
 - **Last Updated**: January 2025
+
+## Recent Updates
+
+### New Features:
+- **GPS Location Recording**: Automatically records your location when you start or complete trips
+- **Trip Types**: Support for both Airport Trips (with flight numbers) and Standard Trips (with job/PO numbers)
+- **Tier-Based Flight Status**: Flight status checking method depends on your company's subscription tier
+- **Auto-Refresh**: Dashboard automatically refreshes every 30 seconds to show new assignments
+- **Manual Refresh**: "Refresh" button available to manually update your trip list
 
 ---
 

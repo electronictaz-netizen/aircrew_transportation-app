@@ -144,27 +144,46 @@ export function generateDailyAssignmentSMS(data: DailyAssignmentData): string {
 }
 
 /**
- * Send daily assignment SMS to a single driver
- * Note: This uses sms: link which works on mobile devices.
- * For production, integrate with AWS SNS, Twilio, or similar backend API.
+ * Send daily assignment SMS to a single driver via AWS SNS
  */
-export function sendDailyAssignmentSMS(data: DailyAssignmentData): void {
+export async function sendDailyAssignmentSMS(data: DailyAssignmentData): Promise<{ success: boolean; error?: string }> {
   const { driver } = data;
   
   if (!driver.phone) {
     console.warn(`Cannot send daily assignment SMS: Driver ${driver.name} has no phone number`);
-    return;
+    return { success: false, error: 'Driver has no phone number' };
   }
   
   const message = generateDailyAssignmentSMS(data);
-  const phoneNumber = driver.phone.replace(/[^\d+]/g, ''); // Clean phone number
-  const smsLink = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
   
-  // Open SMS app (works on mobile devices)
-  window.open(smsLink);
+  // Import SMS service
+  const { sendSMS, formatPhoneForSMS, isValidPhoneNumber } = await import('./smsService');
   
-  console.log(`Daily assignment SMS prepared for ${driver.name} (${driver.phone})`);
-  console.log('Note: SMS functionality requires backend API integration for production use.');
+  // Validate phone number
+  if (!isValidPhoneNumber(driver.phone)) {
+    console.warn(`Invalid phone number for ${driver.name}: ${driver.phone}`);
+    return { success: false, error: 'Invalid phone number format' };
+  }
+  
+  const formattedPhone = formatPhoneForSMS(driver.phone);
+  
+  try {
+    const result = await sendSMS({
+      phoneNumber: formattedPhone,
+      message: message,
+    });
+    
+    if (result.success) {
+      console.log(`✅ Daily assignment SMS sent to ${driver.name} (${formattedPhone.substring(0, 4)}***)`);
+      return { success: true };
+    } else {
+      console.error(`Failed to send SMS to ${driver.name}:`, result.error);
+      return { success: false, error: result.error };
+    }
+  } catch (error: any) {
+    console.error(`Error sending SMS to ${driver.name}:`, error);
+    return { success: false, error: error.message || 'Unknown error' };
+  }
 }
 
 /**
@@ -320,9 +339,14 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
         // - Driver has phone number
         if (options.sms && (preference === 'sms' || preference === 'both') && driver.phone) {
           try {
-            sendDailyAssignmentSMS(assignmentData);
-            result.sent.sms++;
-            console.log(`✅ Daily assignment SMS sent to ${driver.name} (${trips.length} trip(s))`);
+            const smsResult = await sendDailyAssignmentSMS(assignmentData);
+            if (smsResult.success) {
+              result.sent.sms++;
+              console.log(`✅ Daily assignment SMS sent to ${driver.name} (${trips.length} trip(s))`);
+            } else {
+              result.failed.sms++;
+              console.error(`Failed to send SMS to ${driver.name}:`, smsResult.error);
+            }
           } catch (error) {
             console.error(`Error sending SMS to ${driver.name}:`, error);
             result.failed.sms++;
@@ -395,8 +419,8 @@ export async function sendDailyAssignmentToDriver(
     
     // Send SMS if enabled and driver has phone
     if (options.sms && driver.phone) {
-      sendDailyAssignmentSMS(assignmentData);
-      result.sms = true;
+      const smsResult = await sendDailyAssignmentSMS(assignmentData);
+      result.sms = smsResult.success;
     }
     
     return result;

@@ -54,9 +54,11 @@ After logging in, you'll see the **Management Dashboard** - your central hub for
 The Management Dashboard provides:
 
 - **Trip List**: All trips for your company
+- **Calendar View**: Visual calendar showing trips by date
 - **Quick Actions**: Buttons to create trips, manage drivers, manage locations
-- **Filters**: View trips by date, airport, driver, or status
+- **Filters**: View trips by date, location category, driver, or status
 - **Bulk Actions**: Assign or delete multiple trips at once
+- **Reports**: Driver Reports and Trip Reports for analytics
 
 ### Main Sections
 
@@ -64,18 +66,29 @@ The Management Dashboard provides:
    - Create Trip button
    - Manage Drivers button
    - Manage Locations button
+   - Filter Categories button (manage custom filters)
    - Company Settings button (if you're an admin)
+   - Driver Reports button (view driver statistics)
+   - Trip Reports button (view trip analytics)
    - Send Daily Assignment Emails button
+   - Delete All Trips button (use with caution)
 
-2. **Filters Section**
-   - Airport filters (All, BUF, ROC, SYR, ALB)
+2. **View Toggle**
+   - **List View**: Table/card view of all trips
+   - **Calendar View**: Visual calendar showing trips by date
+
+3. **Filters Section**
+   - Location category filters (custom categories you create)
    - Quick date filters (Today, Tomorrow, This Week, etc.)
    - Driver filter
    - Status filter
+   - Custom filter categories (if configured)
 
-3. **Trip List**
-   - Table view (desktop) or card view (mobile)
+4. **Trip List/Calendar**
+   - **List View**: Table view (desktop) or card view (mobile)
+   - **Calendar View**: Monthly calendar with clickable dates
    - Shows all trip information
+   - **Click on trip row or "Trip Type" column** to edit trip
    - Actions: Edit, Delete, Assign
 
 ---
@@ -86,13 +99,24 @@ The Management Dashboard provides:
 
 1. **Click "Create Trip"** in the Management Dashboard
 
-2. **Select Airport** (Required)
-   - Choose from the airports configured for your company
-   - The available airports will be shown in the dropdown
-   - This determines the airport for the trip
+2. **Select Trip Type** (Required)
+   - **Airport Trip**: Standard airport transportation with a flight number
+   - **Standard Trip**: Non-airport transportation with a job number, PO number, or other identifier
+   - This determines which fields are shown and required
 
-3. **Enter Flight Information**
+3. **Enter Trip Identifier**
+   
+   **For Airport Trips:**
    - **Flight Number**: Enter the airline code and number (e.g., UA1234, DL5678)
+   - Must follow format: 2-3 letters followed by 1-4 digits
+   - Required field
+   
+   **For Standard Trips:**
+   - **Job/PO Number**: Enter any identifier (e.g., "PO-12345", "Job-2025-001")
+   - No format restrictions
+   - Required field
+
+4. **Set Date and Time**
    - **Pickup Date**: Select the date
    - **Pickup Time**: Enter the time (24-hour format or AM/PM)
 
@@ -233,8 +257,25 @@ Click **"Manage Locations"** in the Management Dashboard.
    - **Name**: Descriptive name (e.g., "Downtown Office", "Hotel XYZ")
    - **Address**: Full street address
    - **Description**: Additional details (optional)
+   - **Category**: Location category (e.g., "Airport", "Hotel", "Office", "Other")
+     - Categories help with filtering and organization
+     - Use consistent categories for better filtering
    - **Active**: Check to make location available
 3. Click **"Save"**
+
+### Adding Default Airports
+
+Quick way to add common airport locations:
+
+1. Click **"+ Add Default Airports"** button
+2. Confirm the action
+3. The system will add:
+   - Buffalo Niagara International Airport (BUF)
+   - Frederick Douglass Greater Rochester International Airport (ROC)
+   - Syracuse Hancock International Airport (SYR)
+   - Albany International Airport (ALB)
+4. All airports are added with "Airport" category
+5. Existing airports are skipped (won't create duplicates)
 
 ### Editing a Location
 
@@ -255,13 +296,29 @@ Click **"Manage Locations"** in the Management Dashboard.
 
 When creating a trip:
 1. Select "Use Saved Location" for pickup or dropoff
-2. Choose from your saved locations
+2. Choose from your saved locations (grouped by category)
 3. The address will be automatically filled in
+4. The location's category is automatically assigned to the trip
 
 **Benefits**:
 - Faster trip creation
 - Consistent address formatting
 - Reduced typing errors
+- Automatic category assignment for filtering
+
+### Location Categories
+
+Locations can be assigned categories:
+- **Airport**: Airport locations
+- **Hotel**: Hotel locations
+- **Office**: Office/business locations
+- **Other**: Other location types
+- **Custom**: Create your own categories
+
+Categories help with:
+- Filtering trips
+- Organizing locations
+- Auto-populating filter values
 
 ### Location Best Practices
 
@@ -322,27 +379,58 @@ Assign multiple trips to one driver at once:
 
 ## Viewing and Filtering Trips
 
+### View Modes
+
+You can view trips in two ways:
+
+#### List View
+- Table view (desktop) or card view (mobile)
+- Shows all trip information in a list
+- Click on any row or "Trip Type" column to edit
+
+#### Calendar View
+- Visual monthly calendar
+- Days with trips are highlighted
+- Click on a date to see all trips for that day
+- Navigate between months with arrow buttons
+- Click "Today" to jump to current month
+
+**Switch Views**: Use the view toggle buttons (📋 List / 📅 Calendar) in the dashboard header.
+
 ### Trip List View
 
 The trip list shows:
-- **Airport**: Airport code (BUF, ROC, SYR, ALB)
-- **Flight Number**: Airline and flight number
-- **Pickup Date & Time**: When to pick up
+- **Category**: Location category or airport code
+- **Pickup Date**: Date of pickup
+- **Pickup Time**: Time of pickup
+- **Flight Number/Identifier**: Flight number (Airport Trip) or job/PO number (Standard Trip)
+- **Flight Status**: Check flight status button (tier-based)
 - **Pickup Location**: Where to pick up
 - **Dropoff Location**: Where to drop off
-- **Passenger**: Passenger name
+- **Passengers**: Number of passengers
 - **Driver**: Assigned driver (or "Unassigned")
-- **Status**: Trip status
-- **Actions**: Edit, Delete, Assign buttons
+- **Status**: Trip status (Unassigned, Assigned, In Progress, Completed)
+- **Actual Pickup**: Time when trip was started (time only)
+- **Actual Dropoff**: Time when trip was completed (time only)
+- **Actions**: Edit, Delete buttons
+
+**Note**: Table headers wrap for better readability, and times are shown in HH:mm format for compact display.
 
 ### Filtering Trips
 
-#### By Airport
+#### By Location Category
 
-Click airport filter buttons:
-- **All Airports**: Shows all trips
-- **[Airport Name]**: Shows only trips for that specific airport
-- Your company's configured airports will appear as filter buttons
+Use custom filter categories:
+- **Filter Categories**: Click "Filter Categories" to create custom filters
+- **Location Categories**: Filter by pickup/dropoff location categories (e.g., "Airport", "Hotel", "Office")
+- **Auto-Generated Values**: Filter categories can auto-populate from existing trips and locations
+- **Multiple Filters**: Combine multiple filters for precise searches
+
+#### By Airport/Location
+
+- **All**: Shows all trips
+- **Specific Categories**: Shows only trips matching that category
+- Your company's configured location categories will appear as filter options
 
 #### By Date
 
@@ -379,6 +467,160 @@ On mobile devices:
 - Each trip is shown as a card
 - All information is visible
 - Actions are accessible via buttons
+- Calendar view is optimized for touch interaction
+
+---
+
+## Driver Reports
+
+### Accessing Driver Reports
+
+Click **"📊 Driver Reports"** in the Management Dashboard header.
+
+### What You Can View
+
+**Summary View:**
+- Total trips per driver
+- Breakdown by status (Completed, Assigned, In Progress, Unassigned)
+- Trips grouped by airline
+- Date ranges for each driver's trips
+
+**Driver Detail View:**
+- Individual driver statistics
+- All trips for that driver
+- Trips grouped by airline
+- Complete trip history
+
+**Airline View:**
+- All trips for a specific airline
+- Driver assignments
+- Trip details and status
+
+### Features
+
+- **Date Range Filtering**: Filter trips by start and end dates
+- **Status Filtering**: Show only completed trips
+- **Export to Excel**: Download comprehensive reports as Excel files
+- **Print Support**: Print-friendly formatting
+- **Click to Edit**: Click on trips to edit them
+
+### Using Driver Reports
+
+1. **Open Driver Reports**: Click "📊 Driver Reports" button
+2. **Set Filters** (optional):
+   - Start date
+   - End date
+   - Completed only checkbox
+3. **View Summary**: See overview of all drivers
+4. **View Driver Details**: Click "View Details" on any driver
+5. **View by Airline**: Click "View All" on any airline breakdown
+6. **Export**: Click "📥 Export Excel" to download report
+
+---
+
+## Trip Reports
+
+### Accessing Trip Reports
+
+Click **"📋 Trip Reports"** in the Management Dashboard header.
+
+### What You Can View
+
+**Summary View:**
+- Total trips
+- Breakdown by status
+- Total passengers
+- Date ranges
+
+**By Status:**
+- Trips grouped by status (Unassigned, Assigned, In Progress, Completed)
+- Trip counts and passenger totals per status
+
+**By Airline:**
+- Trips grouped by airline code
+- Trip counts and passenger totals per airline
+
+**By Location:**
+- Trips grouped by pickup/dropoff locations
+- Pickup count, dropoff count, and total trips per location
+
+**By Driver:**
+- Trips grouped by driver
+- Completed trips per driver
+- Total passengers per driver
+
+**All Trips:**
+- Complete list of all trips with full details
+- Sortable and filterable
+
+### Features
+
+- **Comprehensive Filtering**:
+  - Date range (start/end dates)
+  - Status filter
+  - Location filter
+  - Airline filter
+  - Driver filter
+- **Export to Excel**: Multi-sheet Excel file with all data
+- **Print Support**: Print-friendly formatting
+- **Click to Edit**: Click on trips to edit them
+
+### Using Trip Reports
+
+1. **Open Trip Reports**: Click "📋 Trip Reports" button
+2. **Set Filters** (optional):
+   - Start date, end date
+   - Status, location, airline, driver
+3. **Select View Mode**: Summary, By Status, By Airline, By Location, By Driver, or All Trips
+4. **Export**: Click "📥 Export Excel" to download comprehensive report
+5. **Print**: Click "🖨️ Print" for print-friendly view
+
+---
+
+## Filter Categories
+
+### What Are Filter Categories?
+
+Filter categories allow you to create custom filters for trips based on various criteria. This helps you quickly find and organize trips.
+
+### Creating Filter Categories
+
+1. Click **"Filter Categories"** in the Management Dashboard
+2. Click **"+ Add Filter Category"**
+3. Fill in the form:
+   - **Category Name**: Descriptive name (e.g., "Airport Locations", "Service Types")
+   - **Filter Field**: What to filter on
+     - Location Category (Any - Pickup or Dropoff)
+     - Primary Location Category (Pickup Only)
+     - Other fields as needed
+   - **Values**: Filter values (comma-separated)
+   - **Display Order**: Order for display (lower numbers appear first)
+   - **Active**: Check to enable the filter
+4. Click **"Auto-fill"** to automatically populate values from existing trips and locations
+5. Click **"Create Category"**
+
+### Using Auto-Fill
+
+The Auto-fill feature automatically extracts:
+- Location categories from saved locations
+- Airport codes from location names (e.g., "BUF" from "Buffalo Niagara International Airport (BUF)")
+- Categories from existing trips
+- Both pickup and dropoff location categories
+
+This saves time and ensures consistency.
+
+### Managing Filter Categories
+
+- **Edit**: Click "Edit" to modify a filter category
+- **Delete**: Click "Delete" to remove a filter category
+- **Activate/Deactivate**: Edit the category and toggle "Active" status
+
+### Using Filters
+
+Once created, filter categories appear in the trip filters section:
+- Click on filter category buttons to filter trips
+- Combine with other filters (date, driver, status)
+- Filters persist until you clear them
 
 ---
 
@@ -390,12 +632,31 @@ Daily assignment emails (and SMS) are summaries sent to drivers showing their tr
 
 ### Sending Daily Assignment Emails
 
+You can send to all drivers or select a specific driver:
+
+#### Option 1: Send to All Drivers
+
 1. Click **"Send Daily Assignment Emails"** in the Management Dashboard
-2. Choose notification method:
+2. Click **"OK"** when asked if you want to send to all drivers
+3. Choose notification method:
    - **Email**: Send email summaries
    - **SMS**: Send text message summaries
    - **Both**: Send both email and SMS
-3. Click **"Send"**
+4. Click **"Send"**
+
+#### Option 2: Send to Specific Driver
+
+1. Click **"Send Daily Assignment Emails"** in the Management Dashboard
+2. Click **"Cancel"** when asked about sending to all drivers
+3. **Select a driver** from the driver selection dialog
+4. Click **"Continue"**
+5. Choose notification method:
+   - **Email**: Send email summaries
+   - **SMS**: Send text message summaries
+   - **Both**: Send both email and SMS
+6. Click **"Send"**
+
+**Note**: Only drivers with trips scheduled for tomorrow will receive emails. Drivers without trips are automatically skipped.
 
 ### What Drivers Receive
 
@@ -482,12 +743,31 @@ The system respects each driver's notification preference:
 
 ### Editing a Trip
 
-1. Find the trip in the trip list
-2. Click **"Edit"** next to the trip
-3. Update any information
-4. Click **"Save"**
+**Multiple Ways to Edit:**
+
+1. **Click "Edit" button** next to the trip
+2. **Click on the trip row** in the table (anywhere on the row)
+3. **Click on "Trip Type" column** (shows Airport Trip or Standard Trip)
+
+After clicking, the trip editing modal will open where you can:
+- Update trip type (Airport Trip ↔ Standard Trip)
+- Change flight number or job identifier
+- Update dates, times, locations
+- Modify passenger information
+- View GPS location information (if driver has started/completed trip)
+- View reverse geocoded addresses (converted from GPS coordinates)
 
 **Note**: If the trip is assigned, the driver will be notified of changes.
+
+### Viewing GPS Location Information
+
+When editing a trip, you can see:
+- **Start Location**: GPS coordinates where driver started the trip (if recorded)
+- **Complete Location**: GPS coordinates where driver completed the trip (if recorded)
+- **Reverse Geocoded Addresses**: Human-readable addresses converted from GPS coordinates
+- **Google Maps Links**: Click to view location on Google Maps
+
+**Note**: GPS information is only visible in the Management Dashboard, not in the Driver Dashboard.
 
 ### Deleting a Trip
 
@@ -808,6 +1088,21 @@ Contact your system administrator or support email.
 
 - **App Version**: 1.0
 - **Last Updated**: January 2025
+
+## Recent Updates
+
+### New Features:
+- **Trip Type Selection**: Choose between Airport Trip (with flight number) or Standard Trip (with job/PO number)
+- **Driver Reports**: Comprehensive reporting on driver performance, trips by airline, and statistics
+- **Trip Reports**: Analytics on trips by status, airline, location, and driver
+- **Calendar View**: Visual calendar showing trips by date
+- **Filter Categories**: Create custom filters for better trip organization
+- **Location Categories**: Categorize locations for better filtering and organization
+- **GPS Location Tracking**: View GPS coordinates and reverse geocoded addresses for trips
+- **Tier-Based Flight Status**: Premium tier uses API, standard tier uses FlightRadar24
+- **Daily Assignment Email Selection**: Choose to send to all drivers or a specific driver
+- **Improved Table Layouts**: Better desktop viewing without horizontal scrolling
+- **Click to Edit**: Click on trip rows or "Trip Type" column to quickly edit trips
 
 ---
 

@@ -15,12 +15,16 @@ A one-page quick reference for managers using the Aircrew Transportation app.
 ## Creating a Trip
 
 1. Click **"Create Trip"**
-2. **Select Airport** (choose from your company's configured airports)
-3. **Enter Flight Number** (e.g., UA1234)
+2. **Select Trip Type**:
+   - **Airport Trip**: Standard airport transportation (requires flight number)
+   - **Standard Trip**: Non-airport transportation (requires job/PO number)
+3. **Enter Identifier**:
+   - Airport Trip: Flight number (e.g., UA1234)
+   - Standard Trip: Job/PO number (e.g., PO-12345)
 4. **Set Pickup Date & Time**
 5. **Choose Pickup Location**:
    - Use Airport
-   - Use Saved Location
+   - Use Saved Location (grouped by category)
    - Enter Text (custom)
 6. **Choose Dropoff Location** (same options)
 7. **Enter Passenger Info** (name, contact, instructions)
@@ -80,8 +84,10 @@ A one-page quick reference for managers using the Aircrew Transportation app.
 ## Daily Assignment Emails
 
 1. Click **"Send Daily Assignment Emails"**
-2. Choose: Email, SMS, or Both
-3. Click **"Send"**
+2. Choose: **All Drivers** or **Specific Driver**
+3. If specific driver: Select driver from list
+4. Choose: Email, SMS, or Both
+5. Click **"Send"**
 
 **When**: Evening (for tomorrow's trips)
 
@@ -89,9 +95,16 @@ A one-page quick reference for managers using the Aircrew Transportation app.
 
 ---
 
+## Viewing Trips
+
+**List View**: Table/card view (default)  
+**Calendar View**: Visual monthly calendar - click date to see trips
+
+**Switch**: Use view toggle buttons (📋 List / 📅 Calendar)
+
 ## Filtering Trips
 
-**By Airport**: Click airport filter buttons (your company's airports will be listed)
+**By Location Category**: Use custom filter categories (create in "Filter Categories")
 
 **By Date**: 
 - Today, Tomorrow, This Week, Next Week
@@ -107,7 +120,13 @@ A one-page quick reference for managers using the Aircrew Transportation app.
 
 ## Editing/Deleting Trips
 
-**Edit**: Click "Edit" → Update → Save
+**Edit**: 
+- Click "Edit" button, OR
+- Click on trip row, OR
+- Click on "Trip Type" column
+- Update → Save
+
+**View GPS Info**: When editing, see GPS locations and reverse geocoded addresses (if driver started/completed trip)
 
 **Delete**: Click "Delete" → Confirm
 
@@ -155,22 +174,45 @@ The airports available in your system are configured by your company administrat
 
 ---
 
+## Reports
+
+**Driver Reports** (📊): 
+- View driver statistics
+- Trips by airline
+- Export to Excel
+
+**Trip Reports** (📋):
+- Summary statistics
+- By status, airline, location, driver
+- Export to Excel
+
+## Filter Categories
+
+**Create Custom Filters**:
+- Click "Filter Categories"
+- Add category with field and values
+- Use "Auto-fill" to populate from existing data
+- Filters appear in trip filter section
+
 ## Common Tasks
 
 **Morning Routine**:
 - Review today's trips
 - Check unassigned trips
 - Assign any pending trips
+- Check calendar view for overview
 
 **Creating Trips**:
-- Use saved locations
+- Select trip type (Airport or Standard)
+- Use saved locations (grouped by category)
 - Include passenger contact
 - Add special instructions
 
 **Evening Routine**:
 - Review tomorrow's trips
 - Ensure all assigned
-- Send daily summaries
+- Send daily summaries (all or specific driver)
+- Run reports for analytics
 
 ---
 

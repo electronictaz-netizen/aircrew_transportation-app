@@ -6,22 +6,32 @@ A comprehensive React application built with AWS Amplify Gen 2 for managing airc
 
 ### Management Dashboard
 - **Trip Scheduling**: Create and manage transportation trips with:
+  - Trip Type Selection (Airport Trip with flight number or Standard Trip with job/PO number)
   - Pickup Date and Time
-  - Flight Number
-  - Pickup Location
-  - Dropoff Location
+  - Flight Number (for Airport Trips) or Job/PO Number (for Standard Trips)
+  - Pickup Location (with category support)
+  - Dropoff Location (with category support)
   - Number of Passengers
   - Driver Assignment
   - Status Tracking (Unassigned, Assigned, InProgress, Completed)
-- **Driver Management**: Add, edit, and manage driver information
-- **Real-time Flight Status**: Integration with flight status APIs to show flight delays, cancellations, and on-time status
+  - GPS Location Tracking (start and completion coordinates with reverse geocoding)
+- **Driver Management**: Add, edit, and manage driver information with notification preferences
+- **Location Management**: Manage saved locations with categories for better organization
+- **Filter Categories**: Create custom filters for trip organization and searching
+- **Calendar View**: Visual monthly calendar showing trips by date
+- **Driver Reports**: Comprehensive analytics on driver performance, trips by airline, and statistics
+- **Trip Reports**: Analytics on trips by status, airline, location, and driver
+- **Real-time Flight Status**: Integration with flight status APIs (premium tier) or FlightRadar24 links (standard tier)
 - **Trip Tracking**: View actual pickup and dropoff times recorded by drivers
+- **Daily Assignment Emails**: Send daily summaries to all drivers or specific drivers
 
 ### Driver Dashboard
 - **Assigned Jobs View**: Drivers see all their assigned transportation jobs
-- **Job Details**: View pickup/dropoff locations, flight numbers, passenger counts, and scheduled times
+- **Job Details**: View pickup/dropoff locations, flight numbers/job identifiers, passenger counts, and scheduled times
+- **GPS Location Recording**: Automatically records GPS coordinates when starting or completing trips
 - **Timestamp Recording**: One-click buttons to record actual pickup and dropoff times
-- **Flight Status**: Real-time flight status information for assigned trips
+- **Flight Status**: Real-time flight status information (premium tier) or FlightRadar24 links (standard tier)
+- **Auto-Refresh**: Dashboard automatically refreshes every 30 seconds to show new assignments
 
 ## Prerequisites
 
@@ -247,8 +257,9 @@ After the first deployment:
 
 ### Trip
 - `id`: Unique identifier
+- `tripType`: Trip type ("Airport Trip" or "Standard Trip")
 - `pickupDate`: Scheduled pickup date and time
-- `flightNumber`: Flight number (e.g., AA1234)
+- `flightNumber`: Flight number (e.g., AA1234) or job/PO identifier for Standard Trips
 - `pickupLocation`: Pickup location address
 - `dropoffLocation`: Dropoff location address
 - `numberOfPassengers`: Number of passengers
@@ -256,8 +267,21 @@ After the first deployment:
 - `driverId`: Reference to assigned driver
 - `actualPickupTime`: Timestamp when driver recorded pickup
 - `actualDropoffTime`: Timestamp when driver recorded dropoff
+- `startLocationLat`: GPS latitude when trip was started
+- `startLocationLng`: GPS longitude when trip was started
+- `completeLocationLat`: GPS latitude when trip was completed
+- `completeLocationLng`: GPS longitude when trip was completed
 - `flightStatus`: Current flight status
 - `flightStatusLastUpdated`: Last time flight status was checked
+
+### Location
+- `id`: Unique identifier
+- `companyId`: Reference to company (for multi-tenancy)
+- `name`: Location name
+- `address`: Full address
+- `description`: Additional details
+- `category`: Location category (e.g., "Airport", "Hotel", "Office", "Other")
+- `isActive`: Active status flag
 
 ## Customization
 

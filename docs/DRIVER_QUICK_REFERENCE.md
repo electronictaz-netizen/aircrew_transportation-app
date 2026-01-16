@@ -23,8 +23,9 @@ A one-page quick reference for drivers using the Aircrew Transportation app.
 ## Trip Information
 
 Each trip shows:
-- ✈️ **Airport** (airport name and code)
-- 🛫 **Flight Number** (e.g., UA1234)
+- 🏷️ **Trip Type** (Airport Trip or Standard Trip)
+- ✈️ **Airport/Category** (airport name/code or location category)
+- 🛫 **Flight Number/Identifier** (e.g., UA1234 or PO-12345)
 - 📅 **Pickup Date & Time**
 - 📍 **Pickup Location**
 - 📍 **Dropoff Location**
@@ -57,9 +58,10 @@ Each trip shows:
 
 1. Find trip in dashboard
 2. Click "Check Flight Status"
-3. View current status
+3. View current status (or opens FlightRadar24 for standard tier)
 
-⚠️ **Only check when needed** - excessive use costs money
+⚠️ **Premium tier**: Only check when needed - excessive use costs money  
+⚠️ **Standard tier**: Opens external website (no cost)
 
 **Check before**: Leaving for airport, if delay suspected
 
@@ -103,10 +105,19 @@ The airport name and code will be displayed on each trip card. Your company conf
 
 ---
 
+## Recording Trips
+
+**Start Trip**: Click "Start Trip" → Allow location access → GPS recorded automatically  
+**Complete Trip**: Click "Complete Trip" → Allow location access → GPS recorded automatically
+
+**Note**: Location is only recorded when you click these buttons, not continuously tracked.
+
 ## Best Practices
 
 ✅ Check assignments daily  
 ✅ Check flight status before leaving  
+✅ Start trip when you begin pickup  
+✅ Complete trip when finished  
 ✅ Arrive 15-30 minutes early  
 ✅ Keep phone charged  
 ✅ Don't use app while driving  

@@ -85,33 +85,50 @@ export function sendEmailNotification(
 }
 
 /**
- * Send SMS notification
- * Note: This is a placeholder. For production, integrate with AWS SNS, Twilio, or similar service.
- * SMS requires a backend API endpoint for security (API keys should not be in frontend).
+ * Send SMS notification via AWS SNS
  */
-export function sendSMSNotification(
+export async function sendSMSNotification(
   driver: Schema['Driver']['type'],
   trip: Schema['Trip']['type'],
   isReassignment: boolean = false
-): void {
+): Promise<{ success: boolean; error?: string }> {
   if (!driver.phone) {
     console.warn(`Cannot send SMS notification: Driver ${driver.name} has no phone number`);
-    return;
+    return { success: false, error: 'Driver has no phone number' };
   }
 
   const message = isReassignment
     ? `Trip Reassignment: Flight ${trip.flightNumber} on ${trip.pickupDate ? new Date(trip.pickupDate).toLocaleDateString() : 'TBD'}. Check your email for details.`
     : `New Trip Assignment: Flight ${trip.flightNumber} on ${trip.pickupDate ? new Date(trip.pickupDate).toLocaleDateString() : 'TBD'}. Check your email for details.`;
 
-  // For now, create a sms: link (works on mobile devices)
-  // For production, this should call a backend API that uses AWS SNS or similar
-  const smsLink = `sms:${driver.phone.replace(/[^\d+]/g, '')}?body=${encodeURIComponent(message)}`;
+  // Import SMS service
+  const { sendSMS, formatPhoneForSMS, isValidPhoneNumber } = await import('./smsService');
   
-  // Open SMS app (works on mobile devices)
-  window.open(smsLink);
+  // Validate phone number
+  if (!isValidPhoneNumber(driver.phone)) {
+    console.warn(`Invalid phone number for ${driver.name}: ${driver.phone}`);
+    return { success: false, error: 'Invalid phone number format' };
+  }
   
-  console.log(`SMS notification prepared for ${driver.name} (${driver.phone})`);
-  console.log('Note: SMS functionality requires backend API integration for production use.');
+  const formattedPhone = formatPhoneForSMS(driver.phone);
+  
+  try {
+    const result = await sendSMS({
+      phoneNumber: formattedPhone,
+      message: message,
+    });
+    
+    if (result.success) {
+      console.log(`✅ SMS notification sent to ${driver.name} (${formattedPhone.substring(0, 4)}***)`);
+      return { success: true };
+    } else {
+      console.error(`Failed to send SMS to ${driver.name}:`, result.error);
+      return { success: false, error: result.error };
+    }
+  } catch (error: any) {
+    console.error(`Error sending SMS to ${driver.name}:`, error);
+    return { success: false, error: error.message || 'Unknown error' };
+  }
 }
 
 /**
@@ -196,7 +213,7 @@ export async function notifyDriver(
     // - Driver wants SMS (preference is 'sms' or 'both') AND
     // - Driver has phone number
     if (options.sms && (preference === 'sms' || preference === 'both') && driver.phone) {
-      sendSMSNotification(driver, trip, isReassignment);
+      await sendSMSNotification(driver, trip, isReassignment);
     }
 
     // Send in-app notification (always send if enabled, doesn't depend on preference)
@@ -239,9 +256,22 @@ export async function notifyPreviousDriver(
   // Send SMS if driver prefers SMS or both
   if ((preference === 'sms' || preference === 'both') && previousDriver.phone) {
     const message = `Trip Unassigned: Flight ${trip.flightNumber} on ${trip.pickupDate ? new Date(trip.pickupDate).toLocaleDateString() : 'TBD'}. Check your email for details.`;
-    const phoneNumber = previousDriver.phone.replace(/[^\d+]/g, '');
-    const smsLink = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
-    window.open(smsLink);
-    console.log(`SMS notification sent to previous driver ${previousDriver.name}`);
+    const { sendSMS, formatPhoneForSMS, isValidPhoneNumber } = await import('./smsService');
+    
+    if (isValidPhoneNumber(previousDriver.phone)) {
+      const formattedPhone = formatPhoneForSMS(previousDriver.phone);
+      const result = await sendSMS({
+        phoneNumber: formattedPhone,
+        message: message,
+      });
+      
+      if (result.success) {
+        console.log(`✅ SMS notification sent to previous driver ${previousDriver.name}`);
+      } else {
+        console.error(`Failed to send SMS to previous driver ${previousDriver.name}:`, result.error);
+      }
+    } else {
+      console.warn(`Invalid phone number for previous driver ${previousDriver.name}: ${previousDriver.phone}`);
+    }
   }
 }
