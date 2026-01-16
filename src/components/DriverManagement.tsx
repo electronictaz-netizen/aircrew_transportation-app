@@ -425,8 +425,21 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
               </thead>
               <tbody>
                 {drivers.map((driver) => (
-                  <tr key={driver.id} className={selectedDrivers.has(driver.id) ? 'selected' : ''}>
-                    <td>
+                  <tr 
+                    key={driver.id} 
+                    className={selectedDrivers.has(driver.id) ? 'selected' : ''}
+                    onClick={(e) => {
+                      // Don't trigger if clicking on checkbox, button, or link
+                      const target = e.target as HTMLElement;
+                      if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.closest('button') || target.closest('a')) {
+                        return;
+                      }
+                      handleEdit(driver);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    title="Click to view/edit driver details"
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedDrivers.has(driver.id)}
@@ -449,7 +462,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
                         {driver.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div className="action-buttons">
                         <button
                           className="btn-icon btn-edit"
