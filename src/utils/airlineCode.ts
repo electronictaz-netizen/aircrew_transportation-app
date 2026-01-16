@@ -3,6 +3,21 @@
  */
 
 /**
+ * Determine trip type from flight number
+ * Airport Trip: matches flight number pattern (e.g., AA1234, UA123)
+ * Standard Trip: anything else
+ */
+export function getTripType(flightNumber: string | null | undefined): 'Airport Trip' | 'Standard Trip' {
+  if (!flightNumber || !flightNumber.trim()) {
+    return 'Airport Trip'; // Default for empty
+  }
+  
+  // Flight number pattern: 2-3 letters followed by 1-4 digits, optionally followed by a letter
+  const flightNumberPattern = /^[A-Z]{2,3}\d{1,4}[A-Z]?$/i;
+  return flightNumberPattern.test(flightNumber.trim()) ? 'Airport Trip' : 'Standard Trip';
+}
+
+/**
  * Extract airline code from flight number
  * Flight numbers are typically 2-3 letters followed by digits (e.g., AA1234, UAL123)
  * 

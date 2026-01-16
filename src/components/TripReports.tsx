@@ -2,15 +2,12 @@ import { useState, useMemo } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
-import { extractAirlineCode, getAirlineName, groupTripsByAirline } from '../utils/airlineCode';
+import { extractAirlineCode, getAirlineName, groupTripsByAirline, getTripType } from '../utils/airlineCode';
 import { 
-  calculateTripDuration, 
   calculateTotalHoursWorked, 
-  calculateDriverPay,
   calculateTotalDriverPay,
   calculateTotalRevenue,
   calculateProfit,
-  formatDuration,
   formatCurrency
 } from '../utils/tripCalculations';
 import { useNotification } from './Notification';
@@ -322,36 +319,35 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
       const driverSheet = XLSX.utils.json_to_sheet(driverData);
       XLSX.utils.book_append_sheet(workbook, driverSheet, 'By Driver');
 
-      // All Trips Detail with comprehensive financial and time data
-      const allTripsData = filteredTrips.map(trip => {
+      // All Trips Detail - showing individual trip information with cumulative data
+      const allTripsData = filteredTrips.map((trip, index) => {
         const driver = trip.driverId ? drivers.find(d => d.id === trip.driverId) : null;
-        const duration = calculateTripDuration(trip);
-        const pay = calculateDriverPay(trip, driver || null);
+        const tripType = getTripType(trip.flightNumber);
+        const airlineCode = extractAirlineCode(trip.flightNumber);
+        const airline = tripType === 'Airport Trip' ? getAirlineName(airlineCode) : 'N/A';
+        
+        // Calculate cumulative totals up to this trip
+        const tripsUpToThis = filteredTrips.slice(0, index + 1);
+        const cumulativeTrips = tripsUpToThis.length;
+        const cumulativePassengers = tripsUpToThis.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0);
+        const cumulativeCompleted = tripsUpToThis.filter(t => t.status === 'Completed').length;
         
         return {
           'Trip ID': trip.id,
-          'Pickup Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
-          'Flight Number': trip.flightNumber || '',
-          'Airline': getAirlineName(extractAirlineCode(trip.flightNumber)),
-          'Airline Code': extractAirlineCode(trip.flightNumber),
-          'Pickup Location': trip.pickupLocation || '',
-          'Dropoff Location': trip.dropoffLocation || '',
-          'Passengers': trip.numberOfPassengers || 1,
+          'Trip Type': tripType,
+          'Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
+          'Airline': airline,
+          'Airline Code': tripType === 'Airport Trip' ? airlineCode : 'N/A',
+          'Number of Passengers': trip.numberOfPassengers || 1,
           'Status': trip.status || 'Unassigned',
           'Driver': driver?.name || 'Unassigned',
-          'Driver Email': driver?.email || '',
-          'Driver Phone': driver?.phone || '',
-          'Driver License': driver?.licenseNumber || '',
-          'Scheduled Pickup': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
-          'Actual Pickup': trip.actualPickupTime ? format(new Date(trip.actualPickupTime), 'MMM d, yyyy HH:mm') : '',
-          'Actual Dropoff': trip.actualDropoffTime ? format(new Date(trip.actualDropoffTime), 'MMM d, yyyy HH:mm') : '',
-          'Trip Duration (Hours)': duration !== null ? duration.toFixed(2) : 'N/A',
-          'Trip Duration (HH:MM)': formatDuration(duration),
-          'Trip Rate': formatCurrency(trip.tripRate),
-          'Driver Pay': formatCurrency(pay),
-          'Profit': formatCurrency((trip.tripRate || 0) - (pay || 0)),
-          'Category': trip.primaryLocationCategory || trip.airport || '',
-          'Notes': trip.notes || '',
+          'Flight Number': trip.flightNumber || '',
+          'Pickup Location': trip.pickupLocation || '',
+          'Dropoff Location': trip.dropoffLocation || '',
+          // Cumulative information
+          'Cumulative Trip Count': cumulativeTrips,
+          'Cumulative Passengers': cumulativePassengers,
+          'Cumulative Completed': cumulativeCompleted,
         };
       });
       const allTripsSheet = XLSX.utils.json_to_sheet(allTripsData);
@@ -861,16 +857,12 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                     <thead>
                       <tr>
                         <th>Date</th>
-                        <th>Flight<br />Number</th>
+                        <th>Trip<br />Type</th>
                         <th>Airline</th>
-                        <th>Pickup</th>
-                        <th>Dropoff</th>
-                        <th>Passengers</th>
-                        <th>Duration</th>
-                        <th>Trip Rate</th>
-                        <th>Driver Pay</th>
-                        <th>Driver</th>
+                        <th>Number of<br />Passengers</th>
                         <th>Status</th>
+                        <th>Driver</th>
+                        <th>Flight Number</th>
                         {onEdit && <th>Actions</th>}
                       </tr>
                     </thead>
@@ -888,20 +880,24 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                               <td>
                                 {trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : 'N/A'}
                               </td>
-                              <td>{trip.flightNumber}</td>
-                              <td>{getAirlineName(extractAirlineCode(trip.flightNumber))}</td>
-                              <td>{trip.pickupLocation}</td>
-                              <td>{trip.dropoffLocation}</td>
+                              <td>
+                                <span className={`trip-type-badge trip-type-${getTripType(trip.flightNumber).toLowerCase().replace(' ', '-')}`}>
+                                  {getTripType(trip.flightNumber)}
+                                </span>
+                              </td>
+                              <td>
+                                {getTripType(trip.flightNumber) === 'Airport Trip' 
+                                  ? getAirlineName(extractAirlineCode(trip.flightNumber))
+                                  : 'N/A'}
+                              </td>
                               <td>{trip.numberOfPassengers || 1}</td>
-                              <td>{formatDuration(calculateTripDuration(trip))}</td>
-                              <td>{formatCurrency(trip.tripRate)}</td>
-                              <td>{formatCurrency(calculateDriverPay(trip, driver || null))}</td>
-                              <td>{driver?.name || 'Unassigned'}</td>
                               <td>
                                 <span className={`status-badge status-${trip.status?.toLowerCase()}`}>
                                   {trip.status || 'Unassigned'}
                                 </span>
                               </td>
+                              <td>{driver?.name || 'Unassigned'}</td>
+                              <td>{trip.flightNumber || ''}</td>
                               {onEdit && (
                                 <td>
                                   <button

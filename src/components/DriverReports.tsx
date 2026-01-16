@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
-import { extractAirlineCode, getAirlineName, groupTripsByAirline } from '../utils/airlineCode';
+import { extractAirlineCode, getAirlineName, groupTripsByAirline, getTripType } from '../utils/airlineCode';
 import { 
   calculateTripDuration, 
   calculateTotalHoursWorked, 
@@ -31,6 +31,8 @@ interface DriverStats {
   inProgressTrips: number;
   unassignedTrips: number;
   tripsByAirline: Map<string, number>;
+  tripsByType: { airport: number; standard: number };
+  totalTripDuration: number; // Total duration in hours
   dateRange: { earliest: Date | null; latest: Date | null };
   totalHoursWorked: number;
   totalDriverPay: number;
@@ -101,6 +103,8 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
           inProgressTrips: 0,
           unassignedTrips: 0,
           tripsByAirline: new Map(),
+          tripsByType: { airport: 0, standard: 0 },
+          totalTripDuration: 0,
           dateRange: { earliest: null, latest: null },
           totalHoursWorked: 0,
           totalDriverPay: 0,
@@ -112,6 +116,8 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
         stat.totalTrips++;
         stat.unassignedTrips++;
         updateAirlineCount(stat, trip);
+        updateTripTypeCount(stat, trip);
+        updateTripDuration(stat, trip);
         updateDateRange(stat, trip);
         return;
       }
@@ -127,6 +133,8 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
           inProgressTrips: 0,
           unassignedTrips: 0,
           tripsByAirline: new Map(),
+          tripsByType: { airport: 0, standard: 0 },
+          totalTripDuration: 0,
           dateRange: { earliest: null, latest: null },
           totalHoursWorked: 0,
           totalDriverPay: 0,
@@ -155,6 +163,8 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
       }
 
       updateAirlineCount(stat, trip);
+      updateTripTypeCount(stat, trip);
+      updateTripDuration(stat, trip);
       updateDateRange(stat, trip);
     });
 
@@ -164,8 +174,15 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
       
       const driverTrips = filteredTrips.filter(t => t.driverId === stat.driverId);
       
-      // Calculate hours worked
-      stat.totalHoursWorked = calculateTotalHoursWorked(driverTrips);
+      // Calculate hours worked (for completed trips)
+      const completedTrips = driverTrips.filter(t => t.status === 'Completed');
+      stat.totalHoursWorked = calculateTotalHoursWorked(completedTrips);
+      
+      // Calculate total trip duration (sum of all completed trip durations)
+      stat.totalTripDuration = completedTrips.reduce((sum, trip) => {
+        const duration = calculateTripDuration(trip);
+        return sum + (duration || 0);
+      }, 0);
       
       // Calculate total driver pay
       stat.totalDriverPay = calculateTotalDriverPay(driverTrips, drivers);
@@ -190,6 +207,24 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
     const airlineCode = extractAirlineCode(trip.flightNumber);
     const currentCount = stat.tripsByAirline.get(airlineCode) || 0;
     stat.tripsByAirline.set(airlineCode, currentCount + 1);
+  }
+
+  function updateTripTypeCount(stat: DriverStats, trip: Schema['Trip']['type']) {
+    const tripType = getTripType(trip.flightNumber);
+    if (tripType === 'Airport Trip') {
+      stat.tripsByType.airport++;
+    } else {
+      stat.tripsByType.standard++;
+    }
+  }
+
+  function updateTripDuration(stat: DriverStats, trip: Schema['Trip']['type']) {
+    if (trip.status === 'Completed') {
+      const duration = calculateTripDuration(trip);
+      if (duration !== null) {
+        stat.totalTripDuration += duration;
+      }
+    }
   }
 
   function updateDateRange(stat: DriverStats, trip: Schema['Trip']['type']) {
@@ -250,6 +285,9 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
           return {
             'Driver Name': stat.driverName,
             'Total Trips': stat.totalTrips,
+            'Total Trip Duration (Hours)': stat.totalTripDuration.toFixed(2),
+            'Airport Trips': stat.tripsByType.airport,
+            'Standard Trips': stat.tripsByType.standard,
             'Completed Trips': stat.completedTrips,
             'Assigned': stat.assignedTrips,
             'In Progress': stat.inProgressTrips,
@@ -301,6 +339,9 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
           { 'Field': 'Pay Rate Per Trip', 'Value': formatCurrency(driver?.payRatePerTrip) },
           { 'Field': 'Pay Rate Per Hour', 'Value': formatCurrency(driver?.payRatePerHour) },
           { 'Field': 'Total Trips', 'Value': driverStat?.totalTrips || 0 },
+          { 'Field': 'Total Trip Duration', 'Value': driverStat ? formatDuration(driverStat.totalTripDuration) : '0:00' },
+          { 'Field': 'Airport Trips', 'Value': driverStat?.tripsByType.airport || 0 },
+          { 'Field': 'Standard Trips', 'Value': driverStat?.tripsByType.standard || 0 },
           { 'Field': 'Completed Trips', 'Value': driverStat?.completedTrips || 0 },
           { 'Field': 'Assigned Trips', 'Value': driverStat?.assignedTrips || 0 },
           { 'Field': 'In Progress Trips', 'Value': driverStat?.inProgressTrips || 0 },
@@ -317,12 +358,14 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
         const tripsData = selectedDriverTrips.map(trip => {
           const duration = calculateTripDuration(trip);
           const pay = calculateDriverPay(trip, driver || null);
+          const tripType = getTripType(trip.flightNumber);
           
           return {
             'Trip ID': trip.id,
+            'Trip Type': tripType,
             'Pickup Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
             'Flight Number': trip.flightNumber || '',
-            'Airline': getAirlineName(extractAirlineCode(trip.flightNumber)),
+            'Airline': tripType === 'Airport Trip' ? getAirlineName(extractAirlineCode(trip.flightNumber)) : 'N/A',
             'Pickup Location': trip.pickupLocation || '',
             'Dropoff Location': trip.dropoffLocation || '',
             'Passengers': trip.numberOfPassengers || 1,
@@ -340,6 +383,20 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
 
         const tripsSheet = XLSX.utils.json_to_sheet(tripsData);
         XLSX.utils.book_append_sheet(workbook, tripsSheet, 'Trips');
+
+        // Trip Type Breakdown sheet
+        const tripTypeBreakdown = [
+          {
+            'Trip Type': 'Airport Trip',
+            'Count': selectedDriverTrips.filter(t => getTripType(t.flightNumber) === 'Airport Trip').length,
+          },
+          {
+            'Trip Type': 'Standard Trip',
+            'Count': selectedDriverTrips.filter(t => getTripType(t.flightNumber) === 'Standard Trip').length,
+          },
+        ];
+        const tripTypeSheet = XLSX.utils.json_to_sheet(tripTypeBreakdown);
+        XLSX.utils.book_append_sheet(workbook, tripTypeSheet, 'By Trip Type');
 
         // Airline breakdown sheet with financial data
         const airlineBreakdown = Array.from(tripsByAirline.entries())
@@ -518,14 +575,11 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
                   <thead>
                     <tr>
                       <th>Driver</th>
-                      <th>Total Trips</th>
+                      <th>Total<br />Trips</th>
+                      <th>Total Trip<br />Duration</th>
+                      <th>Airport<br />Trips</th>
+                      <th>Standard<br />Trips</th>
                       <th>Completed</th>
-                      <th>Hours<br />Worked</th>
-                      <th>Driver Pay</th>
-                      <th>Revenue</th>
-                      <th>Profit</th>
-                      <th>Trips by Airline</th>
-                      <th>Date Range</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -539,11 +593,10 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
                           )}
                         </td>
                         <td><strong>{stat.totalTrips}</strong></td>
+                        <td>{formatDuration(stat.totalTripDuration)}</td>
+                        <td>{stat.tripsByType.airport}</td>
+                        <td>{stat.tripsByType.standard}</td>
                         <td>{stat.completedTrips}</td>
-                        <td>{stat.totalHoursWorked.toFixed(2)}</td>
-                        <td>{formatCurrency(stat.totalDriverPay)}</td>
-                        <td>{formatCurrency(stat.totalRevenue)}</td>
-                        <td>{formatCurrency(stat.profit)}</td>
                         <td>
                           <div className="airline-breakdown">
                             {Array.from(stat.tripsByAirline.entries())
@@ -617,33 +670,32 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
                   </div>
                   <div className="stat-card">
                     <div className="stat-value">
+                      {formatDuration(selectedDriverTrips
+                        .filter(t => t.status === 'Completed')
+                        .reduce((sum, trip) => {
+                          const duration = calculateTripDuration(trip);
+                          return sum + (duration || 0);
+                        }, 0))}
+                    </div>
+                    <div className="stat-label">Total Trip Duration</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-value">
+                      {selectedDriverTrips.filter(t => getTripType(t.flightNumber) === 'Airport Trip').length}
+                    </div>
+                    <div className="stat-label">Airport Trips</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-value">
+                      {selectedDriverTrips.filter(t => getTripType(t.flightNumber) === 'Standard Trip').length}
+                    </div>
+                    <div className="stat-label">Standard Trips</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-value">
                       {selectedDriverTrips.filter(t => t.status === 'Completed').length}
                     </div>
                     <div className="stat-label">Completed</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">
-                      {calculateTotalHoursWorked(selectedDriverTrips.filter(t => t.status === 'Completed')).toFixed(1)}
-                    </div>
-                    <div className="stat-label">Hours Worked</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">
-                      {formatCurrency(calculateTotalDriverPay(selectedDriverTrips, drivers))}
-                    </div>
-                    <div className="stat-label">Total Pay</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">
-                      {formatCurrency(calculateTotalRevenue(selectedDriverTrips))}
-                    </div>
-                    <div className="stat-label">Total Revenue</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">
-                      {tripsByAirline.size}
-                    </div>
-                    <div className="stat-label">Airlines</div>
                   </div>
                 </div>
 

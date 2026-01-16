@@ -7,6 +7,25 @@
   flex-direction: column;
 }
 
+.trip-type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.trip-type-airport-trip {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.trip-type-standard-trip {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
 .reports-controls {
   display: flex;
   justify-content: space-between;
