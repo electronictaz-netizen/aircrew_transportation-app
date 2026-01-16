@@ -43,6 +43,8 @@ const schema = a.schema({
       licenseNumber: a.string(),
       isActive: a.boolean().default(true),
       notificationPreference: a.string(), // 'email', 'sms', or 'both'
+      payRatePerTrip: a.float(), // Driver pay per completed trip (optional)
+      payRatePerHour: a.float(), // Driver pay per hour (optional)
       trips: a.hasMany('Trip', 'driverId'),
     })
     .authorization((allow) => [
@@ -78,6 +80,10 @@ const schema = a.schema({
       parentTripId: a.id(), // Reference to the original recurring trip
       childTrips: a.hasMany('Trip', 'parentTripId'),
       parentTrip: a.belongsTo('Trip', 'parentTripId'),
+      // Financial fields for billing and payroll
+      tripRate: a.float(), // Rate charged to customer/airline for this trip
+      driverPayAmount: a.float(), // Amount paid to driver for this trip (calculated or fixed)
+      notes: a.string(), // Additional notes for billing/payroll verification
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

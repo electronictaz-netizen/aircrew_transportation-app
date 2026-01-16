@@ -63,6 +63,9 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     isRecurring: trip?.isRecurring || !!trip?.parentTripId || false,
     recurringPattern: trip?.recurringPattern || 'weekly',
     recurringEndDate: trip?.recurringEndDate ? format(new Date(trip.recurringEndDate), "yyyy-MM-dd'T'HH:mm") : '',
+    tripRate: trip?.tripRate !== null && trip?.tripRate !== undefined ? String(trip.tripRate) : '',
+    driverPayAmount: trip?.driverPayAmount !== null && trip?.driverPayAmount !== undefined ? String(trip.driverPayAmount) : '',
+    notes: trip?.notes || '',
   });
   
   const [passengerInput, setPassengerInput] = useState(String(formData.numberOfPassengers));
@@ -226,6 +229,9 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
         driverId: formData.driverId || undefined,
         status: formData.driverId ? 'Assigned' : 'Unassigned',
         isRecurring: formData.isRecurring === true,
+        tripRate: formData.tripRate ? parseFloat(formData.tripRate) : undefined,
+        driverPayAmount: formData.driverPayAmount ? parseFloat(formData.driverPayAmount) : undefined,
+        notes: formData.notes.trim() || undefined,
       };
 
       // Only include recurring fields if it's a recurring job
@@ -664,6 +670,66 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
               </div>
             </>
           )}
+
+          {/* Financial Information */}
+          <div className="form-group" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+            <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>Financial Information (for Billing & Payroll)</h4>
+            
+            <div className="form-group">
+              <label htmlFor="tripRate">Trip Rate (Customer Charge)</label>
+              <input
+                type="number"
+                id="tripRate"
+                name="tripRate"
+                value={formData.tripRate}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                style={{ width: '100%' }}
+              />
+              <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
+                Amount charged to customer/airline for this trip (optional, for billing verification)
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="driverPayAmount">Driver Pay Amount</label>
+              <input
+                type="number"
+                id="driverPayAmount"
+                name="driverPayAmount"
+                value={formData.driverPayAmount}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                style={{ width: '100%' }}
+              />
+              <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
+                Fixed amount paid to driver for this trip (optional, will calculate from driver pay rate if not specified)
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="notes">Notes (for Billing/Payroll)</label>
+              <textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={(e) => {
+                  handleChange(e as any);
+                }}
+                rows={3}
+                placeholder="Additional notes for billing or payroll verification..."
+                maxLength={500}
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+              <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
+                Optional notes for billing or payroll verification
+              </small>
+            </div>
+          </div>
 
           {/* GPS Location Information (only shown when editing existing trip with GPS data) */}
           {trip && (trip.startLocationLat || trip.completeLocationLat) && (

@@ -3,6 +3,16 @@ import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { extractAirlineCode, getAirlineName, groupTripsByAirline } from '../utils/airlineCode';
+import { 
+  calculateTripDuration, 
+  calculateTotalHoursWorked, 
+  calculateDriverPay,
+  calculateTotalDriverPay,
+  calculateTotalRevenue,
+  calculateProfit,
+  formatDuration,
+  formatCurrency
+} from '../utils/tripCalculations';
 import { useNotification } from './Notification';
 import './TripReports.css';
 
@@ -185,7 +195,13 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
       const workbook = XLSX.utils.book_new();
       const dateStr = new Date().toISOString().split('T')[0];
 
-      // Summary sheet
+      // Summary sheet with financial data
+      const completedTrips = filteredTrips.filter(t => t.status === 'Completed');
+      const totalHours = calculateTotalHoursWorked(completedTrips);
+      const totalPay = calculateTotalDriverPay(completedTrips, drivers);
+      const totalRevenue = calculateTotalRevenue(filteredTrips);
+      const profit = calculateProfit(completedTrips, drivers);
+      
       const summaryData = [
         { 'Metric': 'Total Trips', 'Value': statistics.total },
         { 'Metric': 'Unassigned', 'Value': statistics.unassigned },
@@ -193,71 +209,131 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
         { 'Metric': 'In Progress', 'Value': statistics.inProgress },
         { 'Metric': 'Completed', 'Value': statistics.completed },
         { 'Metric': 'Total Passengers', 'Value': statistics.totalPassengers },
+        { 'Metric': 'Total Hours Worked', 'Value': `${totalHours.toFixed(2)} hours` },
+        { 'Metric': 'Total Revenue', 'Value': formatCurrency(totalRevenue) },
+        { 'Metric': 'Total Driver Pay', 'Value': formatCurrency(totalPay) },
+        { 'Metric': 'Total Profit', 'Value': formatCurrency(profit) },
         { 'Metric': 'Date Range Start', 'Value': statistics.dateRange.earliest ? format(statistics.dateRange.earliest, 'MMM d, yyyy') : '' },
         { 'Metric': 'Date Range End', 'Value': statistics.dateRange.latest ? format(statistics.dateRange.latest, 'MMM d, yyyy') : '' },
       ];
       const summarySheet = XLSX.utils.json_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
 
-      // Trips by Status
-      const statusData = Array.from(tripsByStatus.entries()).map(([status, trips]) => ({
-        'Status': status,
-        'Trip Count': trips.length,
-        'Total Passengers': trips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0),
-      }));
+      // Trips by Status with financial data
+      const statusData = Array.from(tripsByStatus.entries()).map(([status, trips]) => {
+        const completed = trips.filter(t => t.status === 'Completed');
+        const hours = calculateTotalHoursWorked(completed);
+        const pay = calculateTotalDriverPay(completed, drivers);
+        const revenue = calculateTotalRevenue(trips);
+        
+        return {
+          'Status': status,
+          'Trip Count': trips.length,
+          'Completed Count': completed.length,
+          'Total Passengers': trips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0),
+          'Total Hours': hours.toFixed(2),
+          'Total Revenue': formatCurrency(revenue),
+          'Total Driver Pay': formatCurrency(pay),
+          'Profit': formatCurrency(revenue - pay),
+        };
+      });
       const statusSheet = XLSX.utils.json_to_sheet(statusData);
       XLSX.utils.book_append_sheet(workbook, statusSheet, 'By Status');
 
-      // Trips by Airline
+      // Trips by Airline with financial data
       const airlineData = Array.from(tripsByAirline.entries())
-        .map(([airlineCode, airlineTrips]) => ({
-          'Airline': getAirlineName(airlineCode),
-          'Airline Code': airlineCode,
-          'Trip Count': airlineTrips.length,
-          'Total Passengers': airlineTrips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0),
-        }))
+        .map(([airlineCode, airlineTrips]) => {
+          const completed = airlineTrips.filter(t => t.status === 'Completed');
+          const hours = calculateTotalHoursWorked(completed);
+          const pay = calculateTotalDriverPay(completed, drivers);
+          const revenue = calculateTotalRevenue(airlineTrips);
+          
+          return {
+            'Airline': getAirlineName(airlineCode),
+            'Airline Code': airlineCode,
+            'Trip Count': airlineTrips.length,
+            'Completed Count': completed.length,
+            'Total Passengers': airlineTrips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0),
+            'Total Hours': hours.toFixed(2),
+            'Total Revenue': formatCurrency(revenue),
+            'Total Driver Pay': formatCurrency(pay),
+            'Profit': formatCurrency(revenue - pay),
+          };
+        })
         .sort((a, b) => b['Trip Count'] - a['Trip Count']);
       const airlineSheet = XLSX.utils.json_to_sheet(airlineData);
       XLSX.utils.book_append_sheet(workbook, airlineSheet, 'By Airline');
 
-      // Trips by Location
+      // Trips by Location with financial data
       const locationData = Array.from(tripsByLocation.combinedMap.entries())
-        .map(([location, counts]) => ({
-          'Location': location,
-          'Pickup Count': counts.pickup,
-          'Dropoff Count': counts.dropoff,
-          'Total Trips': counts.total,
-        }))
+        .map(([location, counts]) => {
+          const locationTrips = filteredTrips.filter(t => 
+            t.pickupLocation === location || t.dropoffLocation === location
+          );
+          const completed = locationTrips.filter(t => t.status === 'Completed');
+          const hours = calculateTotalHoursWorked(completed);
+          const pay = calculateTotalDriverPay(completed, drivers);
+          const revenue = calculateTotalRevenue(locationTrips);
+          
+          return {
+            'Location': location,
+            'Pickup Count': counts.pickup,
+            'Dropoff Count': counts.dropoff,
+            'Total Trips': counts.total,
+            'Completed Count': completed.length,
+            'Total Hours': hours.toFixed(2),
+            'Total Revenue': formatCurrency(revenue),
+            'Total Driver Pay': formatCurrency(pay),
+            'Profit': formatCurrency(revenue - pay),
+          };
+        })
         .sort((a, b) => b['Total Trips'] - a['Total Trips']);
       const locationSheet = XLSX.utils.json_to_sheet(locationData);
       XLSX.utils.book_append_sheet(workbook, locationSheet, 'By Location');
 
-      // Trips by Driver
+      // Trips by Driver with financial data
       const driverData = Array.from(tripsByDriver.entries())
         .map(([driverId, driverTrips]) => {
           const driver = driverId === '__unassigned__' 
             ? null 
             : drivers.find(d => d.id === driverId);
+          const completed = driverTrips.filter(t => t.status === 'Completed');
+          const hours = calculateTotalHoursWorked(completed);
+          const pay = calculateTotalDriverPay(completed, drivers);
+          const revenue = calculateTotalRevenue(driverTrips);
+          
           return {
             'Driver': driver?.name || 'Unassigned',
             'Email': driver?.email || '',
             'Phone': driver?.phone || '',
+            'License Number': driver?.licenseNumber || '',
+            'Pay Rate Per Trip': formatCurrency(driver?.payRatePerTrip),
+            'Pay Rate Per Hour': formatCurrency(driver?.payRatePerHour),
             'Trip Count': driverTrips.length,
-            'Completed': driverTrips.filter(t => t.status === 'Completed').length,
+            'Completed': completed.length,
             'Total Passengers': driverTrips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0),
+            'Total Hours Worked': hours.toFixed(2),
+            'Total Driver Pay': formatCurrency(pay),
+            'Total Revenue': formatCurrency(revenue),
+            'Profit': formatCurrency(revenue - pay),
           };
         })
         .sort((a, b) => b['Trip Count'] - a['Trip Count']);
       const driverSheet = XLSX.utils.json_to_sheet(driverData);
       XLSX.utils.book_append_sheet(workbook, driverSheet, 'By Driver');
 
-      // All Trips Detail
+      // All Trips Detail with comprehensive financial and time data
       const allTripsData = filteredTrips.map(trip => {
         const driver = trip.driverId ? drivers.find(d => d.id === trip.driverId) : null;
+        const duration = calculateTripDuration(trip);
+        const pay = calculateDriverPay(trip, driver || null);
+        
         return {
+          'Trip ID': trip.id,
           'Pickup Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
           'Flight Number': trip.flightNumber || '',
           'Airline': getAirlineName(extractAirlineCode(trip.flightNumber)),
+          'Airline Code': extractAirlineCode(trip.flightNumber),
           'Pickup Location': trip.pickupLocation || '',
           'Dropoff Location': trip.dropoffLocation || '',
           'Passengers': trip.numberOfPassengers || 1,
@@ -265,9 +341,17 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
           'Driver': driver?.name || 'Unassigned',
           'Driver Email': driver?.email || '',
           'Driver Phone': driver?.phone || '',
+          'Driver License': driver?.licenseNumber || '',
+          'Scheduled Pickup': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
           'Actual Pickup': trip.actualPickupTime ? format(new Date(trip.actualPickupTime), 'MMM d, yyyy HH:mm') : '',
           'Actual Dropoff': trip.actualDropoffTime ? format(new Date(trip.actualDropoffTime), 'MMM d, yyyy HH:mm') : '',
+          'Trip Duration (Hours)': duration !== null ? duration.toFixed(2) : 'N/A',
+          'Trip Duration (HH:MM)': formatDuration(duration),
+          'Trip Rate': formatCurrency(trip.tripRate),
+          'Driver Pay': formatCurrency(pay),
+          'Profit': formatCurrency((trip.tripRate || 0) - (pay || 0)),
           'Category': trip.primaryLocationCategory || trip.airport || '',
+          'Notes': trip.notes || '',
         };
       });
       const allTripsSheet = XLSX.utils.json_to_sheet(allTripsData);
@@ -525,8 +609,12 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                   <thead>
                     <tr>
                       <th>Status</th>
-                      <th>Trip Count</th>
-                      <th>Total Passengers</th>
+                      <th>Trip<br />Count</th>
+                      <th>Completed</th>
+                      <th>Hours</th>
+                      <th>Revenue</th>
+                      <th>Driver Pay</th>
+                      <th>Profit</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -541,7 +629,11 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                             </span>
                           </td>
                           <td><strong>{statusTrips.length}</strong></td>
-                          <td>{statusTrips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0)}</td>
+                          <td>{statusTrips.filter(t => t.status === 'Completed').length}</td>
+                          <td>{calculateTotalHoursWorked(statusTrips.filter(t => t.status === 'Completed')).toFixed(2)}</td>
+                          <td>{formatCurrency(calculateTotalRevenue(statusTrips))}</td>
+                          <td>{formatCurrency(calculateTotalDriverPay(statusTrips.filter(t => t.status === 'Completed'), drivers))}</td>
+                          <td>{formatCurrency(calculateProfit(statusTrips.filter(t => t.status === 'Completed'), drivers))}</td>
                           <td>
                             <button
                               className="btn btn-sm btn-secondary"
@@ -569,9 +661,13 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                   <thead>
                     <tr>
                       <th>Airline</th>
-                      <th>Airline Code</th>
-                      <th>Trip Count</th>
-                      <th>Total Passengers</th>
+                      <th>Airline<br />Code</th>
+                      <th>Trip<br />Count</th>
+                      <th>Completed</th>
+                      <th>Hours</th>
+                      <th>Revenue</th>
+                      <th>Driver Pay</th>
+                      <th>Profit</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -590,7 +686,11 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                           <td><strong>{airlineName}</strong></td>
                           <td>{airlineCode}</td>
                           <td><strong>{count}</strong></td>
-                          <td>{passengers}</td>
+                          <td>{airlineTrips.filter(t => t.status === 'Completed').length}</td>
+                          <td>{calculateTotalHoursWorked(airlineTrips.filter(t => t.status === 'Completed')).toFixed(2)}</td>
+                          <td>{formatCurrency(calculateTotalRevenue(airlineTrips))}</td>
+                          <td>{formatCurrency(calculateTotalDriverPay(airlineTrips.filter(t => t.status === 'Completed'), drivers))}</td>
+                          <td>{formatCurrency(calculateProfit(airlineTrips.filter(t => t.status === 'Completed'), drivers))}</td>
                           <td>
                             <button
                               className="btn btn-sm btn-secondary"
@@ -618,9 +718,14 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                   <thead>
                     <tr>
                       <th>Location</th>
-                      <th>Pickup Count</th>
-                      <th>Dropoff Count</th>
-                      <th>Total Trips</th>
+                      <th>Pickup<br />Count</th>
+                      <th>Dropoff<br />Count</th>
+                      <th>Total<br />Trips</th>
+                      <th>Completed</th>
+                      <th>Hours</th>
+                      <th>Revenue</th>
+                      <th>Driver Pay</th>
+                      <th>Profit</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -637,6 +742,11 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                           <td>{pickup}</td>
                           <td>{dropoff}</td>
                           <td><strong>{total}</strong></td>
+                          <td>{filteredTrips.filter(t => (t.pickupLocation === location || t.dropoffLocation === location) && t.status === 'Completed').length}</td>
+                          <td>{calculateTotalHoursWorked(filteredTrips.filter(t => (t.pickupLocation === location || t.dropoffLocation === location) && t.status === 'Completed')).toFixed(2)}</td>
+                          <td>{formatCurrency(calculateTotalRevenue(filteredTrips.filter(t => t.pickupLocation === location || t.dropoffLocation === location)))}</td>
+                          <td>{formatCurrency(calculateTotalDriverPay(filteredTrips.filter(t => (t.pickupLocation === location || t.dropoffLocation === location) && t.status === 'Completed'), drivers))}</td>
+                          <td>{formatCurrency(calculateProfit(filteredTrips.filter(t => (t.pickupLocation === location || t.dropoffLocation === location) && t.status === 'Completed'), drivers))}</td>
                           <td>
                             <button
                               className="btn btn-sm btn-secondary"
@@ -664,9 +774,12 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                   <thead>
                     <tr>
                       <th>Driver</th>
-                      <th>Trip Count</th>
+                      <th>Trip<br />Count</th>
                       <th>Completed</th>
-                      <th>Total Passengers</th>
+                      <th>Hours<br />Worked</th>
+                      <th>Driver Pay</th>
+                      <th>Revenue</th>
+                      <th>Profit</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -691,7 +804,10 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                           <td><strong>{driverName}</strong></td>
                           <td><strong>{count}</strong></td>
                           <td>{completed}</td>
-                          <td>{passengers}</td>
+                          <td>{calculateTotalHoursWorked(driverTrips.filter(t => t.status === 'Completed')).toFixed(2)}</td>
+                          <td>{formatCurrency(calculateTotalDriverPay(driverTrips.filter(t => t.status === 'Completed'), drivers))}</td>
+                          <td>{formatCurrency(calculateTotalRevenue(driverTrips))}</td>
+                          <td>{formatCurrency(calculateProfit(driverTrips.filter(t => t.status === 'Completed'), drivers))}</td>
                           <td>
                             {driverId !== '__unassigned__' && (
                               <button
@@ -726,11 +842,14 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                     <thead>
                       <tr>
                         <th>Date</th>
-                        <th>Flight Number</th>
+                        <th>Flight<br />Number</th>
                         <th>Airline</th>
                         <th>Pickup</th>
                         <th>Dropoff</th>
                         <th>Passengers</th>
+                        <th>Duration</th>
+                        <th>Trip Rate</th>
+                        <th>Driver Pay</th>
                         <th>Driver</th>
                         <th>Status</th>
                         {onEdit && <th>Actions</th>}
@@ -755,6 +874,9 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                               <td>{trip.pickupLocation}</td>
                               <td>{trip.dropoffLocation}</td>
                               <td>{trip.numberOfPassengers || 1}</td>
+                              <td>{formatDuration(calculateTripDuration(trip))}</td>
+                              <td>{formatCurrency(trip.tripRate)}</td>
+                              <td>{formatCurrency(calculateDriverPay(trip, driver || null))}</td>
                               <td>{driver?.name || 'Unassigned'}</td>
                               <td>
                                 <span className={`status-badge status-${trip.status?.toLowerCase()}`}>

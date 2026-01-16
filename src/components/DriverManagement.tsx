@@ -30,6 +30,8 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     licenseNumber: '',
     isActive: true,
     notificationPreference: 'email' as 'email' | 'both',
+    payRatePerTrip: '',
+    payRatePerHour: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -90,6 +92,8 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
         licenseNumber: sanitizeString(formData.licenseNumber, MAX_LENGTHS.LICENSE_NUMBER) || undefined,
         isActive: formData.isActive,
         notificationPreference: formData.notificationPreference,
+        payRatePerTrip: formData.payRatePerTrip ? parseFloat(formData.payRatePerTrip) : undefined,
+        payRatePerHour: formData.payRatePerHour ? parseFloat(formData.payRatePerHour) : undefined,
       };
       
       if (editingDriver) {
@@ -124,6 +128,8 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       licenseNumber: driver.licenseNumber || '',
       isActive: driver.isActive ?? true,
       notificationPreference: (driver.notificationPreference as 'email' | 'both') || 'email',
+      payRatePerTrip: driver.payRatePerTrip !== null && driver.payRatePerTrip !== undefined ? String(driver.payRatePerTrip) : '',
+      payRatePerHour: driver.payRatePerHour !== null && driver.payRatePerHour !== undefined ? String(driver.payRatePerHour) : '',
     });
     setShowForm(true);
   };
@@ -214,6 +220,8 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       licenseNumber: '',
       isActive: true,
       notificationPreference: 'email',
+      payRatePerTrip: '',
+      payRatePerHour: '',
     });
     setEditingDriver(null);
     setShowForm(false);
@@ -332,6 +340,50 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
               <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
                 {formData.notificationPreference === 'email' && 'Driver will receive email notifications'}
                 {formData.notificationPreference === 'both' && 'Driver will receive email and in-app notifications'}
+              </small>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+              <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>Pay Rate Information (for Payroll)</h4>
+              
+              <div className="form-group">
+                <label htmlFor="payRatePerTrip">Pay Rate Per Trip</label>
+                <input
+                  type="number"
+                  id="payRatePerTrip"
+                  name="payRatePerTrip"
+                  value={formData.payRatePerTrip}
+                  onChange={(e) => setFormData({ ...formData, payRatePerTrip: e.target.value })}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  style={{ width: '100%' }}
+                />
+                <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
+                  Fixed amount paid per completed trip (optional, for payroll calculation)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="payRatePerHour">Pay Rate Per Hour</label>
+                <input
+                  type="number"
+                  id="payRatePerHour"
+                  name="payRatePerHour"
+                  value={formData.payRatePerHour}
+                  onChange={(e) => setFormData({ ...formData, payRatePerHour: e.target.value })}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  style={{ width: '100%' }}
+                />
+                <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
+                  Hourly rate for calculating pay based on trip duration (optional, for payroll calculation)
+                </small>
+              </div>
+              
+              <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280', fontStyle: 'italic' }}>
+                Note: If both rates are set, per-trip rate takes precedence. If neither is set, pay will be calculated from trip-specific driver pay amount.
               </small>
             </div>
 
