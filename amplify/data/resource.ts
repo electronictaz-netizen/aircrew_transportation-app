@@ -16,6 +16,7 @@ const schema = a.schema({
       locations: a.hasMany('Location', 'companyId'),
       filterCategories: a.hasMany('FilterCategory', 'companyId'),
       customFields: a.hasMany('CustomField', 'companyId'),
+      customFieldValues: a.hasMany('CustomFieldValue', 'companyId'),
       reportConfigurations: a.hasMany('ReportConfiguration', 'companyId'),
     })
     .authorization((allow) => [
