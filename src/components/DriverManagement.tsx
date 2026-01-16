@@ -253,7 +253,7 @@ function DriverManagement() {
       
       let driverId: string;
       if (editingDriver) {
-        const result = await client.models.Driver.update({
+        await client.models.Driver.update({
           id: editingDriver.id,
           ...driverData,
         });

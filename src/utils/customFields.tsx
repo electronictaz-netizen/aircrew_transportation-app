@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Schema } from '../../amplify/data/resource';
 
 export type CustomFieldType = Schema['CustomField']['type'];
@@ -29,7 +28,7 @@ export function renderCustomFieldInput(
             id={fieldId}
             value={fieldValue}
             onChange={(e) => onChange(e.target.value)}
-            required={field.isRequired}
+            required={field.isRequired === true}
             maxLength={255}
             aria-invalid={!!error}
           />
@@ -48,7 +47,7 @@ export function renderCustomFieldInput(
             id={fieldId}
             value={fieldValue}
             onChange={(e) => onChange(e.target.value)}
-            required={field.isRequired}
+            required={field.isRequired === true}
             rows={4}
             maxLength={1000}
             aria-invalid={!!error}
@@ -69,7 +68,7 @@ export function renderCustomFieldInput(
             id={fieldId}
             value={fieldValue}
             onChange={(e) => onChange(e.target.value)}
-            required={field.isRequired}
+            required={field.isRequired === true}
             step="any"
             aria-invalid={!!error}
           />
@@ -89,7 +88,7 @@ export function renderCustomFieldInput(
             id={fieldId}
             value={fieldValue}
             onChange={(e) => onChange(e.target.value)}
-            required={field.isRequired}
+            required={field.isRequired === true}
             aria-invalid={!!error}
           />
           {error && <span className="error-message">{error}</span>}
@@ -108,7 +107,7 @@ export function renderCustomFieldInput(
             id={fieldId}
             value={fieldValue}
             onChange={(e) => onChange(e.target.value)}
-            required={field.isRequired}
+            required={field.isRequired === true}
             aria-invalid={!!error}
           />
           {error && <span className="error-message">{error}</span>}
@@ -124,7 +123,7 @@ export function renderCustomFieldInput(
               id={fieldId}
               checked={fieldValue === 'true' || fieldValue === '1' || fieldValue === 'yes'}
               onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
-              required={field.isRequired}
+              required={field.isRequired === true}
               aria-invalid={!!error}
             />
             {field.label}
@@ -153,7 +152,7 @@ export function renderCustomFieldInput(
             id={fieldId}
             value={fieldValue}
             onChange={(e) => onChange(e.target.value)}
-            required={field.isRequired}
+            required={field.isRequired === true}
             aria-invalid={!!error}
           >
             <option value="">-- Select --</option>

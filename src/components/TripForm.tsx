@@ -9,7 +9,7 @@ import { validateFlightNumber, validateLocation, validatePassengers, validateFut
 import { logger } from '../utils/logger';
 import { formatCoordinates } from '../utils/gpsLocation';
 import { reverseGeocode } from '../utils/reverseGeocoding';
-import { renderCustomFieldInput, validateCustomFieldValue, parseCustomFieldValue } from '../utils/customFields.tsx';
+import { renderCustomFieldInput, validateCustomFieldValue } from '../utils/customFields.tsx';
 import './TripForm.css';
 
 const client = generateClient<Schema>();
@@ -331,7 +331,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       submitData.customFieldValues = customFieldValues;
       
       logger.debug('TripForm submitting data:', submitData);
-      const result = await onSubmit(submitData);
+      await onSubmit(submitData);
       
       // Custom field values are now saved in the parent component (ManagementDashboard)
       // No need to save them here anymore
