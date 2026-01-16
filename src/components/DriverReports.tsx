@@ -9,7 +9,6 @@ import {
   calculateDriverPay,
   calculateTotalDriverPay,
   calculateTotalRevenue,
-  calculateProfit,
   formatDuration,
   formatCurrency
 } from '../utils/tripCalculations';
@@ -164,7 +163,6 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
       if (stat.driverId === '__unassigned__') return;
       
       const driverTrips = filteredTrips.filter(t => t.driverId === stat.driverId);
-      const driver = drivers.find(d => d.id === stat.driverId);
       
       // Calculate hours worked
       stat.totalHoursWorked = calculateTotalHoursWorked(driverTrips);

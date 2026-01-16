@@ -673,24 +673,35 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                   </thead>
                   <tbody>
                     {Array.from(tripsByAirline.entries())
-                      .map(([airlineCode, airlineTrips]) => ({
-                        airlineCode,
-                        airlineName: getAirlineName(airlineCode),
-                        trips: airlineTrips,
-                        count: airlineTrips.length,
-                        passengers: airlineTrips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0),
-                      }))
+                      .map(([airlineCode, airlineTrips]) => {
+                        const completed = airlineTrips.filter(t => t.status === 'Completed');
+                        const hours = calculateTotalHoursWorked(completed);
+                        const pay = calculateTotalDriverPay(completed, drivers);
+                        const revenue = calculateTotalRevenue(airlineTrips);
+                        
+                        return {
+                          airlineCode,
+                          airlineName: getAirlineName(airlineCode),
+                          trips: airlineTrips,
+                          count: airlineTrips.length,
+                          completed,
+                          hours,
+                          pay,
+                          revenue,
+                          profit: revenue - pay,
+                        };
+                      })
                       .sort((a, b) => b.count - a.count)
-                      .map(({ airlineCode, airlineName, count, passengers }) => (
+                      .map(({ airlineCode, airlineName, count, completed, hours, pay, revenue, profit }) => (
                         <tr key={airlineCode}>
                           <td><strong>{airlineName}</strong></td>
                           <td>{airlineCode}</td>
                           <td><strong>{count}</strong></td>
-                          <td>{airlineTrips.filter(t => t.status === 'Completed').length}</td>
-                          <td>{calculateTotalHoursWorked(airlineTrips.filter(t => t.status === 'Completed')).toFixed(2)}</td>
-                          <td>{formatCurrency(calculateTotalRevenue(airlineTrips))}</td>
-                          <td>{formatCurrency(calculateTotalDriverPay(airlineTrips.filter(t => t.status === 'Completed'), drivers))}</td>
-                          <td>{formatCurrency(calculateProfit(airlineTrips.filter(t => t.status === 'Completed'), drivers))}</td>
+                          <td>{completed.length}</td>
+                          <td>{hours.toFixed(2)}</td>
+                          <td>{formatCurrency(revenue)}</td>
+                          <td>{formatCurrency(pay)}</td>
+                          <td>{formatCurrency(profit)}</td>
                           <td>
                             <button
                               className="btn btn-sm btn-secondary"
@@ -789,25 +800,33 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
                         const driver = driverId === '__unassigned__' 
                           ? null 
                           : drivers.find(d => d.id === driverId);
+                        const completed = driverTrips.filter(t => t.status === 'Completed');
+                        const hours = calculateTotalHoursWorked(completed);
+                        const pay = calculateTotalDriverPay(completed, drivers);
+                        const revenue = calculateTotalRevenue(driverTrips);
+                        
                         return {
                           driverId,
                           driverName: driver?.name || 'Unassigned',
                           trips: driverTrips,
                           count: driverTrips.length,
-                          completed: driverTrips.filter(t => t.status === 'Completed').length,
-                          passengers: driverTrips.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0),
+                          completed: completed.length,
+                          hours,
+                          pay,
+                          revenue,
+                          profit: revenue - pay,
                         };
                       })
                       .sort((a, b) => b.count - a.count)
-                      .map(({ driverId, driverName, count, completed, passengers }) => (
+                      .map(({ driverId, driverName, count, completed, hours, pay, revenue, profit }) => (
                         <tr key={driverId}>
                           <td><strong>{driverName}</strong></td>
                           <td><strong>{count}</strong></td>
                           <td>{completed}</td>
-                          <td>{calculateTotalHoursWorked(driverTrips.filter(t => t.status === 'Completed')).toFixed(2)}</td>
-                          <td>{formatCurrency(calculateTotalDriverPay(driverTrips.filter(t => t.status === 'Completed'), drivers))}</td>
-                          <td>{formatCurrency(calculateTotalRevenue(driverTrips))}</td>
-                          <td>{formatCurrency(calculateProfit(driverTrips.filter(t => t.status === 'Completed'), drivers))}</td>
+                          <td>{hours.toFixed(2)}</td>
+                          <td>{formatCurrency(pay)}</td>
+                          <td>{formatCurrency(revenue)}</td>
+                          <td>{formatCurrency(profit)}</td>
                           <td>
                             {driverId !== '__unassigned__' && (
                               <button
