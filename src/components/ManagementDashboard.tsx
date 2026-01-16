@@ -322,12 +322,10 @@ function ManagementDashboard() {
         } catch (recurringError) {
           console.error('Error creating recurring trips:', recurringError);
           console.error('Error details:', JSON.stringify(recurringError, null, 2));
-          // Fallback: create as regular trip if recurring creation fails
-          console.log('Falling back to creating single trip');
-          await client.models.Trip.create({
-            ...tripWithStatus,
-            companyId: companyId,
-          });
+          // Don't create a fallback trip - the parent may have already been created
+          // If parent was created, it will show up. If not, user can retry.
+          alert(`Failed to create recurring trips: ${recurringError instanceof Error ? recurringError.message : 'Unknown error'}\n\nPlease check if a parent trip was created and try again if needed.`);
+          throw recurringError; // Re-throw to prevent showing success message
         }
       } else {
         // Regular one-time trip

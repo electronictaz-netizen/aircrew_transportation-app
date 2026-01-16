@@ -155,11 +155,29 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
       isRecurring: false, // Child trips are not recurring themselves
       parentTripId,
       status: tripData.status || 'Unassigned',
+      companyId: tripData.companyId, // Ensure companyId is included
     };
 
     // Add driver if assigned
     if (tripData.driverId) {
       childTripData.driverId = tripData.driverId;
+    }
+    
+    // Add other optional fields
+    if (tripData.airport) {
+      childTripData.airport = tripData.airport;
+    }
+    if (tripData.primaryLocationCategory) {
+      childTripData.primaryLocationCategory = tripData.primaryLocationCategory;
+    }
+    if (tripData.tripRate !== undefined) {
+      childTripData.tripRate = tripData.tripRate;
+    }
+    if (tripData.driverPayAmount !== undefined) {
+      childTripData.driverPayAmount = tripData.driverPayAmount;
+    }
+    if (tripData.notes) {
+      childTripData.notes = tripData.notes;
     }
 
     tripsToCreate.push(childTripData);
@@ -173,7 +191,7 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
 
   console.log(`Generated ${tripsToCreate.length} child trips to create`);
 
-  // Get all existing trips to check for duplicates
+  // Get all existing trips to check for duplicates (including the parent we just created)
   const existingFilter: any = {};
   if (config.companyId) {
     existingFilter.companyId = { eq: config.companyId };
@@ -181,7 +199,9 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   const { data: allExistingTrips } = await client.models.Trip.list({
     filter: Object.keys(existingFilter).length > 0 ? existingFilter : undefined
   });
-  console.log(`Checking against ${allExistingTrips?.length || 0} existing trips for duplicates...`);
+  // Include the parent trip we just created in the duplicate check
+  const allTripsForDuplicateCheck = [...(allExistingTrips || []), parentTrip.data];
+  console.log(`Checking against ${allTripsForDuplicateCheck.length} existing trips for duplicates (including parent)...`);
 
   // Create all child trips
   let createdCount = 0;
@@ -198,7 +218,7 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
     const tripDateStart = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
     const flightNumber = trip.flightNumber.trim().toUpperCase();
     
-    const duplicate = allExistingTrips?.find((existing: Schema['Trip']['type']) => {
+    const duplicate = allTripsForDuplicateCheck.find((existing: Schema['Trip']['type']) => {
       if (!existing.pickupDate || !existing.flightNumber) return false;
       
       const existingFlightNumber = existing.flightNumber.trim().toUpperCase();
@@ -333,7 +353,7 @@ export async function generateUpcomingRecurringTrips(companyId?: string): Promis
         }
 
         if (nextDate && (isBefore(nextDate, endDate) || nextDate.getTime() === endDate.getTime())) {
-          tripsToCreate.push({
+          const upcomingTripData: any = {
             pickupDate: nextDate.toISOString(),
             flightNumber: trip.flightNumber,
             pickupLocation: trip.pickupLocation,
@@ -343,7 +363,27 @@ export async function generateUpcomingRecurringTrips(companyId?: string): Promis
             isRecurring: false,
             parentTripId: trip.id,
             status: trip.driverId ? 'Assigned' : 'Unassigned',
-          });
+            companyId: trip.companyId, // Ensure companyId is included
+          };
+          
+          // Add optional fields
+          if (trip.airport) {
+            upcomingTripData.airport = trip.airport;
+          }
+          if (trip.primaryLocationCategory) {
+            upcomingTripData.primaryLocationCategory = trip.primaryLocationCategory;
+          }
+          if (trip.tripRate !== undefined) {
+            upcomingTripData.tripRate = trip.tripRate;
+          }
+          if (trip.driverPayAmount !== undefined) {
+            upcomingTripData.driverPayAmount = trip.driverPayAmount;
+          }
+          if (trip.notes) {
+            upcomingTripData.notes = trip.notes;
+          }
+          
+          tripsToCreate.push(upcomingTripData);
           currentDate = nextDate;
         } else {
           break;
