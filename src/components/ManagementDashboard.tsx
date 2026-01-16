@@ -6,7 +6,6 @@ import { useAdminAccess } from '../utils/adminAccess';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import TripForm from './TripForm';
-import DriverManagement from './DriverManagement';
 import LocationManagement from './LocationManagement';
 import FilterCategoryManagement from './FilterCategoryManagement';
 import CompanyManagement from './CompanyManagement';
@@ -30,7 +29,6 @@ function ManagementDashboard() {
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
   const [showTripForm, setShowTripForm] = useState(false);
-  const [showDriverManagement, setShowDriverManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
   const [showCompanyManagement, setShowCompanyManagement] = useState(false);
@@ -983,9 +981,6 @@ function ManagementDashboard() {
     setShowTripForm(true);
   };
 
-  const handleDriverUpdate = () => {
-    loadDrivers();
-  };
 
   const handleLocationUpdate = () => {
     loadLocations();
@@ -1173,12 +1168,12 @@ function ManagementDashboard() {
           >
             + New Trip
           </button>
-          <button
+          <Link
+            to="/drivers"
             className="btn btn-secondary"
-            onClick={() => setShowDriverManagement(true)}
           >
             Manage Drivers
-          </button>
+          </Link>
           <button
             className="btn btn-secondary"
             onClick={() => setShowLocationManagement(true)}
@@ -1261,13 +1256,6 @@ function ManagementDashboard() {
         />
       )}
 
-      {showDriverManagement && (
-        <DriverManagement
-          drivers={drivers}
-          onClose={() => setShowDriverManagement(false)}
-          onUpdate={handleDriverUpdate}
-        />
-      )}
 
       {showLocationManagement && (
         <LocationManagement

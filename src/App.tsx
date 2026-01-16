@@ -4,6 +4,7 @@ import '@aws-amplify/ui-react/styles.css';
 import { CompanyProvider } from './contexts/CompanyContext';
 import ManagementDashboard from './components/ManagementDashboard';
 import DriverDashboard from './components/DriverDashboard';
+import DriverManagement from './components/DriverManagement';
 import AdminDashboard from './components/AdminDashboard';
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import Navigation from './components/Navigation';
@@ -19,6 +20,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/management" replace />} />
               <Route path="/management" element={<ManagementDashboard />} />
+              <Route path="/drivers" element={<DriverManagement />} />
               <Route path="/driver" element={<DriverDashboard />} />
               <Route 
                 path="/admin" 

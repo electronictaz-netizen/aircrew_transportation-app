@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
@@ -6,18 +6,15 @@ import { useNotification, useConfirm, ConfirmDialog } from './Notification';
 import NotificationComponent from './Notification';
 import { validateName, validateEmail, validatePhone, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
+import { Link } from 'react-router-dom';
 import './DriverManagement.css';
 
 const client = generateClient<Schema>();
 
-interface DriverManagementProps {
-  drivers: Array<Schema['Driver']['type']>;
-  onClose: () => void;
-  onUpdate: () => void;
-}
-
-function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps) {
+function DriverManagement() {
   const { companyId } = useCompany();
+  const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
+  const [loading, setLoading] = useState(true);
   const { notification, showSuccess, showError, showWarning, hideNotification } = useNotification();
   const { confirmState, confirm, handleCancel } = useConfirm();
   const [showForm, setShowForm] = useState(false);
@@ -34,7 +31,30 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     payRatePerHour: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+
+  useEffect(() => {
+    if (companyId) {
+      loadDrivers();
+    }
+  }, [companyId]);
+
+  const loadDrivers = async () => {
+    if (!companyId) return;
+    
+    try {
+      setLoading(true);
+      const { data: driversData } = await client.models.Driver.list({
+        filter: { companyId: { eq: companyId! } }
+      });
+      setDrivers(driversData as Array<Schema['Driver']['type']>);
+    } catch (error) {
+      logger.error('Error loading drivers:', error);
+      showError('Failed to load drivers. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +97,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     }
     
     setErrors({});
-    setLoading(true);
+    setFormLoading(true);
 
     try {
       // Sanitize inputs
@@ -109,13 +129,13 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
         });
         showSuccess('Driver created successfully!');
       }
-      onUpdate();
+      loadDrivers();
       resetForm();
     } catch (error) {
       logger.error('Error saving driver:', error);
       showError('Failed to save driver. Please try again.');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -145,7 +165,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     try {
       await client.models.Driver.delete({ id: driverId });
       showSuccess('Driver deleted successfully!');
-      onUpdate();
+      loadDrivers();
     } catch (error) {
       logger.error('Error deleting driver:', error);
       showError('Failed to delete driver. Please try again.');
@@ -197,7 +217,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       }
       
       setSelectedDrivers(new Set());
-      onUpdate();
+      loadDrivers();
       
       if (failCount > 0) {
         showWarning(`Deleted ${successCount} driver${successCount > 1 ? 's' : ''}. ${failCount} failed.`);
@@ -208,7 +228,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       logger.error('Error deleting drivers:', error);
       showError('Failed to delete some drivers. Please try again.');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -227,17 +247,24 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     setShowForm(false);
   };
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content driver-management">
-        <div className="modal-header">
-          <h3>Driver Management</h3>
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
-        </div>
+  if (loading) {
+    return (
+      <div className="driver-management-page">
+        <div className="loading-state">Loading drivers...</div>
+      </div>
+    );
+  }
 
-        <div className="driver-actions">
+  return (
+    <div className="driver-management-page">
+      <div className="dashboard-header">
+        <div>
+          <h2>Driver Management</h2>
+          <Link to="/management" className="back-link" style={{ marginTop: '0.5rem', display: 'inline-block', color: '#3b82f6', textDecoration: 'none' }}>
+            ← Back to Management Dashboard
+          </Link>
+        </div>
+        <div className="header-actions">
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
             + Add Driver
           </button>
@@ -251,8 +278,9 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
             </button>
           )}
         </div>
+      </div>
 
-        {showForm && (
+      {showForm && (
           <form onSubmit={handleSubmit} className="driver-form">
             <div className="form-group">
               <label htmlFor="name">Name *</label>
@@ -388,11 +416,11 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
             </div>
 
             <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={loading}>
+              <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={formLoading}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" disabled={loading} aria-busy={loading}>
-                {loading ? 'Saving...' : editingDriver ? 'Update' : 'Create'} Driver
+              <button type="submit" className="btn btn-primary" disabled={formLoading} aria-busy={formLoading}>
+                {formLoading ? 'Saving...' : editingDriver ? 'Update' : 'Create'} Driver
               </button>
             </div>
           </form>
@@ -485,7 +513,6 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
               </tbody>
             </table>
           )}
-        </div>
       </div>
       {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
       <ConfirmDialog
