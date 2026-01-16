@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
@@ -12,6 +12,14 @@ import {
   formatDuration,
   formatCurrency
 } from '../utils/tripCalculations';
+import { useCompany } from '../contexts/CompanyContext';
+import { 
+  loadCustomFields, 
+  loadDriverCustomFieldValues, 
+  loadTripCustomFieldValues,
+  getDriverCustomFieldValue,
+  getTripCustomFieldValue
+} from '../utils/reportUtils';
 import { useNotification } from './Notification';
 import './DriverReports.css';
 
@@ -43,6 +51,7 @@ interface DriverStats {
 type ViewMode = 'summary' | 'driver' | 'airline';
 
 function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) {
+  const { companyId } = useCompany();
   const { showNotification } = useNotification();
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [selectedAirline, setSelectedAirline] = useState<string | null>(null);
@@ -50,6 +59,40 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
   const [dateFilterStart, setDateFilterStart] = useState<string>('');
   const [dateFilterEnd, setDateFilterEnd] = useState<string>('');
   const [showCompletedOnly, setShowCompletedOnly] = useState(false);
+  
+  // Custom fields state
+  const [driverCustomFields, setDriverCustomFields] = useState<Array<Schema['CustomField']['type']>>([]);
+  const [tripCustomFields, setTripCustomFields] = useState<Array<Schema['CustomField']['type']>>([]);
+  const [driverCustomFieldValues, setDriverCustomFieldValues] = useState<Map<string, Map<string, string>>>(new Map());
+  const [tripCustomFieldValues, setTripCustomFieldValues] = useState<Map<string, Map<string, string>>>(new Map());
+  
+  // Load custom fields and values
+  useEffect(() => {
+    const loadCustomData = async () => {
+      if (!companyId) return;
+      
+      // Load custom field definitions
+      const [driverFields, tripFields] = await Promise.all([
+        loadCustomFields(companyId, 'Driver'),
+        loadCustomFields(companyId, 'Trip'),
+      ]);
+      setDriverCustomFields(driverFields);
+      setTripCustomFields(tripFields);
+      
+      // Load custom field values
+      const driverIds = drivers.map(d => d.id);
+      const tripIds = trips.map(t => t.id);
+      
+      const [driverValues, tripValues] = await Promise.all([
+        loadDriverCustomFieldValues(driverIds, companyId),
+        loadTripCustomFieldValues(tripIds, companyId),
+      ]);
+      setDriverCustomFieldValues(driverValues);
+      setTripCustomFieldValues(tripValues);
+    };
+    
+    loadCustomData();
+  }, [companyId, drivers, trips]);
 
   // Filter trips by date range
   const filteredTrips = useMemo(() => {
@@ -282,7 +325,8 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
             .map(([airline, count]) => `${getAirlineName(airline)}: ${count}`)
             .join('; ');
           
-          return {
+          const driver = drivers.find(d => d.id === stat.driverId);
+          const baseData: any = {
             'Driver Name': stat.driverName,
             'Total Trips': stat.totalTrips,
             'Total Trip Duration (Hours)': stat.totalTripDuration.toFixed(2),
@@ -300,6 +344,16 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
             'Date Range Start': stat.dateRange.earliest ? format(stat.dateRange.earliest, 'MMM d, yyyy') : '',
             'Date Range End': stat.dateRange.latest ? format(stat.dateRange.latest, 'MMM d, yyyy') : '',
           };
+          
+          // Add custom driver fields
+          if (driver && stat.driverId !== '__unassigned__') {
+            driverCustomFields.forEach((field) => {
+              const value = getDriverCustomFieldValue(stat.driverId, field.id, driverCustomFieldValues);
+              baseData[field.label] = value || '';
+            });
+          }
+          
+          return baseData;
         });
 
         const summarySheet = XLSX.utils.json_to_sheet(summaryData);
@@ -331,26 +385,34 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
         const driverStat = driverStats.find(s => s.driverId === selectedDriverId);
 
         // Driver info sheet
-        const driverInfo = [
+        const driverInfo: Array<{ Field: string; Value: string }> = [
           { 'Field': 'Driver Name', 'Value': driver?.name || 'Unknown' },
           { 'Field': 'Email', 'Value': driver?.email || '' },
           { 'Field': 'Phone', 'Value': driver?.phone || '' },
           { 'Field': 'License Number', 'Value': driver?.licenseNumber || '' },
           { 'Field': 'Pay Rate Per Trip', 'Value': formatCurrency(driver?.payRatePerTrip) },
           { 'Field': 'Pay Rate Per Hour', 'Value': formatCurrency(driver?.payRatePerHour) },
-          { 'Field': 'Total Trips', 'Value': driverStat?.totalTrips || 0 },
+          { 'Field': 'Total Trips', 'Value': String(driverStat?.totalTrips || 0) },
           { 'Field': 'Total Trip Duration', 'Value': driverStat ? formatDuration(driverStat.totalTripDuration) : '0:00' },
-          { 'Field': 'Airport Trips', 'Value': driverStat?.tripsByType.airport || 0 },
-          { 'Field': 'Standard Trips', 'Value': driverStat?.tripsByType.standard || 0 },
-          { 'Field': 'Completed Trips', 'Value': driverStat?.completedTrips || 0 },
-          { 'Field': 'Assigned Trips', 'Value': driverStat?.assignedTrips || 0 },
-          { 'Field': 'In Progress Trips', 'Value': driverStat?.inProgressTrips || 0 },
-          { 'Field': 'Unassigned Trips', 'Value': driverStat?.unassignedTrips || 0 },
+          { 'Field': 'Airport Trips', 'Value': String(driverStat?.tripsByType.airport || 0) },
+          { 'Field': 'Standard Trips', 'Value': String(driverStat?.tripsByType.standard || 0) },
+          { 'Field': 'Completed Trips', 'Value': String(driverStat?.completedTrips || 0) },
+          { 'Field': 'Assigned Trips', 'Value': String(driverStat?.assignedTrips || 0) },
+          { 'Field': 'In Progress Trips', 'Value': String(driverStat?.inProgressTrips || 0) },
+          { 'Field': 'Unassigned Trips', 'Value': String(driverStat?.unassignedTrips || 0) },
           { 'Field': 'Total Hours Worked', 'Value': driverStat ? `${driverStat.totalHoursWorked.toFixed(2)} hours` : '0 hours' },
           { 'Field': 'Total Driver Pay', 'Value': formatCurrency(driverStat?.totalDriverPay) },
           { 'Field': 'Total Revenue', 'Value': formatCurrency(driverStat?.totalRevenue) },
           { 'Field': 'Profit', 'Value': formatCurrency(driverStat?.profit) },
         ];
+        
+        // Add custom driver fields
+        if (driver && selectedDriverId) {
+          driverCustomFields.forEach((field) => {
+            const value = getDriverCustomFieldValue(selectedDriverId, field.id, driverCustomFieldValues);
+            driverInfo.push({ 'Field': field.label, 'Value': value || '' });
+          });
+        }
         const driverInfoSheet = XLSX.utils.json_to_sheet(driverInfo);
         XLSX.utils.book_append_sheet(workbook, driverInfoSheet, 'Driver Info');
 
@@ -360,7 +422,7 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
           const pay = calculateDriverPay(trip, driver || null);
           const tripType = getTripType(trip.flightNumber);
           
-          return {
+          const baseData: any = {
             'Trip ID': trip.id,
             'Trip Type': tripType,
             'Pickup Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
@@ -379,6 +441,14 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
             'Driver Pay': formatCurrency(pay),
             'Notes': trip.notes || '',
           };
+          
+          // Add custom trip fields
+          tripCustomFields.forEach((field) => {
+            const value = getTripCustomFieldValue(trip.id, field.id, tripCustomFieldValues);
+            baseData[field.label] = value || '';
+          });
+          
+          return baseData;
         });
 
         const tripsSheet = XLSX.utils.json_to_sheet(tripsData);
@@ -438,7 +508,7 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
           const duration = calculateTripDuration(trip);
           const pay = calculateDriverPay(trip, driver || null);
           
-          return {
+          const baseData: any = {
             'Trip ID': trip.id,
             'Pickup Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
             'Flight Number': trip.flightNumber || '',
@@ -456,6 +526,14 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
             'Driver Pay': formatCurrency(pay),
             'Notes': trip.notes || '',
           };
+          
+          // Add custom trip fields
+          tripCustomFields.forEach((field) => {
+            const value = getTripCustomFieldValue(trip.id, field.id, tripCustomFieldValues);
+            baseData[field.label] = value || '';
+          });
+          
+          return baseData;
         });
 
         const tripsSheet = XLSX.utils.json_to_sheet(tripsData);

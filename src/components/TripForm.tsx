@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import { useCompany } from '../contexts/CompanyContext';
@@ -8,7 +9,10 @@ import { validateFlightNumber, validateLocation, validatePassengers, validateFut
 import { logger } from '../utils/logger';
 import { formatCoordinates } from '../utils/gpsLocation';
 import { reverseGeocode } from '../utils/reverseGeocoding';
+import { renderCustomFieldInput, validateCustomFieldValue, parseCustomFieldValue } from '../utils/customFields';
 import './TripForm.css';
+
+const client = generateClient<Schema>();
 
 interface TripFormProps {
   trip?: Schema['Trip']['type'] | null;
@@ -72,11 +76,78 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   
+  // Custom fields state
+  const [customFields, setCustomFields] = useState<Array<Schema['CustomField']['type']>>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  const [loadingCustomFields, setLoadingCustomFields] = useState(true);
+  
   // GPS address states
   const [pickupAddress, setPickupAddress] = useState<string | null>(null);
   const [dropoffAddress, setDropoffAddress] = useState<string | null>(null);
   const [loadingPickupAddress, setLoadingPickupAddress] = useState(false);
   const [loadingDropoffAddress, setLoadingDropoffAddress] = useState(false);
+
+  // Load custom fields for trips
+  useEffect(() => {
+    const loadCustomFields = async () => {
+      if (!companyId) return;
+      
+      try {
+        setLoadingCustomFields(true);
+        const { data: fieldsData } = await client.models.CustomField.list({
+          filter: {
+            companyId: { eq: companyId },
+            entityType: { eq: 'Trip' },
+            isActive: { eq: true },
+          },
+        });
+        const sortedFields = (fieldsData || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+        setCustomFields(sortedFields);
+        
+        // Initialize custom field values with defaults
+        const initialValues: Record<string, string> = {};
+        sortedFields.forEach((field) => {
+          initialValues[field.id] = field.defaultValue || '';
+        });
+        setCustomFieldValues(initialValues);
+      } catch (error) {
+        logger.error('Error loading custom fields:', error);
+      } finally {
+        setLoadingCustomFields(false);
+      }
+    };
+    
+    loadCustomFields();
+  }, [companyId]);
+
+  // Load existing custom field values when editing a trip
+  useEffect(() => {
+    const loadExistingValues = async () => {
+      if (!trip?.id || !companyId || customFields.length === 0) return;
+      
+      try {
+        const { data: valuesData } = await client.models.CustomFieldValue.list({
+          filter: {
+            companyId: { eq: companyId },
+            tripId: { eq: trip.id },
+            entityType: { eq: 'Trip' },
+          },
+        });
+        
+        const existingValues: Record<string, string> = { ...customFieldValues };
+        (valuesData || []).forEach((value) => {
+          if (value.customFieldId) {
+            existingValues[value.customFieldId] = value.value || '';
+          }
+        });
+        setCustomFieldValues(existingValues);
+      } catch (error) {
+        logger.error('Error loading custom field values:', error);
+      }
+    };
+    
+    loadExistingValues();
+  }, [trip?.id, companyId, customFields.length]);
 
   // Load addresses for GPS coordinates when trip is loaded or changes
   useEffect(() => {
@@ -186,6 +257,15 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       }
     }
     
+    // Validate custom fields
+    customFields.forEach((field) => {
+      const value = customFieldValues[field.id] || '';
+      const validation = validateCustomFieldValue(field, value);
+      if (!validation.isValid) {
+        newErrors[`custom_${field.id}`] = validation.error || '';
+      }
+    });
+    
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       showError('Please fix the errors in the form');
@@ -247,8 +327,14 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
         submitData.parentTripId = undefined;
       }
 
+      // Add custom field values to submit data
+      submitData.customFieldValues = customFieldValues;
+      
       logger.debug('TripForm submitting data:', submitData);
-      await onSubmit(submitData);
+      const result = await onSubmit(submitData);
+      
+      // Custom field values are now saved in the parent component (ManagementDashboard)
+      // No need to save them here anymore
     } catch (error) {
       logger.error('Error preparing trip data:', error);
       showError('Error preparing trip data. Please check your input and try again.');
@@ -730,6 +816,38 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
               </small>
             </div>
           </div>
+
+          {/* Custom Fields */}
+          {customFields.length > 0 && (
+            <div className="form-group" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+              <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>Additional Information</h4>
+              {loadingCustomFields ? (
+                <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Loading custom fields...</p>
+              ) : (
+                customFields.map((field) =>
+                  renderCustomFieldInput(
+                    field,
+                    customFieldValues[field.id] || '',
+                    (value) => {
+                      setCustomFieldValues((prev) => ({
+                        ...prev,
+                        [field.id]: value,
+                      }));
+                      // Clear error when user starts typing
+                      if (errors[`custom_${field.id}`]) {
+                        setErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors[`custom_${field.id}`];
+                          return newErrors;
+                        });
+                      }
+                    },
+                    errors[`custom_${field.id}`]
+                  )
+                )
+              )}
+            </div>
+          )}
 
           {/* GPS Location Information (only shown when editing existing trip with GPS data) */}
           {trip && (trip.startLocationLat || trip.completeLocationLat) && (

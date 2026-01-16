@@ -7,6 +7,7 @@ import NotificationComponent from './Notification';
 import { validateName, validateEmail, validatePhone, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
 import { Link } from 'react-router-dom';
+import { renderCustomFieldInput, validateCustomFieldValue } from '../utils/customFields';
 import './DriverManagement.css';
 
 const client = generateClient<Schema>();
@@ -32,12 +33,76 @@ function DriverManagement() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formLoading, setFormLoading] = useState(false);
+  
+  // Custom fields state
+  const [customFields, setCustomFields] = useState<Array<Schema['CustomField']['type']>>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  const [loadingCustomFields, setLoadingCustomFields] = useState(true);
 
   useEffect(() => {
     if (companyId) {
       loadDrivers();
+      loadCustomFields();
     }
   }, [companyId]);
+  
+  // Load custom fields for drivers
+  const loadCustomFields = async () => {
+    if (!companyId) return;
+    
+    try {
+      setLoadingCustomFields(true);
+      const { data: fieldsData } = await client.models.CustomField.list({
+        filter: {
+          companyId: { eq: companyId },
+          entityType: { eq: 'Driver' },
+          isActive: { eq: true },
+        },
+      });
+      const sortedFields = (fieldsData || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      setCustomFields(sortedFields);
+      
+      // Initialize custom field values with defaults
+      const initialValues: Record<string, string> = {};
+      sortedFields.forEach((field) => {
+        initialValues[field.id] = field.defaultValue || '';
+      });
+      setCustomFieldValues(initialValues);
+    } catch (error) {
+      logger.error('Error loading custom fields:', error);
+    } finally {
+      setLoadingCustomFields(false);
+    }
+  };
+  
+  // Load existing custom field values when editing a driver
+  useEffect(() => {
+    const loadExistingValues = async () => {
+      if (!editingDriver?.id || !companyId || customFields.length === 0) return;
+      
+      try {
+        const { data: valuesData } = await client.models.CustomFieldValue.list({
+          filter: {
+            companyId: { eq: companyId },
+            driverId: { eq: editingDriver.id },
+            entityType: { eq: 'Driver' },
+          },
+        });
+        
+        const existingValues: Record<string, string> = { ...customFieldValues };
+        (valuesData || []).forEach((value) => {
+          if (value.customFieldId) {
+            existingValues[value.customFieldId] = value.value || '';
+          }
+        });
+        setCustomFieldValues(existingValues);
+      } catch (error) {
+        logger.error('Error loading custom field values:', error);
+      }
+    };
+    
+    loadExistingValues();
+  }, [editingDriver?.id, companyId, customFields.length]);
 
   const loadDrivers = async () => {
     if (!companyId) return;
@@ -53,6 +118,66 @@ function DriverManagement() {
       showError('Failed to load drivers. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper function to save custom field values
+  const saveCustomFieldValues = async (
+    driverId: string,
+    customFieldValues: Record<string, string>
+  ) => {
+    if (!companyId) return;
+    
+    try {
+      // Get existing custom field values for this driver
+      const { data: existingValues } = await client.models.CustomFieldValue.list({
+        filter: {
+          companyId: { eq: companyId },
+          driverId: { eq: driverId },
+          entityType: { eq: 'Driver' },
+        },
+      });
+      
+      // Create a map of existing values by customFieldId
+      const existingMap = new Map<string, Schema['CustomFieldValue']['type']>();
+      (existingValues || []).forEach((val) => {
+        if (val.customFieldId) {
+          existingMap.set(val.customFieldId, val);
+        }
+      });
+      
+      // Save or update custom field values
+      for (const field of customFields) {
+        const value = customFieldValues[field.id] || '';
+        const stringValue = value.trim();
+        
+        const existing = existingMap.get(field.id);
+        
+        if (stringValue || field.isRequired) {
+          if (existing) {
+            // Update existing value
+            await client.models.CustomFieldValue.update({
+              id: existing.id,
+              value: stringValue,
+            });
+          } else {
+            // Create new value
+            await client.models.CustomFieldValue.create({
+              companyId: companyId!,
+              customFieldId: field.id,
+              entityType: 'Driver',
+              driverId: driverId,
+              value: stringValue,
+            });
+          }
+        } else if (existing) {
+          // Delete empty optional values
+          await client.models.CustomFieldValue.delete({ id: existing.id });
+        }
+      }
+    } catch (error) {
+      logger.error('Error saving custom field values:', error);
+      // Don't throw - this is a non-critical operation
     }
   };
 
@@ -90,6 +215,15 @@ function DriverManagement() {
       newErrors.licenseNumber = `License number must be no more than ${MAX_LENGTHS.LICENSE_NUMBER} characters`;
     }
     
+    // Validate custom fields
+    customFields.forEach((field) => {
+      const value = customFieldValues[field.id] || '';
+      const validation = validateCustomFieldValue(field, value);
+      if (!validation.isValid) {
+        newErrors[`custom_${field.id}`] = validation.error || '';
+      }
+    });
+    
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       showError('Please fix the errors in the form');
@@ -105,7 +239,7 @@ function DriverManagement() {
       const emailValidation = formData.email ? validateEmail(formData.email) : { isValid: true, sanitized: '' };
       const phoneValidation = formData.phone ? validatePhone(formData.phone) : { isValid: true, sanitized: '' };
       
-      const driverData = {
+      const driverData: any = {
         name: nameValidation.sanitized,
         email: emailValidation.sanitized || undefined,
         phone: phoneValidation.sanitized || undefined,
@@ -114,21 +248,34 @@ function DriverManagement() {
         notificationPreference: formData.notificationPreference,
         payRatePerTrip: formData.payRatePerTrip ? parseFloat(formData.payRatePerTrip) : undefined,
         payRatePerHour: formData.payRatePerHour ? parseFloat(formData.payRatePerHour) : undefined,
+        customFieldValues: customFieldValues,
       };
       
+      let driverId: string;
       if (editingDriver) {
-        await client.models.Driver.update({
+        const result = await client.models.Driver.update({
           id: editingDriver.id,
           ...driverData,
         });
+        driverId = editingDriver.id;
         showSuccess('Driver updated successfully!');
       } else {
-        await client.models.Driver.create({
+        const result = await client.models.Driver.create({
           ...driverData,
           companyId: companyId!,
         });
+        if (!result.data) {
+          throw new Error('Failed to create driver');
+        }
+        driverId = result.data.id;
         showSuccess('Driver created successfully!');
       }
+      
+      // Save custom field values
+      if (driverData.customFieldValues && companyId) {
+        await saveCustomFieldValues(driverId, driverData.customFieldValues);
+      }
+      
       loadDrivers();
       resetForm();
     } catch (error) {
@@ -414,6 +561,38 @@ function DriverManagement() {
                 Note: If both rates are set, per-trip rate takes precedence. If neither is set, pay will be calculated from trip-specific driver pay amount.
               </small>
             </div>
+
+            {/* Custom Fields */}
+            {customFields.length > 0 && (
+              <div className="form-group" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+                <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>Additional Information</h4>
+                {loadingCustomFields ? (
+                  <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Loading custom fields...</p>
+                ) : (
+                  customFields.map((field) =>
+                    renderCustomFieldInput(
+                      field,
+                      customFieldValues[field.id] || '',
+                      (value) => {
+                        setCustomFieldValues((prev) => ({
+                          ...prev,
+                          [field.id]: value,
+                        }));
+                        // Clear error when user starts typing
+                        if (errors[`custom_${field.id}`]) {
+                          setErrors((prev) => {
+                            const newErrors = { ...prev };
+                            delete newErrors[`custom_${field.id}`];
+                            return newErrors;
+                          });
+                        }
+                      },
+                      errors[`custom_${field.id}`]
+                    )
+                  )
+                )}
+              </div>
+            )}
 
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={formLoading}>

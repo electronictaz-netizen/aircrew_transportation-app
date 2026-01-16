@@ -9,6 +9,7 @@ import TripForm from './TripForm';
 import LocationManagement from './LocationManagement';
 import FilterCategoryManagement from './FilterCategoryManagement';
 import CustomFieldManagement from './CustomFieldManagement';
+import ReportConfigurationManagement from './ReportConfigurationManagement';
 import CompanyManagement from './CompanyManagement';
 import TripList from './TripList';
 import TripCalendar from './TripCalendar';
@@ -33,6 +34,7 @@ function ManagementDashboard() {
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
   const [showCustomFieldManagement, setShowCustomFieldManagement] = useState(false);
+  const [showReportConfigurationManagement, setShowReportConfigurationManagement] = useState(false);
   const [showCompanyManagement, setShowCompanyManagement] = useState(false);
   const [showDriverReports, setShowDriverReports] = useState(false);
   const [showTripReports, setShowTripReports] = useState(false);
@@ -107,6 +109,88 @@ function ManagementDashboard() {
       setLocations(locationsData as Array<Schema['Location']['type']>);
     } catch (error) {
       console.error('Error loading locations:', error);
+    }
+  };
+
+  // Helper function to save custom field values
+  const saveCustomFieldValues = async (
+    entityId: string,
+    customFieldValues: Record<string, string>,
+    entityType: 'Trip' | 'Driver'
+  ) => {
+    if (!companyId) return;
+    
+    try {
+      // Get existing custom field values for this entity
+      const filter: any = {
+        companyId: { eq: companyId },
+        entityType: { eq: entityType },
+      };
+      
+      if (entityType === 'Trip') {
+        filter.tripId = { eq: entityId };
+      } else {
+        filter.driverId = { eq: entityId };
+      }
+      
+      const { data: existingValues } = await client.models.CustomFieldValue.list({ filter });
+      
+      // Get custom fields for this entity type
+      const { data: fieldsData } = await client.models.CustomField.list({
+        filter: {
+          companyId: { eq: companyId },
+          entityType: { eq: entityType },
+          isActive: { eq: true },
+        },
+      });
+      
+      // Create a map of existing values by customFieldId
+      const existingMap = new Map<string, Schema['CustomFieldValue']['type']>();
+      (existingValues || []).forEach((val) => {
+        if (val.customFieldId) {
+          existingMap.set(val.customFieldId, val);
+        }
+      });
+      
+      // Save or update custom field values
+      for (const field of fieldsData || []) {
+        const value = customFieldValues[field.id] || '';
+        const stringValue = value.trim();
+        
+        const existing = existingMap.get(field.id);
+        
+        if (stringValue || field.isRequired) {
+          const valueData: any = {
+            companyId: companyId!,
+            customFieldId: field.id,
+            entityType: entityType,
+            value: stringValue,
+          };
+          
+          if (entityType === 'Trip') {
+            valueData.tripId = entityId;
+          } else {
+            valueData.driverId = entityId;
+          }
+          
+          if (existing) {
+            // Update existing value
+            await client.models.CustomFieldValue.update({
+              id: existing.id,
+              value: stringValue,
+            });
+          } else {
+            // Create new value
+            await client.models.CustomFieldValue.create(valueData);
+          }
+        } else if (existing) {
+          // Delete empty optional values
+          await client.models.CustomFieldValue.delete({ id: existing.id });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving custom field values:', error);
+      // Don't throw - this is a non-critical operation
     }
   };
 
@@ -280,6 +364,14 @@ function ManagementDashboard() {
               });
             }
           }
+          
+          // Save custom field values if provided
+          if (tripData.customFieldValues && result.data) {
+            await saveCustomFieldValues(result.data.id, tripData.customFieldValues, 'Trip');
+          }
+          
+          // Return the created trip for custom field saving in TripForm
+          return result.data;
         } catch (createError: any) {
           console.error('Detailed create error:', createError);
           throw createError;
@@ -720,10 +812,18 @@ function ManagementDashboard() {
         }
       }
       
+      // Save custom field values if provided
+      if (tripData.customFieldValues && updateResult.data) {
+        await saveCustomFieldValues(updateResult.data.id, tripData.customFieldValues, 'Trip');
+      }
+      
       await loadTrips(true); // Force refresh after update
       setShowTripForm(false);
       setEditingTrip(null);
       alert('Trip updated successfully!');
+      
+      // Return the updated trip for custom field saving in TripForm
+      return updateResult.data;
     } catch (error) {
       console.error('Error updating trip:', error);
       alert('Failed to update trip. Please try again.');
@@ -1196,6 +1296,12 @@ function ManagementDashboard() {
           </button>
           <button
             className="btn btn-secondary"
+            onClick={() => setShowReportConfigurationManagement(true)}
+          >
+            Report Configuration
+          </button>
+          <button
+            className="btn btn-secondary"
             onClick={() => setShowCompanyManagement(true)}
           >
             Company Settings
@@ -1288,6 +1394,12 @@ function ManagementDashboard() {
       {showCustomFieldManagement && (
         <CustomFieldManagement
           onClose={() => setShowCustomFieldManagement(false)}
+        />
+      )}
+
+      {showReportConfigurationManagement && (
+        <ReportConfigurationManagement
+          onClose={() => setShowReportConfigurationManagement(false)}
         />
       )}
 

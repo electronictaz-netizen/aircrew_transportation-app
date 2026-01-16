@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
@@ -10,6 +10,12 @@ import {
   calculateProfit,
   formatCurrency
 } from '../utils/tripCalculations';
+import { useCompany } from '../contexts/CompanyContext';
+import { 
+  loadCustomFields, 
+  loadTripCustomFieldValues,
+  getTripCustomFieldValue
+} from '../utils/reportUtils';
 import { useNotification } from './Notification';
 import './TripReports.css';
 
@@ -24,6 +30,7 @@ interface TripReportsProps {
 type ViewMode = 'summary' | 'byStatus' | 'byAirline' | 'byLocation' | 'byDriver' | 'allTrips';
 
 function TripReports({ trips, drivers, locations: _locations = [], onClose, onEdit }: TripReportsProps) {
+  const { companyId } = useCompany();
   const { showNotification } = useNotification();
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
   const [dateFilterStart, setDateFilterStart] = useState<string>('');
@@ -32,6 +39,28 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [selectedAirline, setSelectedAirline] = useState<string | null>(null);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  
+  // Custom fields state
+  const [tripCustomFields, setTripCustomFields] = useState<Array<Schema['CustomField']['type']>>([]);
+  const [tripCustomFieldValues, setTripCustomFieldValues] = useState<Map<string, Map<string, string>>>(new Map());
+  
+  // Load custom fields and values
+  useEffect(() => {
+    const loadCustomData = async () => {
+      if (!companyId) return;
+      
+      // Load custom field definitions
+      const fields = await loadCustomFields(companyId, 'Trip');
+      setTripCustomFields(fields);
+      
+      // Load custom field values
+      const tripIds = trips.map(t => t.id);
+      const values = await loadTripCustomFieldValues(tripIds, companyId);
+      setTripCustomFieldValues(values);
+    };
+    
+    loadCustomData();
+  }, [companyId, trips]);
 
   // Filter trips by date range and status
   const filteredTrips = useMemo(() => {
@@ -332,7 +361,7 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
         const cumulativePassengers = tripsUpToThis.reduce((sum, t) => sum + (t.numberOfPassengers || 1), 0);
         const cumulativeCompleted = tripsUpToThis.filter(t => t.status === 'Completed').length;
         
-        return {
+        const baseData: any = {
           'Trip ID': trip.id,
           'Trip Type': tripType,
           'Date': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
@@ -341,14 +370,32 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
           'Number of Passengers': trip.numberOfPassengers || 1,
           'Status': trip.status || 'Unassigned',
           'Driver': driver?.name || 'Unassigned',
+          'Driver Email': driver?.email || '',
+          'Driver Phone': driver?.phone || '',
+          'Driver License': driver?.licenseNumber || '',
           'Flight Number': trip.flightNumber || '',
           'Pickup Location': trip.pickupLocation || '',
           'Dropoff Location': trip.dropoffLocation || '',
+          'Scheduled Pickup': trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM d, yyyy HH:mm') : '',
+          'Actual Pickup': trip.actualPickupTime ? format(new Date(trip.actualPickupTime), 'MMM d, yyyy HH:mm') : '',
+          'Actual Dropoff': trip.actualDropoffTime ? format(new Date(trip.actualDropoffTime), 'MMM d, yyyy HH:mm') : '',
+          'Trip Rate': formatCurrency(trip.tripRate),
+          'Driver Pay': formatCurrency(trip.driverPayAmount),
+          'Category': trip.primaryLocationCategory || trip.airport || '',
+          'Notes': trip.notes || '',
           // Cumulative information
           'Cumulative Trip Count': cumulativeTrips,
           'Cumulative Passengers': cumulativePassengers,
           'Cumulative Completed': cumulativeCompleted,
         };
+        
+        // Add custom trip fields
+        tripCustomFields.forEach((field) => {
+          const value = getTripCustomFieldValue(trip.id, field.id, tripCustomFieldValues);
+          baseData[field.label] = value || '';
+        });
+        
+        return baseData;
       });
       const allTripsSheet = XLSX.utils.json_to_sheet(allTripsData);
       XLSX.utils.book_append_sheet(workbook, allTripsSheet, 'All Trips');
