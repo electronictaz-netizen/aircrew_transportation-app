@@ -106,7 +106,7 @@ The system has three user roles, each with different permissions:
 2. **Add a Driver**:
    - Click "Add Driver"
    - Enter driver details (name, email, phone, license number)
-   - Set notification preferences (Email, SMS, or Both)
+   - Set notification preferences (Email or Both)
    - Click "Save"
 3. **Edit a Driver**:
    - Click "Edit" next to the driver
@@ -148,8 +148,8 @@ The system has three user roles, each with different permissions:
 
 Send daily assignment summaries to all drivers:
 1. Click "Send Daily Assignment Emails" in the Management Dashboard
-2. Choose whether to send via Email, SMS, or Both
-3. Click "Send"
+2. Confirm sending emails
+3. Emails will be sent to all eligible drivers
 4. Drivers will receive a summary of their next day's assignments
 
 ---
@@ -219,15 +219,13 @@ You'll receive notifications when:
 **Notification Preferences:**
 - You can set your preference in your driver profile:
   - Email Only
-  - SMS/Text Only
-  - Both Email and SMS
+  - Both Email and In-App
 
 ### Daily Assignment Summary
 
 If enabled by your administrator, you'll receive:
 - **Email**: A summary of all trips for the following day
-- **SMS**: A brief text message with trip times and locations
-- Both include basic information; full details are available in the app
+- Includes basic information; full details are available in the app
 
 ---
 
@@ -271,7 +269,7 @@ A: Click "Forgot Password" on the login screen and follow the instructions sent 
 
 ### Q: Can I change my notification preferences?
 
-A: Yes! Contact your administrator to update your notification preferences (Email, SMS, or Both).
+A: Yes! Contact your administrator to update your notification preferences (Email or Both).
 
 ### Q: What if a flight is delayed?
 

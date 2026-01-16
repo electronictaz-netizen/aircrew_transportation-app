@@ -1,10 +1,8 @@
 /**
  * Daily Assignment Email Utility
  * 
- * Generates and sends daily assignment emails and SMS to drivers with their trips for the following day.
+ * Generates and sends daily assignment emails to drivers with their trips for the following day.
  * Shows basic trip information (times, pickup locations) and directs drivers to the app for full details.
- * 
- * SMS functionality requires phone numbers and can be enabled/disabled via options.
  */
 
 import { generateClient } from 'aws-amplify/data';
@@ -15,7 +13,6 @@ const client = generateClient<Schema>();
 
 export interface DailyAssignmentOptions {
   email?: boolean;
-  sms?: boolean;
 }
 
 export interface DailyAssignmentData {
@@ -49,24 +46,6 @@ function formatTripForEmail(trip: Schema['Trip']['type']): string {
     Time: ${pickupTime}
     Pickup: ${trip.pickupLocation}
     Passengers: ${trip.numberOfPassengers}`;
-}
-
-/**
- * Format a single trip for SMS (shorter format)
- */
-function formatTripForSMS(trip: Schema['Trip']['type'], index: number): string {
-  const pickupDate = trip.pickupDate 
-    ? new Date(trip.pickupDate)
-    : null;
-  
-  const pickupTime = pickupDate 
-    ? format(pickupDate, 'h:mm a')
-    : 'TBD';
-  
-  const airport = trip.airport || 'TBD';
-  
-  // Keep SMS concise - max 160 chars per trip ideally
-  return `${index}. ${trip.flightNumber} (${airport}) ${pickupTime} - ${trip.pickupLocation}`;
 }
 
 /**
@@ -111,79 +90,6 @@ export function generateDailyAssignmentEmail(data: DailyAssignmentData): { subje
   body += `Aircrew Transportation Team`;
   
   return { subject, body };
-}
-
-/**
- * Generate daily assignment SMS content for a driver
- */
-export function generateDailyAssignmentSMS(data: DailyAssignmentData): string {
-  const { driver, trips, targetDate } = data;
-  
-  const dateStr = format(targetDate, 'M/d');
-  const tripCount = trips.length;
-  
-  let message = `${driver.name}, your ${dateStr} assignments:\n\n`;
-  
-  if (tripCount === 0) {
-    message += `No trips scheduled.`;
-  } else {
-    // Sort trips by pickup time
-    const sortedTrips = [...trips].sort((a, b) => {
-      if (!a.pickupDate || !b.pickupDate) return 0;
-      return new Date(a.pickupDate).getTime() - new Date(b.pickupDate).getTime();
-    });
-    
-    sortedTrips.forEach((trip, index) => {
-      message += formatTripForSMS(trip, index + 1) + '\n';
-    });
-    
-    message += `\nSee app for full details.`;
-  }
-  
-  return message;
-}
-
-/**
- * Send daily assignment SMS to a single driver via AWS SNS
- */
-export async function sendDailyAssignmentSMS(data: DailyAssignmentData): Promise<{ success: boolean; error?: string }> {
-  const { driver } = data;
-  
-  if (!driver.phone) {
-    console.warn(`Cannot send daily assignment SMS: Driver ${driver.name} has no phone number`);
-    return { success: false, error: 'Driver has no phone number' };
-  }
-  
-  const message = generateDailyAssignmentSMS(data);
-  
-  // Import SMS service
-  const { sendSMS, formatPhoneForSMS, isValidPhoneNumber } = await import('./smsService');
-  
-  // Validate phone number
-  if (!isValidPhoneNumber(driver.phone)) {
-    console.warn(`Invalid phone number for ${driver.name}: ${driver.phone}`);
-    return { success: false, error: 'Invalid phone number format' };
-  }
-  
-  const formattedPhone = formatPhoneForSMS(driver.phone);
-  
-  try {
-    const result = await sendSMS({
-      phoneNumber: formattedPhone,
-      message: message,
-    });
-    
-    if (result.success) {
-      console.log(`✅ Daily assignment SMS sent to ${driver.name} (${formattedPhone.substring(0, 4)}***)`);
-      return { success: true };
-    } else {
-      console.error(`Failed to send SMS to ${driver.name}:`, result.error);
-      return { success: false, error: result.error };
-    }
-  } catch (error: any) {
-    console.error(`Error sending SMS to ${driver.name}:`, error);
-    return { success: false, error: error.message || 'Unknown error' };
-  }
 }
 
 /**
@@ -244,14 +150,14 @@ async function getDriverTripsForDate(
  */
 export async function sendDailyAssignmentEmailsToAllDrivers(
   targetDate?: Date,
-  options: DailyAssignmentOptions = { email: true, sms: false },
+  options: DailyAssignmentOptions = { email: true },
   companyId?: string
-): Promise<{ sent: { email: number; sms: number }; failed: { email: number; sms: number }; skipped: number }> {
+): Promise<{ sent: { email: number }; failed: { email: number }; skipped: number }> {
   const tomorrow = targetDate || addDays(new Date(), 1);
   const dateStr = format(tomorrow, 'MMMM d, yyyy');
   
-  console.log(`Generating daily assignment notifications for ${dateStr}...`);
-  console.log(`Options: Email=${options.email}, SMS=${options.sms}`);
+  console.log(`Generating daily assignment emails for ${dateStr}...`);
+  console.log(`Options: Email=${options.email}`);
   
   try {
     // Get all active drivers for the company
@@ -267,33 +173,26 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
     const eligibleDrivers = (drivers || []).filter(d => {
       if (!d.isActive) return false;
       
-      // Get driver's notification preference (default to 'both' if not set)
-      const preference = d.notificationPreference || 'both';
+      // Get driver's notification preference (default to 'email' if not set)
+      const preference = d.notificationPreference || 'email';
       
       // Check if driver wants email and has email address
       const wantsEmail = (preference === 'email' || preference === 'both') && d.email;
-      // Check if driver wants SMS and has phone number
-      const wantsSMS = (preference === 'sms' || preference === 'both') && d.phone;
       
-      // Driver is eligible if:
-      // - User wants to send email AND driver wants email AND driver has email, OR
-      // - User wants to send SMS AND driver wants SMS AND driver has phone
-      return (options.email && wantsEmail) || (options.sms && wantsSMS);
+      // Driver is eligible if user wants to send email AND driver wants email AND driver has email
+      return options.email && wantsEmail;
     });
     
     if (eligibleDrivers.length === 0) {
-      const requirements = [];
-      if (options.email) requirements.push('email addresses');
-      if (options.sms) requirements.push('phone numbers');
-      console.log(`No active drivers with ${requirements.join(' or ')} found`);
-      return { sent: { email: 0, sms: 0 }, failed: { email: 0, sms: 0 }, skipped: 0 };
+      console.log(`No active drivers with email addresses found`);
+      return { sent: { email: 0 }, failed: { email: 0 }, skipped: 0 };
     }
     
     console.log(`Found ${eligibleDrivers.length} eligible driver(s)`);
     
     const result = {
-      sent: { email: 0, sms: 0 },
-      failed: { email: 0, sms: 0 },
+      sent: { email: 0 },
+      failed: { email: 0 },
       skipped: 0,
     };
     
@@ -315,8 +214,8 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
           targetDate: tomorrow,
         };
         
-        // Get driver's notification preference (default to 'both' if not set)
-        const preference = driver.notificationPreference || 'both';
+        // Get driver's notification preference (default to 'email' if not set)
+        const preference = driver.notificationPreference || 'email';
         
         // Send email if:
         // - User enabled email AND
@@ -333,40 +232,19 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
           }
         }
         
-        // Send SMS if:
-        // - User enabled SMS AND
-        // - Driver wants SMS (preference is 'sms' or 'both') AND
-        // - Driver has phone number
-        if (options.sms && (preference === 'sms' || preference === 'both') && driver.phone) {
-          try {
-            const smsResult = await sendDailyAssignmentSMS(assignmentData);
-            if (smsResult.success) {
-              result.sent.sms++;
-              console.log(`✅ Daily assignment SMS sent to ${driver.name} (${trips.length} trip(s))`);
-            } else {
-              result.failed.sms++;
-              console.error(`Failed to send SMS to ${driver.name}:`, smsResult.error);
-            }
-          } catch (error) {
-            console.error(`Error sending SMS to ${driver.name}:`, error);
-            result.failed.sms++;
-          }
-        }
-        
         // Small delay to prevent overwhelming clients
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
         console.error(`Error processing ${driver.name}:`, error);
         if (options.email && driver.email) result.failed.email++;
-        if (options.sms && driver.phone) result.failed.sms++;
       }
     }
     
-    console.log(`Daily assignment notifications complete:`, result);
+    console.log(`Daily assignment emails complete:`, result);
     return result;
   } catch (error) {
-    console.error('Error sending daily assignment notifications:', error);
-    return { sent: { email: 0, sms: 0 }, failed: { email: 0, sms: 0 }, skipped: 0 };
+    console.error('Error sending daily assignment emails:', error);
+    return { sent: { email: 0 }, failed: { email: 0 }, skipped: 0 };
   }
 }
 
@@ -376,9 +254,9 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
 export async function sendDailyAssignmentToDriver(
   driverId: string,
   targetDate?: Date,
-  options: DailyAssignmentOptions = { email: true, sms: false },
+  options: DailyAssignmentOptions = { email: true },
   companyId?: string
-): Promise<{ email: boolean; sms: boolean }> {
+): Promise<{ email: boolean }> {
   try {
     const tomorrow = targetDate || addDays(new Date(), 1);
     
@@ -386,13 +264,13 @@ export async function sendDailyAssignmentToDriver(
     const { data: driver } = await client.models.Driver.get({ id: driverId });
     if (!driver || !driver.isActive) {
       console.warn(`Driver ${driverId} not found or inactive`);
-      return { email: false, sms: false };
+      return { email: false };
     }
     
     // Check if driver has required contact info
-    if ((options.email && !driver.email) && (options.sms && !driver.phone)) {
-      console.warn(`Driver ${driver.name} missing required contact information`);
-      return { email: false, sms: false };
+    if (options.email && !driver.email) {
+      console.warn(`Driver ${driver.name} missing email address`);
+      return { email: false };
     }
     
     // Get trips for tomorrow
@@ -400,7 +278,7 @@ export async function sendDailyAssignmentToDriver(
     
     if (trips.length === 0) {
       console.log(`No trips scheduled for ${driver.name} on ${format(tomorrow, 'MMMM d, yyyy')}`);
-      return { email: false, sms: false };
+      return { email: false };
     }
     
     const assignmentData = {
@@ -409,7 +287,7 @@ export async function sendDailyAssignmentToDriver(
       targetDate: tomorrow,
     };
     
-    const result = { email: false, sms: false };
+    const result = { email: false };
     
     // Send email if enabled and driver has email
     if (options.email && driver.email) {
@@ -417,15 +295,9 @@ export async function sendDailyAssignmentToDriver(
       result.email = true;
     }
     
-    // Send SMS if enabled and driver has phone
-    if (options.sms && driver.phone) {
-      const smsResult = await sendDailyAssignmentSMS(assignmentData);
-      result.sms = smsResult.success;
-    }
-    
     return result;
   } catch (error) {
-    console.error('Error sending daily assignment notifications to driver:', error);
-    return { email: false, sms: false };
+    console.error('Error sending daily assignment email to driver:', error);
+    return { email: false };
   }
 }

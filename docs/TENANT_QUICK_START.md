@@ -87,7 +87,7 @@ Your company administrator will send you an invitation email. **Keep this email*
 
 💡 **Check flight status** before leaving for pickup
 
-💡 **Set notification preferences** to receive updates via Email, SMS, or Both
+💡 **Set notification preferences** to receive updates via Email or Both (Email & In-App)
 
 ---
 

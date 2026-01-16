@@ -201,12 +201,11 @@ Click **"Manage Drivers"** in the Management Dashboard.
 2. Fill in driver information:
    - **Name**: Full name (required)
    - **Email**: Email address (required)
-   - **Phone**: Phone number (required for SMS notifications)
+   - **Phone**: Phone number (optional)
    - **License Number**: Driver's license number
    - **Notification Preference**: 
-     - Both (Email & SMS)
      - Email Only
-     - SMS/Text Only
+     - Both (Email & In-App)
    - **Active**: Check to make driver active
 3. Click **"Save"**
 
@@ -229,18 +228,15 @@ Click **"Manage Drivers"** in the Management Dashboard.
 
 - **Name**: Driver's full name
 - **Email**: Used for email notifications
-- **Phone**: Used for SMS notifications (must be provided for SMS)
+- **Phone**: Phone number (optional, for contact purposes)
 - **License Number**: For record keeping
 - **Notification Preference**: How driver receives notifications
 - **Active Status**: Whether driver can receive assignments
 
 ### Notification Preferences Explained
 
-- **Both (Email & SMS)**: Driver receives notifications via both email and text
 - **Email Only**: Driver receives notifications only via email
-- **SMS/Text Only**: Driver receives notifications only via text (requires phone number)
-
-**Important**: SMS notifications require a valid phone number.
+- **Both (Email & In-App)**: Driver receives notifications via both email and in-app browser notifications
 
 ---
 
@@ -628,7 +624,7 @@ Once created, filter categories appear in the trip filters section:
 
 ### What Are Daily Assignment Emails?
 
-Daily assignment emails (and SMS) are summaries sent to drivers showing their trips for the following day. This helps drivers plan their schedule.
+Daily assignment emails are summaries sent to drivers showing their trips for the following day. This helps drivers plan their schedule.
 
 ### Sending Daily Assignment Emails
 
@@ -638,11 +634,8 @@ You can send to all drivers or select a specific driver:
 
 1. Click **"Send Daily Assignment Emails"** in the Management Dashboard
 2. Click **"OK"** when asked if you want to send to all drivers
-3. Choose notification method:
-   - **Email**: Send email summaries
-   - **SMS**: Send text message summaries
-   - **Both**: Send both email and SMS
-4. Click **"Send"**
+3. Confirm sending emails
+4. Emails will be sent to all eligible drivers
 
 #### Option 2: Send to Specific Driver
 
@@ -650,11 +643,8 @@ You can send to all drivers or select a specific driver:
 2. Click **"Cancel"** when asked about sending to all drivers
 3. **Select a driver** from the driver selection dialog
 4. Click **"Continue"**
-5. Choose notification method:
-   - **Email**: Send email summaries
-   - **SMS**: Send text message summaries
-   - **Both**: Send both email and SMS
-6. Click **"Send"**
+5. Confirm sending email to the selected driver
+6. Email will be sent to the driver
 
 **Note**: Only drivers with trips scheduled for tomorrow will receive emails. Drivers without trips are automatically skipped.
 
@@ -666,13 +656,6 @@ You can send to all drivers or select a specific driver:
 - Pickup locations
 - Basic trip information
 - Note to check app for full details
-
-**SMS Format**:
-- Brief summary
-- Flight numbers
-- Pickup times
-- Pickup locations
-- Note to check app for details
 
 ### When to Send
 
@@ -686,10 +669,7 @@ You can send to all drivers or select a specific driver:
 
 The system respects each driver's notification preference:
 - Drivers set to "Email Only" receive email only
-- Drivers set to "SMS Only" receive SMS only (if phone number provided)
-- Drivers set to "Both" receive both email and SMS
-
-**Note**: SMS requires a valid phone number for each driver.
+- Drivers set to "Both" receive both email and in-app notifications
 
 ---
 
@@ -812,7 +792,6 @@ When editing a trip, you can see:
 ✅ **Keep driver information current** - Update contact info regularly  
 ✅ **Set notification preferences** - Match driver preferences  
 ✅ **Deactivate inactive drivers** - Keep list clean  
-✅ **Verify phone numbers** - Required for SMS notifications  
 
 ### Location Management
 
@@ -879,16 +858,15 @@ When editing a trip, you can see:
 **Problem**: Driver says they didn't get notification
 
 **Possible causes**:
-- Email/phone number incorrect
+- Email address incorrect
 - Notification preference not set
 - Email in spam folder
-- Phone number not provided (for SMS)
 
 **Solution**:
-1. Verify driver's email and phone in their profile
+1. Verify driver's email address in their profile
 2. Check notification preference is set correctly
 3. Ask driver to check spam folder
-4. Ensure phone number is provided for SMS
+4. Ensure email notifications are enabled
 
 ### Can't Assign Trip
 

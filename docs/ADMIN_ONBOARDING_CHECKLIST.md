@@ -27,7 +27,7 @@ Use this checklist when onboarding a new company to ensure they're set up correc
   - [ ] Email address
   - [ ] Phone number
   - [ ] License number
-  - [ ] Notification preferences (Email, SMS, or Both)
+  - [ ] Notification preferences (Email or Both)
 - [ ] Invite managers (if applicable)
 - [ ] Verify all users can log in successfully
 

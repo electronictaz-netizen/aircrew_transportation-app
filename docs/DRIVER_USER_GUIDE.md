@@ -167,7 +167,6 @@ You'll receive notifications to keep you informed about your assignments. Here's
 
 **Notification methods:**
 - **Email**: Full trip details sent to your email
-- **SMS/Text**: Brief summary sent to your phone
 - **In-App**: Browser notification (if enabled)
 
 #### 2. Trip Reassignment
@@ -205,7 +204,6 @@ You'll receive notifications to keep you informed about your assignments. Here's
 
 **Notification methods:**
 - **Email**: Detailed summary with all trips
-- **SMS/Text**: Brief summary with times and locations
 
 **Example Email:**
 ```
@@ -228,18 +226,12 @@ You have 3 trips scheduled for tomorrow:
 Please check the app for full trip details including passenger information and dropoff locations.
 ```
 
-**Example SMS:**
-```
-Tomorrow's trips: UA1234 @ 2PM, DL5678 @ 5:30PM, AA9012 @ 8PM. Check app for details.
-```
-
 ### Notification Preferences
 
 You can set how you receive notifications:
 
 - **Email Only**: Receive notifications via email
-- **SMS/Text Only**: Receive notifications via text message
-- **Both**: Receive notifications via both email and SMS
+- **Both**: Receive notifications via both email and in-app notifications
 
 **To change your preferences:**
 Contact your administrator or manager - they can update your notification settings.
@@ -596,7 +588,7 @@ For emergencies:
 
 ### Q: How do I know if I have new trips?
 
-**A**: You'll receive a notification (email, SMS, or both) when a trip is assigned to you. You can also check your Driver Dashboard anytime.
+**A**: You'll receive a notification (email or in-app) when a trip is assigned to you. You can also check your Driver Dashboard anytime.
 
 ### Q: What if I can't complete an assigned trip?
 

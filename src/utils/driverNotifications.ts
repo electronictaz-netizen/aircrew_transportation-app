@@ -2,14 +2,13 @@
  * Driver Notification Utility
  * 
  * Handles sending notifications to drivers when they are assigned or reassigned to trips.
- * Supports email and SMS notifications (email via mailto, SMS can be extended with backend API).
+ * Supports email notifications (via mailto).
  */
 
 import type { Schema } from '../../amplify/data/resource';
 
 export interface NotificationOptions {
   email?: boolean;
-  sms?: boolean;
   inApp?: boolean;
 }
 
@@ -85,53 +84,6 @@ export function sendEmailNotification(
 }
 
 /**
- * Send SMS notification via AWS SNS
- */
-export async function sendSMSNotification(
-  driver: Schema['Driver']['type'],
-  trip: Schema['Trip']['type'],
-  isReassignment: boolean = false
-): Promise<{ success: boolean; error?: string }> {
-  if (!driver.phone) {
-    console.warn(`Cannot send SMS notification: Driver ${driver.name} has no phone number`);
-    return { success: false, error: 'Driver has no phone number' };
-  }
-
-  const message = isReassignment
-    ? `Trip Reassignment: Flight ${trip.flightNumber} on ${trip.pickupDate ? new Date(trip.pickupDate).toLocaleDateString() : 'TBD'}. Check your email for details.`
-    : `New Trip Assignment: Flight ${trip.flightNumber} on ${trip.pickupDate ? new Date(trip.pickupDate).toLocaleDateString() : 'TBD'}. Check your email for details.`;
-
-  // Import SMS service
-  const { sendSMS, formatPhoneForSMS, isValidPhoneNumber } = await import('./smsService');
-  
-  // Validate phone number
-  if (!isValidPhoneNumber(driver.phone)) {
-    console.warn(`Invalid phone number for ${driver.name}: ${driver.phone}`);
-    return { success: false, error: 'Invalid phone number format' };
-  }
-  
-  const formattedPhone = formatPhoneForSMS(driver.phone);
-  
-  try {
-    const result = await sendSMS({
-      phoneNumber: formattedPhone,
-      message: message,
-    });
-    
-    if (result.success) {
-      console.log(`✅ SMS notification sent to ${driver.name} (${formattedPhone.substring(0, 4)}***)`);
-      return { success: true };
-    } else {
-      console.error(`Failed to send SMS to ${driver.name}:`, result.error);
-      return { success: false, error: result.error };
-    }
-  } catch (error: any) {
-    console.error(`Error sending SMS to ${driver.name}:`, error);
-    return { success: false, error: error.message || 'Unknown error' };
-  }
-}
-
-/**
  * Send in-app notification
  * This uses the browser's Notification API if available and permitted
  */
@@ -192,13 +144,13 @@ export async function sendInAppNotification(
  */
 export async function notifyDriver(
   data: TripNotificationData,
-  options: NotificationOptions = { email: true, sms: false, inApp: true }
+  options: NotificationOptions = { email: true, inApp: true }
 ): Promise<void> {
   const { trip, driver, isReassignment = false } = data;
 
   try {
-    // Get driver's notification preference (default to 'both' if not set)
-    const preference = driver.notificationPreference || 'both';
+    // Get driver's notification preference (default to 'email' if not set)
+    const preference = driver.notificationPreference || 'email';
     
     // Send email notification if:
     // - Email is enabled in options AND
@@ -206,14 +158,6 @@ export async function notifyDriver(
     // - Driver has email address
     if (options.email && (preference === 'email' || preference === 'both') && driver.email) {
       sendEmailNotification(driver, trip, isReassignment);
-    }
-
-    // Send SMS notification if:
-    // - SMS is enabled in options AND
-    // - Driver wants SMS (preference is 'sms' or 'both') AND
-    // - Driver has phone number
-    if (options.sms && (preference === 'sms' || preference === 'both') && driver.phone) {
-      await sendSMSNotification(driver, trip, isReassignment);
     }
 
     // Send in-app notification (always send if enabled, doesn't depend on preference)
@@ -240,8 +184,8 @@ export async function notifyPreviousDriver(
     return;
   }
 
-  // Get driver's notification preference (default to 'both' if not set)
-  const preference = previousDriver.notificationPreference || 'both';
+  // Get driver's notification preference (default to 'email' if not set)
+  const preference = previousDriver.notificationPreference || 'email';
 
   // Send email if driver prefers email or both
   if ((preference === 'email' || preference === 'both') && previousDriver.email) {
@@ -251,27 +195,5 @@ export async function notifyPreviousDriver(
     const mailtoLink = `mailto:${previousDriver.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink, '_blank');
     console.log(`Email notification sent to previous driver ${previousDriver.name}`);
-  }
-
-  // Send SMS if driver prefers SMS or both
-  if ((preference === 'sms' || preference === 'both') && previousDriver.phone) {
-    const message = `Trip Unassigned: Flight ${trip.flightNumber} on ${trip.pickupDate ? new Date(trip.pickupDate).toLocaleDateString() : 'TBD'}. Check your email for details.`;
-    const { sendSMS, formatPhoneForSMS, isValidPhoneNumber } = await import('./smsService');
-    
-    if (isValidPhoneNumber(previousDriver.phone)) {
-      const formattedPhone = formatPhoneForSMS(previousDriver.phone);
-      const result = await sendSMS({
-        phoneNumber: formattedPhone,
-        message: message,
-      });
-      
-      if (result.success) {
-        console.log(`✅ SMS notification sent to previous driver ${previousDriver.name}`);
-      } else {
-        console.error(`Failed to send SMS to previous driver ${previousDriver.name}:`, result.error);
-      }
-    } else {
-      console.warn(`Invalid phone number for previous driver ${previousDriver.name}: ${previousDriver.phone}`);
-    }
   }
 }

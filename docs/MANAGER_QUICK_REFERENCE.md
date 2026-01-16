@@ -142,9 +142,8 @@ The airports available in your system are configured by your company administrat
 
 ## Notification Preferences
 
-**Both**: Email + SMS  
-**Email Only**: Email only  
-**SMS Only**: Text only (requires phone number)
+**Email Only**: Email notifications  
+**Both**: Email + In-App notifications
 
 **Set in**: Manage Drivers → Edit Driver
 

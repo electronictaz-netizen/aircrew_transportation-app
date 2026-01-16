@@ -29,7 +29,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
     phone: '',
     licenseNumber: '',
     isActive: true,
-    notificationPreference: 'both' as 'email' | 'sms' | 'both',
+    notificationPreference: 'email' as 'email' | 'both',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -123,7 +123,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       phone: driver.phone || '',
       licenseNumber: driver.licenseNumber || '',
       isActive: driver.isActive ?? true,
-      notificationPreference: (driver.notificationPreference as 'email' | 'sms' | 'both') || 'both',
+      notificationPreference: (driver.notificationPreference as 'email' | 'both') || 'email',
     });
     setShowForm(true);
   };
@@ -213,7 +213,7 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
       phone: '',
       licenseNumber: '',
       isActive: true,
-      notificationPreference: 'both',
+      notificationPreference: 'email',
     });
     setEditingDriver(null);
     setShowForm(false);
@@ -324,16 +324,14 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
               <select
                 id="notificationPreference"
                 value={formData.notificationPreference}
-                onChange={(e) => setFormData({ ...formData, notificationPreference: e.target.value as 'email' | 'sms' | 'both' })}
+                onChange={(e) => setFormData({ ...formData, notificationPreference: e.target.value as 'email' | 'both' })}
               >
-                <option value="both">Both (Email & SMS)</option>
                 <option value="email">Email Only</option>
-                <option value="sms">SMS/Text Only</option>
+                <option value="both">Both (Email & In-App)</option>
               </select>
               <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
-                {formData.notificationPreference === 'email' && 'Driver will only receive email notifications'}
-                {formData.notificationPreference === 'sms' && 'Driver will only receive SMS/text notifications'}
-                {formData.notificationPreference === 'both' && 'Driver will receive both email and SMS notifications'}
+                {formData.notificationPreference === 'email' && 'Driver will receive email notifications'}
+                {formData.notificationPreference === 'both' && 'Driver will receive email and in-app notifications'}
               </small>
             </div>
 
@@ -390,9 +388,8 @@ function DriverManagement({ drivers, onClose, onUpdate }: DriverManagementProps)
                     <td>
                       <span className="notification-preference">
                         {driver.notificationPreference === 'email' ? '📧 Email' :
-                         driver.notificationPreference === 'sms' ? '📱 SMS' :
-                         driver.notificationPreference === 'both' ? '📧📱 Both' :
-                         '📧📱 Both'}
+                         driver.notificationPreference === 'both' ? '📧 Both' :
+                         '📧 Email'}
                       </span>
                     </td>
                     <td>

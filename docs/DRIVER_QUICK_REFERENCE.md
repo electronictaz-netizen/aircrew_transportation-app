@@ -50,7 +50,7 @@ Each trip shows:
 - **Contains**: All trips for next day
 - **Action**: Review and plan route
 
-**Methods**: Email, SMS, or Both (set by manager)
+**Methods**: Email or Both (Email & In-App) (set by manager)
 
 ---
 

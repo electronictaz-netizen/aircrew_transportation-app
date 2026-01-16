@@ -269,14 +269,13 @@ function ManagementDashboard() {
           if (tripData.driverId && result.data) {
             const assignedDriver = drivers.find(d => d.id === tripData.driverId);
             if (assignedDriver) {
-              const preference = assignedDriver.notificationPreference || 'both';
+              const preference = assignedDriver.notificationPreference || 'email';
               await notifyDriver({
                 trip: result.data,
                 driver: assignedDriver,
                 isReassignment: false,
               }, {
                 email: preference === 'email' || preference === 'both',
-                sms: preference === 'sms' || preference === 'both',
                 inApp: true,
               });
             }
@@ -600,7 +599,7 @@ function ManagementDashboard() {
         if ((isNewAssignment || isDriverReassignment) && newDriverId) {
           const newDriver = drivers.find(d => d.id === newDriverId);
           if (newDriver) {
-            const preference = newDriver.notificationPreference || 'both';
+            const preference = newDriver.notificationPreference || 'email';
             await notifyDriver({
               trip: updateResult.data,
               driver: newDriver,
@@ -608,7 +607,6 @@ function ManagementDashboard() {
               previousDriver: previousDriverId ? drivers.find(d => d.id === previousDriverId) || null : null,
             }, {
               email: preference === 'email' || preference === 'both',
-              sms: preference === 'sms' || preference === 'both',
               inApp: true,
             });
           }
@@ -844,7 +842,7 @@ function ManagementDashboard() {
 
             // Notify new driver if assigned
             if (driver && updateResult.data && (isNewAssignment || isReassignment)) {
-              const preference = driver.notificationPreference || 'both';
+              const preference = driver.notificationPreference || 'email';
               await notifyDriver(
                 {
                   trip: updateResult.data,
@@ -853,7 +851,6 @@ function ManagementDashboard() {
                 },
                 {
                   email: preference === 'email' || preference === 'both',
-                  sms: preference === 'sms' || preference === 'both',
                   inApp: true,
                 }
               );
@@ -1010,38 +1007,11 @@ function ManagementDashboard() {
   };
 
   const handleSendToAllDrivers = async () => {
-    // Ask user which notification methods to use
-    // Note: Individual driver preferences will be respected automatically
-    const useEmail = confirm(
-      'Send daily assignment emails?\n\n' +
-      'Click OK for Email, Cancel to skip Email.\n\n' +
-      'Note: Only drivers with "Email" or "Both" preference will receive emails.'
-    );
-    
-    const useSMS = confirm(
-      'Send daily assignment SMS/text messages?\n\n' +
-      'Click OK for SMS, Cancel to skip SMS.\n\n' +
-      'Note: Only drivers with "SMS" or "Both" preference will receive SMS.\n' +
-      'SMS requires phone numbers and will open SMS apps. For production, backend API integration is needed.'
-    );
-    
-    if (!useEmail && !useSMS) {
-      alert('No notification methods selected. Operation cancelled.');
-      return;
-    }
-    
+    // Confirm sending emails to all drivers
     const confirmMessage = 
-      `This will send daily assignment notifications to all active drivers with trips scheduled for tomorrow.\n\n` +
-      `Notification methods enabled:\n` +
-      `${useEmail ? '✓ Email' : '✗ Email'}\n` +
-      `${useSMS ? '✓ SMS/Text' : '✗ SMS/Text'}\n\n` +
-      `Each driver will receive notifications based on their individual preference:\n` +
-      `- Email preference: Email only\n` +
-      `- SMS preference: SMS only\n` +
-      `- Both preference: Both email and SMS\n\n` +
-      `${useEmail ? 'Email clients will open for drivers with email preference.\n' : ''}` +
-      `${useSMS ? 'SMS apps will open for drivers with SMS preference (mobile devices).\n' : ''}` +
-      `Make sure pop-ups are allowed.\n\n` +
+      `This will send daily assignment emails to all active drivers with trips scheduled for tomorrow.\n\n` +
+      `Each driver will receive an email based on their notification preference.\n` +
+      `Email clients will open for each driver. Make sure pop-ups are allowed.\n\n` +
       `Continue?`;
     
     if (!confirm(confirmMessage)) {
@@ -1050,31 +1020,20 @@ function ManagementDashboard() {
     
     try {
       const result = await sendDailyAssignmentEmailsToAllDrivers(undefined, {
-        email: useEmail,
-        sms: useSMS,
+        email: true,
       }, companyId || undefined);
       
-      let message = `Daily assignment notifications processed:\n\n`;
-      
-      if (useEmail) {
-        message += `📧 Email:\n`;
-        message += `  ✅ Sent: ${result.sent.email}\n`;
-        message += `  ❌ Failed: ${result.failed.email}\n\n`;
-      }
-      
-      if (useSMS) {
-        message += `📱 SMS:\n`;
-        message += `  ✅ Sent: ${result.sent.sms}\n`;
-        message += `  ❌ Failed: ${result.failed.sms}\n\n`;
-      }
-      
+      let message = `Daily assignment emails processed:\n\n`;
+      message += `📧 Email:\n`;
+      message += `  ✅ Sent: ${result.sent.email}\n`;
+      message += `  ❌ Failed: ${result.failed.email}\n\n`;
       message += `⏭️ Skipped: ${result.skipped} (no trips scheduled or preference mismatch)\n\n`;
-      message += `Note: Notifications sent based on each driver's preference setting.`;
+      message += `Note: Emails sent based on each driver's preference setting.`;
       
       alert(message);
     } catch (error) {
-      console.error('Error sending daily assignment notifications:', error);
-      alert('Failed to send daily assignment notifications. Please check the console for details.');
+      console.error('Error sending daily assignment emails:', error);
+      alert('Failed to send daily assignment emails. Please check the console for details.');
     }
   };
 
@@ -1090,22 +1049,11 @@ function ManagementDashboard() {
       return;
     }
 
-    // Ask user which notification methods to use
-    const useEmail = confirm(
+    // Confirm sending email
+    if (!confirm(
       `Send daily assignment email to ${driver.name}?\n\n` +
-      'Click OK for Email, Cancel to skip Email.\n\n' +
       `Note: ${driver.email ? 'Driver has email address.' : 'Driver has no email address - email will be skipped.'}`
-    );
-    
-    const useSMS = confirm(
-      `Send daily assignment SMS to ${driver.name}?\n\n` +
-      'Click OK for SMS, Cancel to skip SMS.\n\n' +
-      `Note: ${driver.phone ? 'Driver has phone number.' : 'Driver has no phone number - SMS will be skipped.'}\n` +
-      'SMS requires phone numbers and will open SMS apps. For production, backend API integration is needed.'
-    );
-    
-    if (!useEmail && !useSMS) {
-      alert('No notification methods selected. Operation cancelled.');
+    )) {
       return;
     }
 
@@ -1114,40 +1062,29 @@ function ManagementDashboard() {
         selectedEmailDriverId,
         undefined,
         {
-          email: useEmail,
-          sms: useSMS,
+          email: true,
         },
         companyId || undefined
       );
 
-      let message = `Daily assignment notifications for ${driver.name}:\n\n`;
+      let message = `Daily assignment email for ${driver.name}:\n\n`;
       
-      if (useEmail) {
-        if (result.email) {
-          message += `📧 Email: ✅ Sent\n`;
-        } else {
-          message += `📧 Email: ❌ Failed (${driver.email ? 'error occurred' : 'no email address'})\n`;
-        }
-      }
-      
-      if (useSMS) {
-        if (result.sms) {
-          message += `📱 SMS: ✅ Sent\n`;
-        } else {
-          message += `📱 SMS: ❌ Failed (${driver.phone ? 'error occurred' : 'no phone number'})\n`;
-        }
+      if (result.email) {
+        message += `📧 Email: ✅ Sent\n`;
+      } else {
+        message += `📧 Email: ❌ Failed (${driver.email ? 'error occurred' : 'no email address'})\n`;
       }
 
-      if (!result.email && !result.sms) {
-        message += `\nNote: Driver may have no trips scheduled for tomorrow, or missing contact information.`;
+      if (!result.email) {
+        message += `\nNote: Driver may have no trips scheduled for tomorrow, or missing email address.`;
       }
 
       alert(message);
       setShowEmailDriverDialog(false);
       setSelectedEmailDriverId(null);
     } catch (error) {
-      console.error('Error sending daily assignment notifications:', error);
-      alert('Failed to send daily assignment notifications. Please check the console for details.');
+      console.error('Error sending daily assignment email:', error);
+      alert('Failed to send daily assignment email. Please check the console for details.');
     }
   };
 
