@@ -60,20 +60,31 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
     return;
   }
 
-  // Prepare parent trip data
-  const parentTripData = {
+  // Prepare parent trip data - ensure all required fields are set
+  const parentTripData: any = {
     ...tripData,
-    isRecurring: true,
+    isRecurring: true, // MUST be true for parent
     recurringPattern,
     recurringEndDate,
     status: tripData.status || 'Unassigned',
   };
 
-  // Remove undefined fields
+  // Ensure companyId is set
+  if (config.companyId) {
+    parentTripData.companyId = config.companyId;
+  }
+
+  // Remove undefined fields (but keep companyId even if it was in tripData)
   Object.keys(parentTripData).forEach(key => {
-    if (parentTripData[key] === undefined) {
+    if (parentTripData[key] === undefined && key !== 'companyId') {
       delete parentTripData[key];
     }
+  });
+  
+  console.log('Parent trip data to create:', {
+    ...parentTripData,
+    // Don't log customFieldValues if it's large
+    customFieldValues: parentTripData.customFieldValues ? '[present]' : undefined,
   });
 
   // Check for duplicate parent trip before creating
