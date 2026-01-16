@@ -473,10 +473,6 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const selectedDriver = selectedDriverId ? drivers.find(d => d.id === selectedDriverId) : null;
 
   return (
@@ -546,13 +542,6 @@ function DriverReports({ trips, drivers, onClose, onEdit }: DriverReportsProps) 
               title="Export report as Excel (.xlsx)"
             >
               📥 Export Excel
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={handlePrint}
-              title="Print report"
-            >
-              🖨️ Print
             </button>
           </div>
         </div>

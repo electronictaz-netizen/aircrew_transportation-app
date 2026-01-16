@@ -376,10 +376,6 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const clearFilters = () => {
     setDateFilterStart('');
     setDateFilterEnd('');
@@ -543,13 +539,6 @@ function TripReports({ trips, drivers, locations: _locations = [], onClose, onEd
               title="Export report as Excel (.xlsx)"
             >
               📥 Export Excel
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={handlePrint}
-              title="Print report"
-            >
-              🖨️ Print
             </button>
           </div>
         </div>
