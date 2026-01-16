@@ -47,6 +47,7 @@ function ManagementDashboard() {
   const [selectedEmailDriverId, setSelectedEmailDriverId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     if (companyId) {
@@ -59,6 +60,21 @@ function ManagementDashboard() {
       });
     }
   }, [companyId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setOpenDropdown(null);
+      }
+    };
+    
+    if (openDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openDropdown]);
 
       const loadTrips = async (forceRefresh: boolean = false) => {
     if (!companyId) return;
@@ -1270,70 +1286,154 @@ function ManagementDashboard() {
           >
             + New Trip
           </button>
-          <Link
-            to="/drivers"
-            className="btn btn-secondary"
-          >
-            Manage Drivers
-          </Link>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowLocationManagement(true)}
-          >
-            Manage Locations
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowFilterCategoryManagement(true)}
-          >
-            Filter Categories
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowCustomFieldManagement(true)}
-          >
-            Custom Fields
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowReportConfigurationManagement(true)}
-          >
-            Report Configuration
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowCompanyManagement(true)}
-          >
-            Company Settings
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowDriverReports(true)}
-            title="View driver reports and statistics"
-          >
-            📊 Driver Reports
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowTripReports(true)}
-            title="View trip reports and statistics"
-          >
-            📋 Trip Reports
-          </button>
-          <button
-            className="btn btn-danger"
-            onClick={handleDeleteAllTrips}
-            title="Delete all trips from the database"
-          >
-            Delete All Trips
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={handleSendDailyAssignmentEmails}
-            title="Send daily assignment emails to all drivers for tomorrow"
-          >
-            Send Daily Assignment Emails
-          </button>
+          
+          {/* Data Management Dropdown */}
+          <div className="dropdown-container">
+            <button
+              className="btn btn-secondary dropdown-toggle"
+              onClick={() => setOpenDropdown(openDropdown === 'data' ? null : 'data')}
+            >
+              Data Management ▼
+            </button>
+            {openDropdown === 'data' && (
+              <div className="dropdown-menu">
+                <Link
+                  to="/drivers"
+                  className="dropdown-item"
+                  onClick={() => setOpenDropdown(null)}
+                >
+                  Manage Drivers
+                </Link>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowLocationManagement(true);
+                    setOpenDropdown(null);
+                  }}
+                >
+                  Manage Locations
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowFilterCategoryManagement(true);
+                    setOpenDropdown(null);
+                  }}
+                >
+                  Filter Categories
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Configuration Dropdown */}
+          <div className="dropdown-container">
+            <button
+              className="btn btn-secondary dropdown-toggle"
+              onClick={() => setOpenDropdown(openDropdown === 'config' ? null : 'config')}
+            >
+              Configuration ▼
+            </button>
+            {openDropdown === 'config' && (
+              <div className="dropdown-menu">
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowCustomFieldManagement(true);
+                    setOpenDropdown(null);
+                  }}
+                >
+                  Custom Fields
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowReportConfigurationManagement(true);
+                    setOpenDropdown(null);
+                  }}
+                >
+                  Report Configuration
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowCompanyManagement(true);
+                    setOpenDropdown(null);
+                  }}
+                >
+                  Company Settings
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Reports Dropdown */}
+          <div className="dropdown-container">
+            <button
+              className="btn btn-secondary dropdown-toggle"
+              onClick={() => setOpenDropdown(openDropdown === 'reports' ? null : 'reports')}
+            >
+              Reports ▼
+            </button>
+            {openDropdown === 'reports' && (
+              <div className="dropdown-menu">
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowDriverReports(true);
+                    setOpenDropdown(null);
+                  }}
+                  title="View driver reports and statistics"
+                >
+                  📊 Driver Reports
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowTripReports(true);
+                    setOpenDropdown(null);
+                  }}
+                  title="View trip reports and statistics"
+                >
+                  📋 Trip Reports
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Actions Dropdown */}
+          <div className="dropdown-container">
+            <button
+              className="btn btn-secondary dropdown-toggle"
+              onClick={() => setOpenDropdown(openDropdown === 'actions' ? null : 'actions')}
+            >
+              Actions ▼
+            </button>
+            {openDropdown === 'actions' && (
+              <div className="dropdown-menu">
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    handleSendDailyAssignmentEmails();
+                    setOpenDropdown(null);
+                  }}
+                  title="Send daily assignment emails to all drivers for tomorrow"
+                >
+                  Send Daily Assignment Emails
+                </button>
+                <button
+                  className="dropdown-item dropdown-item-danger"
+                  onClick={() => {
+                    handleDeleteAllTrips();
+                    setOpenDropdown(null);
+                  }}
+                  title="Delete all trips from the database"
+                >
+                  Delete All Trips
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* View Toggle */}

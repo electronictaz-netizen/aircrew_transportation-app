@@ -7,7 +7,7 @@ import NotificationComponent from './Notification';
 import { validateName, validateEmail, validatePhone, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
 import { Link } from 'react-router-dom';
-import { renderCustomFieldInput, validateCustomFieldValue } from '../utils/customFields';
+import { renderCustomFieldInput, validateCustomFieldValue } from '../utils/customFields.tsx';
 import './DriverManagement.css';
 
 const client = generateClient<Schema>();

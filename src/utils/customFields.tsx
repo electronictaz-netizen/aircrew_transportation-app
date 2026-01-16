@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Schema } from '../../amplify/data/resource';
 
 export type CustomFieldType = Schema['CustomField']['type'];

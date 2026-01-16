@@ -9,7 +9,7 @@ import { validateFlightNumber, validateLocation, validatePassengers, validateFut
 import { logger } from '../utils/logger';
 import { formatCoordinates } from '../utils/gpsLocation';
 import { reverseGeocode } from '../utils/reverseGeocoding';
-import { renderCustomFieldInput, validateCustomFieldValue, parseCustomFieldValue } from '../utils/customFields';
+import { renderCustomFieldInput, validateCustomFieldValue, parseCustomFieldValue } from '../utils/customFields.tsx';
 import './TripForm.css';
 
 const client = generateClient<Schema>();
