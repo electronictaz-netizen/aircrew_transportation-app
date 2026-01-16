@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import TripForm from './TripForm';
 import LocationManagement from './LocationManagement';
 import FilterCategoryManagement from './FilterCategoryManagement';
+import CustomFieldManagement from './CustomFieldManagement';
 import CompanyManagement from './CompanyManagement';
 import TripList from './TripList';
 import TripCalendar from './TripCalendar';
@@ -31,6 +32,7 @@ function ManagementDashboard() {
   const [showTripForm, setShowTripForm] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
+  const [showCustomFieldManagement, setShowCustomFieldManagement] = useState(false);
   const [showCompanyManagement, setShowCompanyManagement] = useState(false);
   const [showDriverReports, setShowDriverReports] = useState(false);
   const [showTripReports, setShowTripReports] = useState(false);
@@ -1188,6 +1190,12 @@ function ManagementDashboard() {
           </button>
           <button
             className="btn btn-secondary"
+            onClick={() => setShowCustomFieldManagement(true)}
+          >
+            Custom Fields
+          </button>
+          <button
+            className="btn btn-secondary"
             onClick={() => setShowCompanyManagement(true)}
           >
             Company Settings
@@ -1274,6 +1282,12 @@ function ManagementDashboard() {
             // Refresh filters if needed
             window.location.reload();
           }}
+        />
+      )}
+
+      {showCustomFieldManagement && (
+        <CustomFieldManagement
+          onClose={() => setShowCustomFieldManagement(false)}
         />
       )}
 

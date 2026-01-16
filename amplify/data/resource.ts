@@ -15,6 +15,8 @@ const schema = a.schema({
       drivers: a.hasMany('Driver', 'companyId'),
       locations: a.hasMany('Location', 'companyId'),
       filterCategories: a.hasMany('FilterCategory', 'companyId'),
+      customFields: a.hasMany('CustomField', 'companyId'),
+      reportConfigurations: a.hasMany('ReportConfiguration', 'companyId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update']),
@@ -46,6 +48,7 @@ const schema = a.schema({
       payRatePerTrip: a.float(), // Driver pay per completed trip (optional)
       payRatePerHour: a.float(), // Driver pay per hour (optional)
       trips: a.hasMany('Trip', 'driverId'),
+      customFieldValues: a.hasMany('CustomFieldValue', 'driverId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -84,6 +87,7 @@ const schema = a.schema({
       tripRate: a.float(), // Rate charged to customer/airline for this trip
       driverPayAmount: a.float(), // Amount paid to driver for this trip (calculated or fixed)
       notes: a.string(), // Additional notes for billing/payroll verification
+      customFieldValues: a.hasMany('CustomFieldValue', 'tripId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -111,6 +115,60 @@ const schema = a.schema({
       field: a.string().required(), // Field to filter on: 'locationCategory', 'pickupLocation', 'dropoffLocation', etc.
       values: a.string(), // JSON array of filter values/options
       displayOrder: a.integer().default(0), // Order for display
+      isActive: a.boolean().default(true),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  CustomField: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      entityType: a.enum(['Trip', 'Driver']), // Which entity this field applies to
+      name: a.string().required(), // Field name (e.g., 'Vehicle Type', 'Special Instructions')
+      label: a.string().required(), // Display label
+      fieldType: a.enum(['text', 'number', 'date', 'datetime', 'boolean', 'select', 'textarea']),
+      options: a.string(), // JSON array of options for 'select' type fields
+      isRequired: a.boolean().default(false),
+      displayOrder: a.integer().default(0), // Order for display in forms
+      isActive: a.boolean().default(true),
+      defaultValue: a.string(), // Default value as string (will be parsed based on fieldType)
+      customFieldValues: a.hasMany('CustomFieldValue', 'customFieldId'),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  CustomFieldValue: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      customFieldId: a.id().required(),
+      customField: a.belongsTo('CustomField', 'customFieldId'),
+      entityType: a.enum(['Trip', 'Driver']),
+      tripId: a.id(), // Reference to Trip if entityType is 'Trip'
+      trip: a.belongsTo('Trip', 'tripId'),
+      driverId: a.id(), // Reference to Driver if entityType is 'Driver'
+      driver: a.belongsTo('Driver', 'driverId'),
+      value: a.string().required(), // Stored as string, parsed based on field type
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  ReportConfiguration: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      name: a.string().required(), // Report name (e.g., 'Monthly Driver Summary', 'Customer Invoice Report')
+      reportType: a.enum(['Driver', 'Trip']), // Which entity type this report is for
+      fields: a.string().required(), // JSON array of field names to include
+      grouping: a.string(), // JSON array of grouping fields
+      filters: a.string(), // JSON array of filter configurations
+      sortBy: a.string(), // Field to sort by
+      sortOrder: a.string().default('asc'), // 'asc' or 'desc'
+      displayOrder: a.integer().default(0),
       isActive: a.boolean().default(true),
     })
     .authorization((allow) => [

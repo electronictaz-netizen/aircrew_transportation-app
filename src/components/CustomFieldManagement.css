@@ -1,0 +1,89 @@
+.custom-field-management {
+  max-width: 900px;
+  max-height: 90vh;
+}
+
+.entity-type-selector {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.entity-type-selector label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.entity-type-selector select {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.field-actions {
+  margin-bottom: 1.5rem;
+}
+
+.custom-field-form {
+  background-color: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 2rem;
+}
+
+.custom-fields-list h4 {
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.custom-fields-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.custom-fields-table th {
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  font-size: 0.875rem;
+}
+
+.custom-fields-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.custom-fields-table tr:hover {
+  background-color: #f9fafb;
+}
+
+.status-active {
+  color: #065f46;
+  font-weight: 500;
+}
+
+.status-inactive {
+  color: #991b1b;
+  font-weight: 500;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+}
