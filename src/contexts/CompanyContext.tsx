@@ -3,6 +3,7 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useAdminAccess, isSystemAdmin } from '../utils/adminAccess';
+import { updateAppIcons } from '../utils/dynamicIcons';
 
 interface CompanyContextType {
   company: Schema['Company']['type'] | null;
@@ -48,6 +49,8 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         });
         if (selectedCompany) {
           setCompany(selectedCompany);
+          // Update app icons with company logo
+          updateAppIcons(selectedCompany.logoUrl || null, selectedCompany.displayName || selectedCompany.name);
           setLoading(false);
           return;
         }
@@ -120,8 +123,12 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
         if (companyData && companyData.isActive) {
           setCompany(companyData);
+          // Update app icons with company logo
+          updateAppIcons(companyData.logoUrl || null, companyData.displayName || companyData.name);
         } else {
           setCompany(null);
+          // Reset to default icons
+          updateAppIcons(null);
         }
       } else {
         // No company found - try to create default GLS company or assign user to it
@@ -142,6 +149,8 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
             if (companyData) {
               console.log('✅ Successfully loaded company after creation:', companyData.name);
               setCompany(companyData);
+              // Update app icons with company logo
+              updateAppIcons(companyData.logoUrl || null, companyData.displayName || companyData.name);
             } else {
               console.error('❌ Company data not found after creating CompanyUser');
             }
