@@ -4,6 +4,9 @@ import { addDays, addWeeks, addMonths, isBefore, parseISO } from 'date-fns';
 
 const client = generateClient<Schema>();
 
+// Lock to prevent concurrent execution
+let isGeneratingRecurringTrips = false;
+
 interface RecurringJobConfig {
   tripData: any;
   isRecurring: boolean;
@@ -16,22 +19,31 @@ interface RecurringJobConfig {
  * Generate recurring trips based on the pattern
  */
 export async function generateRecurringTrips(config: RecurringJobConfig): Promise<{ parentId: string; childCount: number } | void> {
-  console.log('=== generateRecurringTrips START ===');
-  console.log('Config received:', {
-    isRecurring: config.isRecurring,
-    recurringPattern: config.recurringPattern,
-    recurringEndDate: config.recurringEndDate,
-    tripDataKeys: Object.keys(config.tripData || {}),
-  });
+  // Prevent concurrent execution
+  if (isGeneratingRecurringTrips) {
+    console.warn('⚠️ generateRecurringTrips already in progress, ignoring duplicate call');
+    return;
+  }
   
-  if (!config.isRecurring || !config.recurringPattern || !config.recurringEndDate) {
-    console.error('❌ Missing required recurring job parameters:', {
+  isGeneratingRecurringTrips = true;
+  
+  try {
+    console.log('=== generateRecurringTrips START ===');
+    console.log('Config received:', {
       isRecurring: config.isRecurring,
       recurringPattern: config.recurringPattern,
       recurringEndDate: config.recurringEndDate,
+      tripDataKeys: Object.keys(config.tripData || {}),
     });
-    return; // Return void if parameters missing
-  }
+    
+    if (!config.isRecurring || !config.recurringPattern || !config.recurringEndDate) {
+      console.error('❌ Missing required recurring job parameters:', {
+        isRecurring: config.isRecurring,
+        recurringPattern: config.recurringPattern,
+        recurringEndDate: config.recurringEndDate,
+      });
+      return; // Return void if parameters missing
+    }
 
   const { tripData, recurringPattern, recurringEndDate } = config;
   const startDate = parseISO(tripData.pickupDate);
@@ -65,9 +77,14 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   });
 
   // Check for duplicate parent trip before creating
+  // Also check for trips that are recurring parents (isRecurring = true) OR have the same flight/date
   const parentDate = new Date(tripData.pickupDate);
   const parentDateStart = new Date(parentDate.getFullYear(), parentDate.getMonth(), parentDate.getDate());
-  const parentFlightNumber = tripData.flightNumber.trim().toUpperCase();
+  const parentFlightNumber = tripData.flightNumber?.trim().toUpperCase();
+  
+  if (!parentFlightNumber) {
+    throw new Error('Flight number is required for recurring trips');
+  }
   
   const filter: any = {};
   if (config.companyId) {
@@ -76,6 +93,8 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   const { data: existingTrips } = await client.models.Trip.list({
     filter: Object.keys(filter).length > 0 ? filter : undefined
   });
+  
+  // Check for duplicates: same flight number on the same day (whether recurring or not)
   const duplicateParent = existingTrips?.find((existing: Schema['Trip']['type']) => {
     if (!existing.pickupDate || !existing.flightNumber) return false;
     
@@ -89,7 +108,7 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   });
   
   if (duplicateParent) {
-    console.error(`❌ Cannot create recurring trip: Duplicate trip with flight ${parentFlightNumber} already exists on ${parentDateStart.toLocaleDateString()} (ID: ${duplicateParent.id})`);
+    console.error(`❌ Cannot create recurring trip: Duplicate trip with flight ${parentFlightNumber} already exists on ${parentDateStart.toLocaleDateString()} (ID: ${duplicateParent.id}, isRecurring: ${duplicateParent.isRecurring})`);
     throw new Error(`A trip with flight number "${parentFlightNumber}" already exists on ${parentDateStart.toLocaleDateString()}. Please use a different flight number or date.`);
   }
 
@@ -277,13 +296,16 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
     throw new Error(`Failed to create any child trips. ${errorCount} errors occurred.`);
   }
   
-  console.log('=== generateRecurringTrips COMPLETE ===');
-  
-  // Return result for tracking
-  return {
-    parentId: parentTripId,
-    childCount: createdCount,
-  };
+    console.log('=== generateRecurringTrips COMPLETE ===');
+    
+    // Return result for tracking
+    return {
+      parentId: parentTripId,
+      childCount: createdCount,
+    };
+  } finally {
+    isGeneratingRecurringTrips = false;
+  }
 }
 
 /**

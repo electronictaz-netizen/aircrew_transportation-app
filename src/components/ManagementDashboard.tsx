@@ -210,12 +210,21 @@ function ManagementDashboard() {
     }
   };
 
+  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
+
   const handleCreateTrip = async (tripData: any) => {
     if (!companyId) {
       alert('Company not found. Please contact support.');
       return;
     }
 
+    // Prevent double submission
+    if (isCreatingTrip) {
+      console.warn('Trip creation already in progress, ignoring duplicate request');
+      return;
+    }
+
+    setIsCreatingTrip(true);
     try {
       console.log('Creating trip with data:', tripData);
       
@@ -445,6 +454,8 @@ function ManagementDashboard() {
       }
       
       alert(errorMessage);
+    } finally {
+      setIsCreatingTrip(false);
     }
   };
 
