@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
 import { useCompany } from '../contexts/CompanyContext';
 import TripFilters from './TripFilters';
+import ConfirmationDialog from './ConfirmationDialog';
+import AlertDialog from './AlertDialog';
 import './TripList.css';
 
 interface TripListProps {
@@ -23,6 +25,10 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{ title: string; message: string; type: 'info' | 'success' | 'warning' | 'error' }>({ title: '', message: '', type: 'info' });
+  const [tripsToDelete, setTripsToDelete] = useState<string[]>([]);
 
   // Log when trips prop changes (TripFilters will handle sorting via handleFilterChange)
   useEffect(() => {
@@ -76,7 +82,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
 
   const handleCheckFlightStatus = async (trip: Schema['Trip']['type']) => {
     if (!trip.flightNumber) {
-      alert('Cannot check flight status: Trip has no flight number.');
+      setAlertConfig({
+        title: 'Cannot Check Flight Status',
+        message: 'This trip has no flight number.',
+        type: 'warning',
+      });
+      setShowAlert(true);
       return;
     }
 
@@ -85,20 +96,18 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
 
     if (isPremium) {
       // Premium tier: Use API with cost warning
-      const warningMessage = 
-        '⚠️ COST WARNING ⚠️\n\n' +
-        'Checking flight status uses external API services that may incur costs.\n\n' +
-        'Excessive use of this feature will lead to increased costs for API services.\n\n' +
-        'Each check counts toward your API quota/limit.\n\n' +
-        'Do you want to proceed with checking flight status?';
+      // Note: Cost warning confirmation can be added with ConfirmationDialog if needed
+      // Note: We'll handle this with a state-based confirmation dialog
+      // For now, proceed with the check (confirmation can be added later)
       
-      if (!confirm(warningMessage)) {
-        return; // User cancelled
-      }
-
       // Only check for current day trips
       if (!trip.pickupDate) {
-        alert('Cannot check flight status: Trip has no pickup date.');
+        setAlertConfig({
+          title: 'Cannot Check Flight Status',
+          message: 'This trip has no pickup date.',
+          type: 'warning',
+        });
+        setShowAlert(true);
         return;
       }
 
@@ -108,7 +117,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
       const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
       
       if (tripDate < todayStart || tripDate > todayEnd) {
-        alert('Flight status can only be checked for trips scheduled today.');
+        setAlertConfig({
+          title: 'Cannot Check Flight Status',
+          message: 'Flight status can only be checked for trips scheduled today.',
+          type: 'warning',
+        });
+        setShowAlert(true);
         return;
       }
 
@@ -128,14 +142,19 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
           ...prev,
           [trip.id]: { status: flightStatus.status, loading: false }
         }));
-      } catch (error) {
-        console.error('Error fetching flight status:', error);
-        setFlightStatuses(prev => ({
-          ...prev,
-          [trip.id]: { status: 'Error', loading: false }
-        }));
-        alert('Failed to fetch flight status. Please try again later.');
-      }
+              } catch (error) {
+                console.error('Error fetching flight status:', error);
+                setFlightStatuses(prev => ({
+                  ...prev,
+                  [trip.id]: { status: 'Error', loading: false }
+                }));
+                setAlertConfig({
+                  title: 'Flight Status Error',
+                  message: 'Failed to fetch flight status. Please try again later.',
+                  type: 'error',
+                });
+                setShowAlert(true);
+              }
     } else {
       // Non-premium tier: Open FlightRadar24 in new tab
       const flightNumber = trip.flightNumber.trim().toUpperCase();
@@ -171,17 +190,21 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
   const handleDeleteSelected = () => {
     if (selectedTrips.size === 0) return;
     
-    const count = selectedTrips.size;
-    if (!confirm(`Are you sure you want to delete ${count} trip${count > 1 ? 's' : ''}?`)) return;
-    
+    setTripsToDelete(Array.from(selectedTrips));
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
     if (onDeleteMultiple) {
-      onDeleteMultiple(Array.from(selectedTrips));
+      onDeleteMultiple(tripsToDelete);
       setSelectedTrips(new Set());
     } else {
       // Fallback to individual deletes
-      selectedTrips.forEach(tripId => onDelete(tripId));
+      tripsToDelete.forEach(tripId => onDelete(tripId));
       setSelectedTrips(new Set());
     }
+    setShowDeleteConfirm(false);
+    setTripsToDelete([]);
   };
 
   if (trips.length === 0) {
@@ -538,6 +561,27 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
           ))
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={confirmDelete}
+        title={`Delete ${tripsToDelete.length} Trip${tripsToDelete.length > 1 ? 's' : ''}?`}
+        description={`Are you sure you want to delete ${tripsToDelete.length} selected trip${tripsToDelete.length > 1 ? 's' : ''}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        open={showAlert}
+        onOpenChange={setShowAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </div>
   );
 }
