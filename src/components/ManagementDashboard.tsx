@@ -6,17 +6,34 @@ import { useCompany } from '../contexts/CompanyContext';
 import { useAdminAccess } from '../utils/adminAccess';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { Suspense, lazy } from 'react';
 import TripForm from './TripForm';
-import LocationManagement from './LocationManagement';
-import FilterCategoryManagement from './FilterCategoryManagement';
-import CustomFieldManagement from './CustomFieldManagement';
-import ReportConfigurationManagement from './ReportConfigurationManagement';
-import CompanyManagement from './CompanyManagement';
-import TripList from './TripList';
-import TripCalendar from './TripCalendar';
 import DriverSelectionDialog from './DriverSelectionDialog';
-import DriverReports from './DriverReports';
-import TripReports from './TripReports';
+
+// Lazy load heavy components for code splitting
+const LocationManagement = lazy(() => import('./LocationManagement'));
+const FilterCategoryManagement = lazy(() => import('./FilterCategoryManagement'));
+const CustomFieldManagement = lazy(() => import('./CustomFieldManagement'));
+const ReportConfigurationManagement = lazy(() => import('./ReportConfigurationManagement'));
+const CompanyManagement = lazy(() => import('./CompanyManagement'));
+const TripList = lazy(() => import('./TripList'));
+const TripCalendar = lazy(() => import('./TripCalendar'));
+const DriverReports = lazy(() => import('./DriverReports'));
+const TripReports = lazy(() => import('./TripReports'));
+
+// Loading component for Suspense fallback
+const ComponentLoadingFallback = (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: '2rem',
+    fontSize: '1rem',
+    color: '#6b7280'
+  }}>
+    Loading...
+  </div>
+);
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
@@ -1515,94 +1532,98 @@ function ManagementDashboard() {
       </AnimatePresence>
 
 
-      {showLocationManagement && (
-        <LocationManagement
-          locations={locations}
-          onClose={() => setShowLocationManagement(false)}
-          onUpdate={handleLocationUpdate}
-        />
-      )}
+      <Suspense fallback={ComponentLoadingFallback}>
+        {showLocationManagement && (
+          <LocationManagement
+            locations={locations}
+            onClose={() => setShowLocationManagement(false)}
+            onUpdate={handleLocationUpdate}
+          />
+        )}
 
-      {showFilterCategoryManagement && (
-        <FilterCategoryManagement
-          locations={locations}
-          trips={trips}
-          onClose={() => setShowFilterCategoryManagement(false)}
-          onUpdate={() => {
-            // Refresh filters if needed
-            window.location.reload();
-          }}
-        />
-      )}
+        {showFilterCategoryManagement && (
+          <FilterCategoryManagement
+            locations={locations}
+            trips={trips}
+            onClose={() => setShowFilterCategoryManagement(false)}
+            onUpdate={() => {
+              // Refresh filters if needed
+              window.location.reload();
+            }}
+          />
+        )}
 
-      {showCustomFieldManagement && (
-        <CustomFieldManagement
-          onClose={() => setShowCustomFieldManagement(false)}
-        />
-      )}
+        {showCustomFieldManagement && (
+          <CustomFieldManagement
+            onClose={() => setShowCustomFieldManagement(false)}
+          />
+        )}
 
-      {showReportConfigurationManagement && (
-        <ReportConfigurationManagement
-          onClose={() => setShowReportConfigurationManagement(false)}
-        />
-      )}
+        {showReportConfigurationManagement && (
+          <ReportConfigurationManagement
+            onClose={() => setShowReportConfigurationManagement(false)}
+          />
+        )}
 
-      {showCompanyManagement && (
-        <CompanyManagement
-          onClose={() => setShowCompanyManagement(false)}
-          onUpdate={() => {
-            // Refresh company context
-            window.location.reload();
-          }}
-        />
-      )}
+        {showCompanyManagement && (
+          <CompanyManagement
+            onClose={() => setShowCompanyManagement(false)}
+            onUpdate={() => {
+              // Refresh company context
+              window.location.reload();
+            }}
+          />
+        )}
 
-      {showDriverReports && (
-        <DriverReports
-          trips={trips}
-          drivers={drivers}
-          onClose={() => setShowDriverReports(false)}
-          onEdit={(trip) => {
-            setEditingTrip(trip);
-            setShowTripForm(true);
-            setShowDriverReports(false);
-          }}
-        />
-      )}
+        {showDriverReports && (
+          <DriverReports
+            trips={trips}
+            drivers={drivers}
+            onClose={() => setShowDriverReports(false)}
+            onEdit={(trip) => {
+              setEditingTrip(trip);
+              setShowTripForm(true);
+              setShowDriverReports(false);
+            }}
+          />
+        )}
 
-      {showTripReports && (
-        <TripReports
-          trips={trips}
-          drivers={drivers}
-          locations={locations}
-          onClose={() => setShowTripReports(false)}
-          onEdit={(trip) => {
-            setEditingTrip(trip);
-            setShowTripForm(true);
-            setShowTripReports(false);
-          }}
-        />
-      )}
+        {showTripReports && (
+          <TripReports
+            trips={trips}
+            drivers={drivers}
+            locations={locations}
+            onClose={() => setShowTripReports(false)}
+            onEdit={(trip) => {
+              setEditingTrip(trip);
+              setShowTripForm(true);
+              setShowTripReports(false);
+            }}
+          />
+        )}
+      </Suspense>
 
-      {viewMode === 'list' ? (
-        <TripList
-          trips={trips}
-          drivers={drivers}
-          locations={locations}
-          onEdit={handleEditTrip}
-          onDelete={handleDeleteTrip}
-          onDeleteMultiple={handleDeleteMultipleTrips}
-          onAssignMultiple={handleAssignMultipleTrips}
-          onUpdate={loadTrips}
-        />
-      ) : (
-        <TripCalendar
-          trips={trips}
-          onDateClick={(date, dateTrips) => {
-            setSelectedDateTrips({ date, trips: dateTrips });
-          }}
-        />
-      )}
+      <Suspense fallback={ComponentLoadingFallback}>
+        {viewMode === 'list' ? (
+          <TripList
+            trips={trips}
+            drivers={drivers}
+            locations={locations}
+            onEdit={handleEditTrip}
+            onDelete={handleDeleteTrip}
+            onDeleteMultiple={handleDeleteMultipleTrips}
+            onAssignMultiple={handleAssignMultipleTrips}
+            onUpdate={loadTrips}
+          />
+        ) : (
+          <TripCalendar
+            trips={trips}
+            onDateClick={(date, dateTrips) => {
+              setSelectedDateTrips({ date, trips: dateTrips });
+            }}
+          />
+        )}
+      </Suspense>
 
       {/* Date Trips Modal */}
       {selectedDateTrips && (
