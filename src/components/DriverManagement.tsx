@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
@@ -8,6 +10,26 @@ import { validateName, validateEmail, validatePhone, sanitizeString, MAX_LENGTHS
 import { logger } from '../utils/logger';
 import { Link } from 'react-router-dom';
 import { renderCustomFieldInput, validateCustomFieldValue } from '../utils/customFields.tsx';
+import { driverFormSchema, type DriverFormData } from '../schemas/driverSchema';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from './ui/form';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { Checkbox } from './ui/checkbox';
 import './DriverManagement.css';
 
 const client = generateClient<Schema>();
@@ -21,18 +43,22 @@ function DriverManagement() {
   const [showForm, setShowForm] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Schema['Driver']['type'] | null>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<Set<string>>(new Set());
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    licenseNumber: '',
-    isActive: true,
-    notificationPreference: 'email' as 'email' | 'both',
-    payRatePerTrip: '',
-    payRatePerHour: '',
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formLoading, setFormLoading] = useState(false);
+  
+  // Initialize form with React Hook Form
+  const form = useForm<DriverFormData>({
+    resolver: zodResolver(driverFormSchema) as any,
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      licenseNumber: '',
+      isActive: true,
+      notificationPreference: 'email',
+      payRatePerTrip: '',
+      payRatePerHour: '',
+    },
+  });
   
   // Custom fields state
   const [customFields, setCustomFields] = useState<Array<Schema['CustomField']['type']>>([]);
@@ -181,73 +207,46 @@ function DriverManagement() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmitForm = async (values: DriverFormData) => {
     if (!companyId) {
       showError('Company not found. Please contact support.');
       return;
     }
 
-    // Validate inputs
-    const newErrors: Record<string, string> = {};
-    
-    const nameValidation = validateName(formData.name);
-    if (!nameValidation.isValid) {
-      newErrors.name = nameValidation.error || 'Invalid name';
-    }
-    
-    if (formData.email) {
-      const emailValidation = validateEmail(formData.email);
-      if (!emailValidation.isValid) {
-        newErrors.email = emailValidation.error || 'Invalid email';
-      }
-    }
-    
-    if (formData.phone) {
-      const phoneValidation = validatePhone(formData.phone);
-      if (!phoneValidation.isValid) {
-        newErrors.phone = phoneValidation.error || 'Invalid phone number';
-      }
-    }
-    
-    if (formData.licenseNumber && formData.licenseNumber.length > MAX_LENGTHS.LICENSE_NUMBER) {
-      newErrors.licenseNumber = `License number must be no more than ${MAX_LENGTHS.LICENSE_NUMBER} characters`;
-    }
-    
     // Validate custom fields
+    const customFieldErrors: Record<string, string> = {};
     customFields.forEach((field) => {
       const value = customFieldValues[field.id] || '';
       const validation = validateCustomFieldValue(field, value);
       if (!validation.isValid) {
-        newErrors[`custom_${field.id}`] = validation.error || '';
+        customFieldErrors[`custom_${field.id}`] = validation.error || '';
       }
     });
     
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      showError('Please fix the errors in the form');
+    if (Object.keys(customFieldErrors).length > 0) {
+      Object.entries(customFieldErrors).forEach(([key, error]) => {
+        showError(`${key}: ${error}`);
+      });
       return;
     }
     
-    setErrors({});
     setFormLoading(true);
 
     try {
       // Sanitize inputs
-      const nameValidation = validateName(formData.name);
-      const emailValidation = formData.email ? validateEmail(formData.email) : { isValid: true, sanitized: '' };
-      const phoneValidation = formData.phone ? validatePhone(formData.phone) : { isValid: true, sanitized: '' };
+      const nameValidation = validateName(values.name);
+      const emailValidation = values.email ? validateEmail(values.email) : { isValid: true, sanitized: '' };
+      const phoneValidation = values.phone ? validatePhone(values.phone) : { isValid: true, sanitized: '' };
       
       const driverData: any = {
         name: nameValidation.sanitized,
         email: emailValidation.sanitized || undefined,
         phone: phoneValidation.sanitized || undefined,
-        licenseNumber: sanitizeString(formData.licenseNumber, MAX_LENGTHS.LICENSE_NUMBER) || undefined,
-        isActive: formData.isActive,
-        notificationPreference: formData.notificationPreference,
-        payRatePerTrip: formData.payRatePerTrip ? parseFloat(formData.payRatePerTrip) : undefined,
-        payRatePerHour: formData.payRatePerHour ? parseFloat(formData.payRatePerHour) : undefined,
+        licenseNumber: sanitizeString(values.licenseNumber || '', MAX_LENGTHS.LICENSE_NUMBER) || undefined,
+        isActive: values.isActive,
+        notificationPreference: values.notificationPreference,
+        payRatePerTrip: values.payRatePerTrip ? parseFloat(values.payRatePerTrip) : undefined,
+        payRatePerHour: values.payRatePerHour ? parseFloat(values.payRatePerHour) : undefined,
         customFieldValues: customFieldValues,
       };
       
@@ -288,7 +287,7 @@ function DriverManagement() {
 
   const handleEdit = (driver: Schema['Driver']['type']) => {
     setEditingDriver(driver);
-    setFormData({
+    form.reset({
       name: driver.name,
       email: driver.email || '',
       phone: driver.phone || '',
@@ -380,7 +379,7 @@ function DriverManagement() {
   };
 
   const resetForm = () => {
-    setFormData({
+    form.reset({
       name: '',
       email: '',
       phone: '',
@@ -392,6 +391,7 @@ function DriverManagement() {
     });
     setEditingDriver(null);
     setShowForm(false);
+    setCustomFieldValues({});
   };
 
   if (loading) {
@@ -428,182 +428,216 @@ function DriverManagement() {
       </div>
 
       {showForm && (
-          <form onSubmit={handleSubmit} className="driver-form">
-            <div className="form-group">
-              <label htmlFor="name">Name *</label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => {
-                  setFormData({ ...formData, name: e.target.value });
-                  if (errors.name) setErrors({ ...errors, name: '' });
-                }}
-                required
-                maxLength={MAX_LENGTHS.NAME}
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? 'name-error' : undefined}
-              />
-              {errors.name && <span id="name-error" className="error-message" role="alert">{errors.name}</span>}
-            </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmitForm)} className="driver-form space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name *</FormLabel>
+                  <FormControl>
+                    <Input
+                      maxLength={MAX_LENGTHS.NAME}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                value={formData.email}
-                onChange={(e) => {
-                  setFormData({ ...formData, email: e.target.value });
-                  if (errors.email) setErrors({ ...errors, email: '' });
-                }}
-                maxLength={MAX_LENGTHS.EMAIL}
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? 'email-error' : undefined}
-              />
-              {errors.email && <span id="email-error" className="error-message" role="alert">{errors.email}</span>}
-            </div>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      maxLength={MAX_LENGTHS.EMAIL}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="form-group">
-              <label htmlFor="phone">Phone</label>
-              <input
-                type="tel"
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => {
-                  setFormData({ ...formData, phone: e.target.value });
-                  if (errors.phone) setErrors({ ...errors, phone: '' });
-                }}
-                maxLength={MAX_LENGTHS.PHONE}
-                aria-invalid={!!errors.phone}
-                aria-describedby={errors.phone ? 'phone-error' : undefined}
-              />
-              {errors.phone && <span id="phone-error" className="error-message" role="alert">{errors.phone}</span>}
-            </div>
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      maxLength={MAX_LENGTHS.PHONE}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="form-group">
-              <label htmlFor="licenseNumber">License Number</label>
-              <input
-                type="text"
-                id="licenseNumber"
-                value={formData.licenseNumber}
-                onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="licenseNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>License Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="form-group">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                />
-                Active
-              </label>
-            </div>
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Active</FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
 
-            <div className="form-group">
-              <label htmlFor="notificationPreference">Notification Preference</label>
-              <select
-                id="notificationPreference"
-                value={formData.notificationPreference}
-                onChange={(e) => setFormData({ ...formData, notificationPreference: e.target.value as 'email' | 'both' })}
-              >
-                <option value="email">Email Only</option>
-                <option value="both">Both (Email & In-App)</option>
-              </select>
-              <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
-                {formData.notificationPreference === 'email' && 'Driver will receive email notifications'}
-                {formData.notificationPreference === 'both' && 'Driver will receive email and in-app notifications'}
-              </small>
-            </div>
+            <FormField
+              control={form.control}
+              name="notificationPreference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notification Preference</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="email">Email Only</SelectItem>
+                      <SelectItem value="both">Both (Email & In-App)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {form.watch('notificationPreference') === 'email' && 'Driver will receive email notifications'}
+                    {form.watch('notificationPreference') === 'both' && 'Driver will receive email and in-app notifications'}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="form-group" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
-              <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>Pay Rate Information (for Payroll)</h4>
+            <div className="mt-6 pt-6 border-t">
+              <h4 className="mb-4 text-base font-semibold text-foreground">Pay Rate Information (for Payroll)</h4>
               
-              <div className="form-group">
-                <label htmlFor="payRatePerTrip">Pay Rate Per Trip</label>
-                <input
-                  type="number"
-                  id="payRatePerTrip"
-                  name="payRatePerTrip"
-                  value={formData.payRatePerTrip}
-                  onChange={(e) => setFormData({ ...formData, payRatePerTrip: e.target.value })}
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  style={{ width: '100%' }}
-                />
-                <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
-                  Fixed amount paid per completed trip (optional, for payroll calculation)
-                </small>
-              </div>
+              <FormField
+                control={form.control}
+                name="payRatePerTrip"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pay Rate Per Trip</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Fixed amount paid per completed trip (optional, for payroll calculation)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <div className="form-group">
-                <label htmlFor="payRatePerHour">Pay Rate Per Hour</label>
-                <input
-                  type="number"
-                  id="payRatePerHour"
-                  name="payRatePerHour"
-                  value={formData.payRatePerHour}
-                  onChange={(e) => setFormData({ ...formData, payRatePerHour: e.target.value })}
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  style={{ width: '100%' }}
-                />
-                <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280' }}>
-                  Hourly rate for calculating pay based on trip duration (optional, for payroll calculation)
-                </small>
-              </div>
+              <FormField
+                control={form.control}
+                name="payRatePerHour"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pay Rate Per Hour</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Hourly rate for calculating pay based on trip duration (optional, for payroll calculation)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              <small style={{ display: 'block', marginTop: '0.5rem', color: '#6b7280', fontStyle: 'italic' }}>
+              <FormDescription className="mt-2 italic">
                 Note: If both rates are set, per-trip rate takes precedence. If neither is set, pay will be calculated from trip-specific driver pay amount.
-              </small>
+              </FormDescription>
             </div>
 
             {/* Custom Fields */}
             {customFields.length > 0 && (
-              <div className="form-group" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
-                <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>Additional Information</h4>
+              <div className="mt-6 pt-6 border-t">
+                <h4 className="mb-4 text-base font-semibold text-foreground">Additional Information</h4>
                 {loadingCustomFields ? (
-                  <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Loading custom fields...</p>
+                  <p className="text-muted-foreground italic">Loading custom fields...</p>
                 ) : (
-                  customFields.map((field) =>
-                    renderCustomFieldInput(
-                      field,
-                      customFieldValues[field.id] || '',
-                      (value) => {
-                        setCustomFieldValues((prev) => ({
-                          ...prev,
-                          [field.id]: value,
-                        }));
-                        // Clear error when user starts typing
-                        if (errors[`custom_${field.id}`]) {
-                          setErrors((prev) => {
-                            const newErrors = { ...prev };
-                            delete newErrors[`custom_${field.id}`];
-                            return newErrors;
-                          });
-                        }
-                      },
-                      errors[`custom_${field.id}`]
-                    )
-                  )
+                  customFields.map((field) => {
+                    const fieldError = form.formState.errors[`custom_${field.id}` as keyof typeof form.formState.errors];
+                    return (
+                      <div key={field.id} className="mb-4">
+                        {renderCustomFieldInput(
+                          field,
+                          customFieldValues[field.id] || '',
+                          (value) => {
+                            setCustomFieldValues((prev) => ({
+                              ...prev,
+                              [field.id]: value,
+                            }));
+                          },
+                          fieldError ? String(fieldError) : undefined
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
 
-            <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={formLoading}>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button type="button" variant="outline" onClick={resetForm} disabled={formLoading}>
                 Cancel
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={formLoading} aria-busy={formLoading}>
+              </Button>
+              <Button type="submit" disabled={formLoading}>
                 {formLoading ? 'Saving...' : editingDriver ? 'Update' : 'Create'} Driver
-              </button>
+              </Button>
             </div>
           </form>
-        )}
+        </Form>
+      )}
 
         <div className="drivers-list">
           <h4>Drivers ({drivers.length})</h4>
