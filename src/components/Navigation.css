@@ -59,18 +59,18 @@
 }
 
 .sign-out-btn {
-  background-color: #ef4444;
-  color: white;
-  border: none;
+  background-color: transparent !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
   font-size: 0.875rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .sign-out-btn:hover {
-  background-color: #dc2626;
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: white !important;
 }
 
 /* Mobile Responsive Styles */

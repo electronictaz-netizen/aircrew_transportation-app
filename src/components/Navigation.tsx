@@ -62,7 +62,7 @@ function Navigation({ signOut, user }: NavigationProps) {
         </div>
         <div className="nav-user">
           <span>{user?.signInDetails?.loginId || user?.username}</span>
-          <Button onClick={handleSignOut} variant="outline" size="sm">
+          <Button onClick={handleSignOut} variant="outline" size="sm" className="sign-out-btn">
             Sign Out
           </Button>
         </div>
