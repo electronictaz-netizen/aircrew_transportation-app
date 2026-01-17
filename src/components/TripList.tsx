@@ -332,8 +332,11 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   </span>
                 ) : (
                   <button
-                    className="btn btn-small btn-secondary"
-                    onClick={() => handleCheckFlightStatus(trip)}
+                    className="btn btn-small btn-secondary flight-status-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCheckFlightStatus(trip);
+                    }}
                     title={company?.subscriptionTier === 'premium' 
                       ? "Check flight status (may incur API costs)" 
                       : "Open FlightRadar24 to check flight status"}

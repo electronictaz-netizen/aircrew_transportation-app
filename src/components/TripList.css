@@ -85,7 +85,33 @@
 /* Flight Status */
 .trips-table th:nth-child(6),
 .trips-table td:nth-child(6) {
-  width: 9%;
+  width: 10%;
+  min-width: 100px;
+}
+
+/* Flight Status button styling */
+.trips-table td:nth-child(6) {
+  padding: 0.5rem 0.375rem;
+}
+
+.trips-table td:nth-child(6) button,
+.trips-table td:nth-child(6) .flight-status-btn {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.625rem;
+  min-width: fit-content;
+  width: auto;
+  max-width: 100%;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.trips-table td:nth-child(6) .flight-status-badge {
+  display: inline-block;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Pickup Location */
