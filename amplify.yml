@@ -5,8 +5,9 @@ backend:
       commands:
         - npm install --legacy-peer-deps
         - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
-        # Optional: Check Lambda runtimes after deployment
-        # - npm run check-lambda || true
+        # Check Lambda runtimes after deployment (non-blocking)
+        - echo "Checking Lambda function runtimes..."
+        - npm run check-lambda || echo "Lambda runtime check completed (warnings may exist)"
 frontend:
   phases:
     preBuild:
