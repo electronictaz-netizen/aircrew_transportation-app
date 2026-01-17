@@ -33,7 +33,6 @@ import {
   SelectValue,
 } from './ui/select';
 import { Checkbox } from './ui/checkbox';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import './TripForm.css';
 
 const client = generateClient<Schema>();
@@ -74,7 +73,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
 
   // Initialize form with React Hook Form
   const form = useForm<TripFormData>({
-    resolver: zodResolver(tripFormSchema),
+    resolver: zodResolver(tripFormSchema) as any,
     defaultValues: {
       tripType: initialTripType,
       primaryLocationCategory: trip?.primaryLocationCategory || trip?.airport || '',
@@ -276,8 +275,8 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
         driverId: values.driverId || undefined,
         status: values.driverId ? 'Assigned' : 'Unassigned',
         isRecurring: values.isRecurring === true,
-        tripRate: values.tripRate,
-        driverPayAmount: values.driverPayAmount,
+        tripRate: values.tripRate ? parseFloat(values.tripRate) : undefined,
+        driverPayAmount: values.driverPayAmount ? parseFloat(values.driverPayAmount) : undefined,
         notes: values.notes?.trim() || undefined,
       };
 

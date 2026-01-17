@@ -29,16 +29,8 @@ export const tripFormSchema = z.object({
   isRecurring: z.boolean().default(false),
   recurringPattern: z.enum(['daily', 'weekly', 'monthly']).optional(),
   recurringEndDate: z.string().optional(),
-  tripRate: z.string().optional().transform((val) => {
-    if (!val || val === '') return undefined;
-    const num = parseFloat(val);
-    return isNaN(num) ? undefined : num;
-  }),
-  driverPayAmount: z.string().optional().transform((val) => {
-    if (!val || val === '') return undefined;
-    const num = parseFloat(val);
-    return isNaN(num) ? undefined : num;
-  }),
+  tripRate: z.string().optional(),
+  driverPayAmount: z.string().optional(),
   notes: z.string().max(1000, 'Notes must be no more than 1000 characters').optional(),
 }).refine(
   (data) => {
