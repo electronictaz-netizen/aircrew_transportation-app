@@ -39,7 +39,7 @@
     "react-router-dom": "^6.28.0",
     "tailwind-merge": "^3.4.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.3.5"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@aws-sdk/client-lambda": "^3.971.0",
