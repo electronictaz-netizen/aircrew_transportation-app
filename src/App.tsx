@@ -16,6 +16,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 
 import { PageSkeleton } from './components/ui/skeleton-loaders';
 import { SkipLinks } from './components/SkipLinks';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => <PageSkeleton />;
@@ -24,10 +25,11 @@ function App() {
   return (
     <Authenticator>
       {({ signOut, user }) => (
-        <CompanyProvider>
-          <div className="app">
-            <SkipLinks />
-            <Navigation signOut={signOut || (() => {})} user={user} />
+        <ThemeProvider>
+          <CompanyProvider>
+            <div className="app">
+              <SkipLinks />
+              <Navigation signOut={signOut || (() => {})} user={user} />
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/" element={<Navigate to="/management" replace />} />
@@ -45,9 +47,10 @@ function App() {
               </Routes>
             </Suspense>
             <InstallPrompt />
-            <Toaster />
-          </div>
-        </CompanyProvider>
+              <Toaster />
+            </div>
+          </CompanyProvider>
+        </ThemeProvider>
       )}
     </Authenticator>
   );

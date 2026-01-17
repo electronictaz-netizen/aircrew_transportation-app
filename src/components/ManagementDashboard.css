@@ -19,6 +19,10 @@
   margin: 0;
 }
 
+.dark .dashboard-header h2 {
+  color: hsl(var(--foreground));
+}
+
 .header-actions {
   display: flex;
   gap: 1rem;

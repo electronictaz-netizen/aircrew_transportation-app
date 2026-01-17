@@ -3,6 +3,7 @@ import { signOutWithCacheClear } from '../utils/cacheClear';
 import { useAdminAccess } from '../utils/adminAccess';
 import { useCompany } from '../contexts/CompanyContext';
 import { Button } from './ui/button';
+import { ThemeToggle } from './ThemeToggle';
 import './Navigation.css';
 
 interface NavigationProps {
@@ -68,6 +69,7 @@ function Navigation({ signOut, user }: NavigationProps) {
         </div>
         <div className="nav-user" aria-label="User menu">
           <span aria-label="Current user">{user?.signInDetails?.loginId || user?.username}</span>
+          <ThemeToggle />
           <Button 
             onClick={handleSignOut} 
             variant="outline" 
