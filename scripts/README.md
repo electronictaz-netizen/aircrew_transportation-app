@@ -2,7 +2,11 @@
 
 ## checkLambdaRuntimes.ts
 
-Checks all Lambda functions in your AWS account for deprecated Node.js 20.x runtime and identifies functions that need to be updated to Node.js 22.x.
+Checks all Lambda functions in your AWS account for deprecated Node.js 18.x and 20.x runtimes and identifies functions that need to be updated to Node.js 22.x.
+
+**Deprecated Runtimes:**
+- Node.js 18.x (end of support)
+- Node.js 20.x (end of life)
 
 ### Prerequisites
 
@@ -46,9 +50,10 @@ npx ts-node scripts/checkLambdaRuntimes.ts --update
 ### What it does
 
 1. Scans multiple AWS regions for Lambda functions
-2. Identifies functions using Node.js 20.x runtime
-3. Highlights Amplify-related functions
-4. Optionally updates functions to Node.js 22.x (with `--update` flag)
+2. Identifies functions using Node.js 18.x (end of support) or 20.x (end of life) runtimes
+3. Groups functions by deprecated runtime for easy identification
+4. Highlights Amplify-related functions
+5. Optionally updates functions to Node.js 22.x (with `--update` flag)
 
 ### Output
 

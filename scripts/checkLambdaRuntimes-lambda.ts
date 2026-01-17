@@ -15,7 +15,7 @@ import { LambdaClient, ListFunctionsCommand, UpdateFunctionConfigurationCommand 
 import type { Context, Handler } from 'aws-lambda';
 
 const TARGET_RUNTIME = 'nodejs22.x';
-const DEPRECATED_RUNTIMES = ['nodejs20.x', 'nodejs20'];
+const DEPRECATED_RUNTIMES = ['nodejs18.x', 'nodejs18', 'nodejs20.x', 'nodejs20'];
 
 interface FunctionInfo {
   functionName: string;

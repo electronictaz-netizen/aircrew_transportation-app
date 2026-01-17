@@ -27,7 +27,7 @@ interface FunctionInfo {
 }
 
 const TARGET_RUNTIME = 'nodejs22.x';
-const DEPRECATED_RUNTIMES = ['nodejs20.x', 'nodejs20'];
+const DEPRECATED_RUNTIMES = ['nodejs18.x', 'nodejs18', 'nodejs20.x', 'nodejs20'];
 const REGIONS = [
   'us-east-1',      // US East (N. Virginia)
   'us-east-2',      // US East (Ohio)
@@ -93,8 +93,11 @@ async function checkAllRegions(): Promise<FunctionInfo[]> {
   const allFunctions: FunctionInfo[] = [];
   
   console.log('🚀 Starting Lambda function runtime check...\n');
-  console.log(`Looking for functions using: ${DEPRECATED_RUNTIMES.join(', ')}`);
-  console.log(`Target runtime: ${TARGET_RUNTIME}\n`);
+  console.log(`⚠️  Looking for functions using deprecated runtimes: ${DEPRECATED_RUNTIMES.join(', ')}`);
+  console.log(`✅ Target runtime: ${TARGET_RUNTIME}\n`);
+  console.log('📋 This check covers:');
+  console.log('   - Node.js 18.x (end of support)');
+  console.log('   - Node.js 20.x (end of life)\n');
 
   // Check all regions in parallel
   const regionChecks = REGIONS.map(region => checkRegion(region));
@@ -163,12 +166,25 @@ async function main() {
   if (needsUpdate.length > 0) {
     console.log('\n⚠️  FUNCTIONS REQUIRING UPDATE:');
     console.log('-'.repeat(80));
-    needsUpdate.forEach(func => {
-      console.log(`\n  Function: ${func.functionName}`);
-      console.log(`  Region:   ${func.region}`);
-      console.log(`  Runtime:  ${func.runtime} → ${TARGET_RUNTIME}`);
-      console.log(`  Modified: ${func.lastModified}`);
+    
+    // Group by runtime for better visibility
+    const byRuntime = needsUpdate.reduce((acc, func) => {
+      const runtime = func.runtime;
+      if (!acc[runtime]) acc[runtime] = [];
+      acc[runtime].push(func);
+      return acc;
+    }, {} as Record<string, typeof needsUpdate>);
+    
+    Object.entries(byRuntime).forEach(([runtime, functions]) => {
+      const isEOL = runtime.includes('20') ? ' (END OF LIFE)' : runtime.includes('18') ? ' (END OF SUPPORT)' : '';
+      console.log(`\n  ${runtime}${isEOL}: ${functions.length} function(s)`);
+      functions.forEach(func => {
+        console.log(`    - ${func.functionName} (${func.region})`);
+        console.log(`      Modified: ${func.lastModified}`);
+      });
     });
+    
+    console.log(`\n  All functions should be updated to: ${TARGET_RUNTIME}`);
 
     if (shouldUpdate) {
       console.log('\n🔄 Updating functions...');
@@ -188,7 +204,7 @@ async function main() {
       console.log('   Please test your functions after updating.');
     }
   } else {
-    console.log('\n✅ No functions found using deprecated Node.js 20.x runtime!');
+    console.log('\n✅ No functions found using deprecated Node.js 18.x or 20.x runtimes!');
   }
 
   if (amplifyFunctions.length > 0 && needsUpdate.length === 0) {
