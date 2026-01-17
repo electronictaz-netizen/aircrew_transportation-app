@@ -3,6 +3,23 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Ensure theme toggle button text and icons are always visible */
+.theme-toggle,
+.theme-toggle *,
+.theme-toggle span,
+.theme-toggle svg,
+.theme-toggle .theme-label,
+.theme-toggle .theme-icon {
+  color: white !important;
+}
+
+.theme-toggle svg {
+  stroke: white !important;
 }
 
 .theme-icon {
