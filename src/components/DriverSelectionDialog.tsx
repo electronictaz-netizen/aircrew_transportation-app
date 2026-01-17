@@ -1,4 +1,14 @@
 import type { Schema } from '../../amplify/data/resource';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
 import './DriverSelectionDialog.css';
 
 interface DriverSelectionDialogProps {
@@ -28,8 +38,6 @@ function DriverSelectionDialog({
   description,
   allowUnassigned = true,
 }: DriverSelectionDialogProps) {
-  if (!isOpen) return null;
-
   const activeDrivers = drivers.filter(d => d.isActive !== false);
   
   const defaultTitle = tripCount !== undefined 
@@ -43,78 +51,73 @@ function DriverSelectionDialog({
   const defaultConfirmText = 'Assign';
 
   return (
-    <div className="dialog-overlay" onClick={onCancel}>
-      <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
-        <div className="dialog-header">
-          <h3>{title || defaultTitle}</h3>
-          <button className="dialog-close" onClick={onCancel} aria-label="Close">
-            ×
-          </button>
-        </div>
-        
-        <div className="dialog-body">
-          <p className="dialog-description">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{title || defaultTitle}</DialogTitle>
+          <DialogDescription>
             {description || defaultDescription}
-          </p>
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="driver-selection-list py-4">
+          {allowUnassigned && (
+            <label className="driver-option flex items-center space-x-2 p-3 rounded-md border cursor-pointer hover:bg-accent">
+              <input
+                type="radio"
+                name="driver"
+                value=""
+                checked={selectedDriverId === null}
+                onChange={() => onSelectDriver(null)}
+                className="cursor-pointer"
+              />
+              <span className="driver-option-label flex-1">
+                <strong className="block">Unassigned</strong>
+                <span className="driver-option-description text-sm text-muted-foreground">Remove assignment</span>
+              </span>
+            </label>
+          )}
           
-          <div className="driver-selection-list">
-            {allowUnassigned && (
-              <label className="driver-option">
+          {activeDrivers.length === 0 ? (
+            <p className="no-drivers text-sm text-muted-foreground py-4">No active drivers available. Please add drivers first.</p>
+          ) : (
+            activeDrivers.map((driver) => (
+              <label key={driver.id} className="driver-option flex items-center space-x-2 p-3 rounded-md border cursor-pointer hover:bg-accent">
                 <input
                   type="radio"
                   name="driver"
-                  value=""
-                  checked={selectedDriverId === null}
-                  onChange={() => onSelectDriver(null)}
+                  value={driver.id}
+                  checked={selectedDriverId === driver.id}
+                  onChange={() => onSelectDriver(driver.id)}
+                  className="cursor-pointer"
                 />
-                <span className="driver-option-label">
-                  <strong>Unassigned</strong>
-                  <span className="driver-option-description">Remove assignment</span>
+                <span className="driver-option-label flex-1">
+                  <strong className="block">{driver.name}</strong>
+                  <span className="driver-option-description text-sm text-muted-foreground">
+                    {driver.email && `📧 ${driver.email}`}
+                    {driver.email && driver.phone && ' • '}
+                    {driver.phone && `📱 ${driver.phone}`}
+                    {!driver.email && !driver.phone && 'No contact info'}
+                  </span>
                 </span>
               </label>
-            )}
-            
-            {activeDrivers.length === 0 ? (
-              <p className="no-drivers">No active drivers available. Please add drivers first.</p>
-            ) : (
-              activeDrivers.map((driver) => (
-                <label key={driver.id} className="driver-option">
-                  <input
-                    type="radio"
-                    name="driver"
-                    value={driver.id}
-                    checked={selectedDriverId === driver.id}
-                    onChange={() => onSelectDriver(driver.id)}
-                  />
-                  <span className="driver-option-label">
-                    <strong>{driver.name}</strong>
-                    <span className="driver-option-description">
-                      {driver.email && `📧 ${driver.email}`}
-                      {driver.email && driver.phone && ' • '}
-                      {driver.phone && `📱 ${driver.phone}`}
-                      {!driver.email && !driver.phone && 'No contact info'}
-                    </span>
-                  </span>
-                </label>
-              ))
-            )}
-          </div>
+            ))
+          )}
         </div>
         
-        <div className="dialog-footer">
-          <button className="btn btn-secondary" onClick={onCancel}>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            className="btn btn-primary"
+          </Button>
+          <Button
             onClick={onConfirm}
             disabled={selectedDriverId === null && activeDrivers.length > 0}
           >
             {confirmText || defaultConfirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
