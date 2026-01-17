@@ -6,6 +6,7 @@ import { CompanyProvider } from './contexts/CompanyContext';
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import Navigation from './components/Navigation';
 import InstallPrompt from './components/InstallPrompt';
+import { Toaster } from './components/ui/toaster';
 
 // Lazy load route components for code splitting
 const ManagementDashboard = lazy(() => import('./components/ManagementDashboard'));
@@ -51,6 +52,7 @@ function App() {
               </Routes>
             </Suspense>
             <InstallPrompt />
+            <Toaster />
           </div>
         </CompanyProvider>
       )}
