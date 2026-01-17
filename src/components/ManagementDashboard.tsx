@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
@@ -1304,8 +1305,15 @@ function ManagementDashboard() {
             >
               Data Management
             </button>
-            {openDropdown === 'data' && (
-              <div className="dropdown-menu">
+            <AnimatePresence>
+              {openDropdown === 'data' && (
+                <motion.div
+                  className="dropdown-menu"
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
                 <Link
                   to="/drivers"
                   className="dropdown-item"
@@ -1331,8 +1339,9 @@ function ManagementDashboard() {
                 >
                   Filter Categories
                 </button>
-              </div>
-            )}
+              </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Configuration Dropdown */}
@@ -1343,8 +1352,15 @@ function ManagementDashboard() {
             >
               Configuration
             </button>
-            {openDropdown === 'config' && (
-              <div className="dropdown-menu">
+            <AnimatePresence>
+              {openDropdown === 'config' && (
+                <motion.div
+                  className="dropdown-menu"
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
                 <button
                   className="dropdown-item"
                   onClick={() => {
@@ -1372,8 +1388,9 @@ function ManagementDashboard() {
                 >
                   Company Settings
                 </button>
-              </div>
-            )}
+              </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Reports Dropdown */}
@@ -1384,8 +1401,15 @@ function ManagementDashboard() {
             >
               Reports
             </button>
-            {openDropdown === 'reports' && (
-              <div className="dropdown-menu">
+            <AnimatePresence>
+              {openDropdown === 'reports' && (
+                <motion.div
+                  className="dropdown-menu"
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
                 <button
                   className="dropdown-item"
                   onClick={() => {
@@ -1406,8 +1430,9 @@ function ManagementDashboard() {
                 >
                   📋 Trip Reports
                 </button>
-              </div>
-            )}
+              </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Actions Dropdown */}
@@ -1418,8 +1443,15 @@ function ManagementDashboard() {
             >
               Actions
             </button>
-            {openDropdown === 'actions' && (
-              <div className="dropdown-menu">
+            <AnimatePresence>
+              {openDropdown === 'actions' && (
+                <motion.div
+                  className="dropdown-menu"
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
                 <button
                   className="dropdown-item"
                   onClick={() => {
@@ -1440,8 +1472,9 @@ function ManagementDashboard() {
                 >
                   Delete All Trips
                 </button>
-              </div>
-            )}
+              </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -1466,18 +1499,20 @@ function ManagementDashboard() {
         </div>
       </div>
 
-      {showTripForm && (
-        <TripForm
-          trip={editingTrip}
-          drivers={drivers}
-          locations={locations}
-          onSubmit={editingTrip ? (data) => handleUpdateTrip(editingTrip.id, data) : handleCreateTrip}
-          onCancel={() => {
-            setShowTripForm(false);
-            setEditingTrip(null);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showTripForm && (
+          <TripForm
+            trip={editingTrip}
+            drivers={drivers}
+            locations={locations}
+            onSubmit={editingTrip ? (data) => handleUpdateTrip(editingTrip.id, data) : handleCreateTrip}
+            onCancel={() => {
+              setShowTripForm(false);
+              setEditingTrip(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
 
       {showLocationManagement && (

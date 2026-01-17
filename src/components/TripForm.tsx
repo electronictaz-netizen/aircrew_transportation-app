@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { motion } from 'framer-motion';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
@@ -331,8 +332,22 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <motion.div
+      className="modal-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onCancel}
+    >
+      <motion.div
+        className="modal-content"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3>{trip ? 'Edit Trip' : 'Create New Trip'}</h3>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmitForm)} className="space-y-4">
@@ -861,9 +876,9 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
             </div>
           </form>
         </Form>
-      </div>
+      </motion.div>
       {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
-    </div>
+    </motion.div>
   );
 }
 

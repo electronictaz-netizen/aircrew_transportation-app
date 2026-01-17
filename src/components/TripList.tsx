@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import type { Schema } from '../../amplify/data/resource';
 import { format } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
@@ -392,10 +393,14 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
             No trips match the current filters. Try adjusting your search criteria.
           </div>
         ) : (
-          displayedTrips.map((trip) => (
-            <div
+          displayedTrips.map((trip, index) => (
+            <motion.div
               key={trip.id}
               className={`trip-card-mobile ${selectedTrips.has(trip.id) ? 'selected' : ''}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
               onClick={(e) => {
                 // Don't trigger if clicking on checkbox, button, or link
                 const target = e.target as HTMLElement;
@@ -542,7 +547,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   </span>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))
         )}
       </div>

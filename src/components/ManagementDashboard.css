@@ -62,6 +62,7 @@
   min-width: 200px;
   z-index: 1000;
   overflow: hidden;
+  /* Animation will be handled by Framer Motion */
 }
 
 .dropdown-item {
