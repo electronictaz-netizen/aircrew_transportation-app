@@ -7,6 +7,7 @@ import { useCompany } from '../contexts/CompanyContext';
 import TripFilters from './TripFilters';
 import ConfirmationDialog from './ConfirmationDialog';
 import AlertDialog from './AlertDialog';
+import EmptyState from './EmptyState';
 import './TripList.css';
 
 interface TripListProps {
@@ -209,9 +210,17 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
 
   if (trips.length === 0) {
     return (
-      <div className="empty-state">
-        <p>No trips scheduled. Create a new trip to get started.</p>
-      </div>
+      <EmptyState
+        icon="calendar"
+        title="No Trips Scheduled"
+        description="You don't have any trips scheduled yet. Create your first trip to get started managing aircrew transportation."
+        actionLabel="Create New Trip"
+        onAction={() => {
+          // This will be handled by the parent component
+          // For now, we'll trigger a custom event
+          window.dispatchEvent(new CustomEvent('create-trip'));
+        }}
+      />
     );
   }
 
@@ -415,9 +424,11 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
       {/* Mobile Card View */}
       <div className="trips-table-mobile">
         {displayedTrips.length === 0 ? (
-          <div className="no-results">
-            No trips match the current filters. Try adjusting your search criteria.
-          </div>
+          <EmptyState
+            icon="search"
+            title="No Trips Found"
+            description="No trips match your current filters. Try adjusting your search criteria or clear filters to see all trips."
+          />
         ) : (
           displayedTrips.map((trip, index) => (
             <motion.div

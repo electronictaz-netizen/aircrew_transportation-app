@@ -28,6 +28,7 @@ const ComponentLoadingFallback = <PageSkeleton />;
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
+import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
 import { sendDailyAssignmentEmailsToAllDrivers, sendDailyAssignmentToDriver } from '../utils/dailyAssignmentEmail';
 import './ManagementDashboard.css';
 
@@ -57,6 +58,17 @@ function ManagementDashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      ...COMMON_SHORTCUTS.NEW_TRIP,
+      action: () => {
+        setEditingTrip(null);
+        setShowTripForm(true);
+      },
+    },
+  ]);
 
   useEffect(() => {
     if (companyId) {

@@ -26,6 +26,7 @@ import {
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
+import LoadingButton from './LoadingButton';
 import {
   Select,
   SelectContent,
@@ -870,9 +871,14 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
               <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : trip ? 'Update' : 'Create'} Trip
-              </Button>
+              <LoadingButton 
+                type="submit" 
+                isLoading={loading}
+                loadingText="Saving..."
+                disabled={loading}
+              >
+                {trip ? 'Update' : 'Create'} Trip
+              </LoadingButton>
             </div>
           </form>
         </Form>
