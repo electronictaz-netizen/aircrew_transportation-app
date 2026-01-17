@@ -214,6 +214,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                     className="btn btn-primary"
                     onClick={() => onAssignMultiple(Array.from(selectedTrips))}
                     title={`Assign ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''} to driver`}
+                    aria-label={`Assign ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''} to driver`}
                   >
                     Assign ({selectedTrips.size})
                   </button>
@@ -223,6 +224,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                     className="btn btn-danger"
                     onClick={handleDeleteSelected}
                     title={`Delete ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''}`}
+                    aria-label={`Delete ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''}`}
                   >
                     Delete Selected ({selectedTrips.size})
                   </button>
@@ -233,7 +235,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
         )}
       </div>
       <div className="trips-table-wrapper">
-        <table className="trips-table">
+        <table className="trips-table" role="table" aria-label="Trips list">
         <thead>
           <tr>
             {onDeleteMultiple && (
@@ -243,6 +245,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   checked={selectedTrips.size === displayedTrips.length && displayedTrips.length > 0}
                   onChange={handleSelectAll}
                   title="Select all"
+                  aria-label="Select all trips"
                 />
               </th>
             )}
@@ -281,8 +284,20 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                 }
                 onEdit(trip);
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  const target = e.target as HTMLElement;
+                  if (target.tagName !== 'INPUT' && target.tagName !== 'BUTTON' && !target.closest('button') && !target.closest('a')) {
+                    onEdit(trip);
+                  }
+                }
+              }}
               style={{ cursor: 'pointer' }}
               title="Click to view/edit trip details"
+              role="row"
+              tabIndex={0}
+              aria-label={`Trip ${trip.flightNumber || 'N/A'} on ${trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM dd, yyyy') : 'N/A'}. Click to edit.`}
             >
               {onDeleteMultiple && (
                 <td onClick={(e) => e.stopPropagation()}>
@@ -365,11 +380,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   : '-'}
               </td>
               <td onClick={(e) => e.stopPropagation()}>
-                <div className="action-buttons">
+                <div className="action-buttons" role="group" aria-label="Trip actions">
                   <button
                     className="btn-icon btn-edit"
                     onClick={() => onEdit(trip)}
                     title="Edit"
+                    aria-label={`Edit trip ${trip.flightNumber || trip.id}`}
                   >
                     ✏️
                   </button>
@@ -377,6 +393,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                     className="btn-icon btn-delete"
                     onClick={() => onDelete(trip.id)}
                     title="Delete"
+                    aria-label={`Delete trip ${trip.flightNumber || trip.id}`}
                   >
                     🗑️
                   </button>
@@ -435,11 +452,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                     )}
                   </span>
                 </div>
-                <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
+                <div className="action-buttons" onClick={(e) => e.stopPropagation()} role="group" aria-label="Trip actions">
                   <button
                     className="btn-icon btn-edit"
                     onClick={() => onEdit(trip)}
                     title="Edit"
+                    aria-label={`Edit trip ${trip.flightNumber || trip.id}`}
                   >
                     ✏️
                   </button>
@@ -447,6 +465,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                     className="btn-icon btn-delete"
                     onClick={() => onDelete(trip.id)}
                     title="Delete"
+                    aria-label={`Delete trip ${trip.flightNumber || trip.id}`}
                   >
                     🗑️
                   </button>

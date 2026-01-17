@@ -15,6 +15,7 @@ const DriverManagement = lazy(() => import('./components/DriverManagement'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 
 import { PageSkeleton } from './components/ui/skeleton-loaders';
+import { SkipLinks } from './components/SkipLinks';
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => <PageSkeleton />;
@@ -25,6 +26,7 @@ function App() {
       {({ signOut, user }) => (
         <CompanyProvider>
           <div className="app">
+            <SkipLinks />
             <Navigation signOut={signOut || (() => {})} user={user} />
             <Suspense fallback={<LoadingFallback />}>
               <Routes>

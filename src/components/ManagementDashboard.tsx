@@ -1278,7 +1278,7 @@ function ManagementDashboard() {
   }
 
   return (
-    <div className="management-dashboard">
+    <div className="management-dashboard" id="main-content" role="main" aria-label="Management Dashboard">
       <div className="dashboard-header">
         <div>
           <h2>Management Dashboard</h2>
@@ -1308,6 +1308,7 @@ function ManagementDashboard() {
               setEditingTrip(null);
               setShowTripForm(true);
             }}
+            aria-label="Create new trip"
           >
             + New Trip
           </button>
@@ -1317,6 +1318,9 @@ function ManagementDashboard() {
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'data' ? null : 'data')}
+              aria-expanded={openDropdown === 'data'}
+              aria-haspopup="true"
+              aria-label="Data Management menu"
             >
               Data Management
             </button>
@@ -1364,6 +1368,9 @@ function ManagementDashboard() {
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'config' ? null : 'config')}
+              aria-expanded={openDropdown === 'config'}
+              aria-haspopup="true"
+              aria-label="Configuration menu"
             >
               Configuration
             </button>
@@ -1413,6 +1420,9 @@ function ManagementDashboard() {
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'reports' ? null : 'reports')}
+              aria-expanded={openDropdown === 'reports'}
+              aria-haspopup="true"
+              aria-label="Reports menu"
             >
               Reports
             </button>
@@ -1455,6 +1465,9 @@ function ManagementDashboard() {
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'actions' ? null : 'actions')}
+              aria-expanded={openDropdown === 'actions'}
+              aria-haspopup="true"
+              aria-label="Actions menu"
             >
               Actions
             </button>

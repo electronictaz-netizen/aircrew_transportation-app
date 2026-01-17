@@ -23,7 +23,7 @@ function Navigation({ signOut, user }: NavigationProps) {
   const displayName = company?.displayName || company?.name || 'Aircrew Transportation';
 
   return (
-    <nav className="navigation">
+    <nav className="navigation" id="navigation" aria-label="Main navigation">
       <div className="nav-container">
         <div className="nav-brand">
           <h1 className="nav-title">{displayName}</h1>
@@ -38,16 +38,20 @@ function Navigation({ signOut, user }: NavigationProps) {
             />
           )}
         </div>
-        <div className="nav-links">
+        <div className="nav-links" role="menubar">
           <Link
             to="/management"
             className={location.pathname === '/management' ? 'active' : ''}
+            role="menuitem"
+            aria-current={location.pathname === '/management' ? 'page' : undefined}
           >
             Management
           </Link>
           <Link
             to="/driver"
             className={location.pathname === '/driver' ? 'active' : ''}
+            role="menuitem"
+            aria-current={location.pathname === '/driver' ? 'page' : undefined}
           >
             Driver View
           </Link>
@@ -55,14 +59,22 @@ function Navigation({ signOut, user }: NavigationProps) {
             <Link
               to="/admin"
               className={location.pathname === '/admin' ? 'active' : ''}
+              role="menuitem"
+              aria-current={location.pathname === '/admin' ? 'page' : undefined}
             >
               Admin
             </Link>
           )}
         </div>
-        <div className="nav-user">
-          <span>{user?.signInDetails?.loginId || user?.username}</span>
-          <Button onClick={handleSignOut} variant="outline" size="sm" className="sign-out-btn">
+        <div className="nav-user" aria-label="User menu">
+          <span aria-label="Current user">{user?.signInDetails?.loginId || user?.username}</span>
+          <Button 
+            onClick={handleSignOut} 
+            variant="outline" 
+            size="sm" 
+            className="sign-out-btn"
+            aria-label="Sign out"
+          >
             Sign Out
           </Button>
         </div>
