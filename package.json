@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "check-lambda": "npx ts-node --esm scripts/checkLambdaRuntimes.ts",
+    "check-lambda:update": "npx ts-node --esm scripts/checkLambdaRuntimes.ts --update"
   },
   "dependencies": {
     "@aws-amplify/backend": "^1.0.0",
@@ -23,6 +25,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@aws-sdk/client-lambda": "^3.700.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/xlsx": "^0.0.35",
@@ -33,6 +36,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "sharp": "^0.34.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5.2.2",
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0"
