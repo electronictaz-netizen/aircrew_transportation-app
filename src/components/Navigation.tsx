@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { signOutWithCacheClear } from '../utils/cacheClear';
 import { useAdminAccess } from '../utils/adminAccess';
 import { useCompany } from '../contexts/CompanyContext';
+import { Button } from './ui/button';
 import './Navigation.css';
 
 interface NavigationProps {
@@ -61,9 +62,9 @@ function Navigation({ signOut, user }: NavigationProps) {
         </div>
         <div className="nav-user">
           <span>{user?.signInDetails?.loginId || user?.username}</span>
-          <button onClick={handleSignOut} className="sign-out-btn">
+          <Button onClick={handleSignOut} variant="outline" size="sm">
             Sign Out
-          </button>
+          </Button>
         </div>
       </div>
     </nav>
