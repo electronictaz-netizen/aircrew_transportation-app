@@ -447,7 +447,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                   <FormControl>
                     {pickupLocationMode === 'location' ? (
                       <Select
-                        value={field.value}
+                        value={field.value || undefined}
                         onValueChange={handlePickupLocationChange}
                       >
                         <SelectTrigger>
@@ -510,7 +510,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                   <FormControl>
                     {dropoffLocationMode === 'location' ? (
                       <Select
-                        value={field.value}
+                        value={field.value || undefined}
                         onValueChange={handleDropoffLocationChange}
                       >
                         <SelectTrigger>
@@ -574,8 +574,8 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                 <FormItem>
                   <FormLabel>Driver Assigned</FormLabel>
                   <Select
-                    value={field.value || ''}
-                    onValueChange={field.onChange}
+                    value={field.value || undefined}
+                    onValueChange={(value) => field.onChange(value || undefined)}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -583,7 +583,6 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
                       {drivers
                         .filter((d) => d.isActive)
                         .map((driver) => (
@@ -593,6 +592,9 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                         ))}
                     </SelectContent>
                   </Select>
+                  <FormDescription>
+                    {!field.value && 'Leave unselected to keep trip unassigned'}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
