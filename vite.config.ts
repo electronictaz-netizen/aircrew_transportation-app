@@ -11,6 +11,79 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       // Don't fail build if icons are missing (they'll be 404 but app will work)
       strategies: 'generateSW',
+      // Enable update notification
+      injectRegister: 'auto',
+      // Service worker configuration
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp}'],
+        // Clean up old caches
+        cleanupOutdatedCaches: true,
+        // Skip waiting for service worker updates (we'll handle this manually)
+        skipWaiting: false,
+        clientsClaim: false,
+        // Runtime caching strategies
+        runtimeCaching: [
+          // Static assets - cache first for performance
+          {
+            urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*\.(js|css|woff2|woff|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-assets-cache',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // API calls - network first with fallback
+          {
+            urlPattern: /^https:\/\/api\.aviationstack\.com\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'aviationstack-api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 // 1 hour
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              },
+              networkTimeoutSeconds: 10
+            }
+          },
+          // AWS Amplify API - network first
+          {
+            urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*\/graphql/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'amplify-graphql-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              },
+              networkTimeoutSeconds: 10
+            }
+          },
+          // AWS Amplify assets - stale while revalidate
+          {
+            urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'aws-amplify-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+              }
+            }
+          }
+        ]
+      },
       manifest: {
         name: 'Aircrew Transportation Management',
         short_name: 'Aircrew Transport',
@@ -21,6 +94,8 @@ export default defineConfig({
         orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
+        id: '/',
+        categories: ['business', 'productivity', 'transportation'],
         icons: [
           {
             src: '/icon-192x192.png',
@@ -60,44 +135,17 @@ export default defineConfig({
             url: '/driver',
             icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
           }
-        ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\.aviationstack\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'aviationstack-api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 // 1 hour
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'aws-amplify-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
-              }
-            }
-          }
-        ]
+        ],
+        // Add share target for future use
+        share_target: undefined,
+        // Add file handlers for future use
+        file_handlers: []
       },
       devOptions: {
         enabled: true,
         type: 'module',
         navigateFallback: 'index.html'
-      },
-      injectRegister: 'auto'
+      }
     })
   ],
   server: {

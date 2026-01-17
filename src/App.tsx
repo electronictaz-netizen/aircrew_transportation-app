@@ -6,6 +6,8 @@ import { CompanyProvider } from './contexts/CompanyContext';
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import Navigation from './components/Navigation';
 import InstallPrompt from './components/InstallPrompt';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
+import OfflineIndicator from './components/OfflineIndicator';
 import { Toaster } from './components/ui/toaster';
 
 // Lazy load route components for code splitting
@@ -47,7 +49,9 @@ function App() {
               </Routes>
             </Suspense>
             <InstallPrompt />
-              <Toaster />
+            <PWAUpdatePrompt />
+            <OfflineIndicator />
+            <Toaster />
             </div>
           </CompanyProvider>
         </ThemeProvider>

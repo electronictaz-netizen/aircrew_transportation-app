@@ -64,7 +64,7 @@
 }
 
 .sign-out-btn {
-  background-color: transparent !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
   color: white !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
   padding: 0.5rem 1rem;
@@ -72,9 +72,24 @@
   transition: all 0.2s;
 }
 
+/* Ensure button text is always visible - override any inherited styles */
+.sign-out-btn,
+.sign-out-btn *,
+.sign-out-btn span,
+.sign-out-btn::before,
+.sign-out-btn::after {
+  color: white !important;
+}
+
 .sign-out-btn:hover {
   background-color: #ef4444 !important;
   border-color: #ef4444 !important;
+  color: white !important;
+}
+
+.sign-out-btn:hover,
+.sign-out-btn:hover *,
+.sign-out-btn:hover span {
   color: white !important;
 }
 

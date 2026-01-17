@@ -1,0 +1,114 @@
+.pwa-update-prompt {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: 90%;
+  width: 100%;
+  max-width: 500px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.pwa-update-prompt-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.pwa-update-prompt-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pwa-update-prompt-text {
+  flex: 1;
+}
+
+.pwa-update-prompt-text strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--foreground);
+}
+
+.pwa-update-prompt-text p {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.pwa-update-prompt-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.pwa-update-btn {
+  white-space: nowrap;
+}
+
+.pwa-update-dismiss-btn {
+  white-space: nowrap;
+}
+
+/* Dark mode */
+.dark .pwa-update-prompt-content {
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1), 0 2px 4px -1px rgba(255, 255, 255, 0.06);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .pwa-update-prompt {
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    max-width: calc(100% - 1rem);
+    transform: none;
+  }
+
+  .pwa-update-prompt-content {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .pwa-update-prompt-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .pwa-update-btn,
+  .pwa-update-dismiss-btn {
+    width: 100%;
+  }
+}
