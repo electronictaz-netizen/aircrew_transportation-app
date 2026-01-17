@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { Label } from './ui/label';
 import './DriverSelectionDialog.css';
 
 interface DriverSelectionDialogProps {
