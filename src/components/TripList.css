@@ -146,8 +146,25 @@
 /* Passengers */
 .trips-table th:nth-child(9),
 .trips-table td:nth-child(9) {
-  width: 5%;
+  width: 7%;
   text-align: center;
+  white-space: nowrap;
+}
+
+.passengers-cell {
+  text-align: center;
+}
+
+.passengers-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.dark .passengers-count {
+  color: hsl(var(--primary));
 }
 
 /* Driver */

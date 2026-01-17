@@ -261,13 +261,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
             <th>Status</th>
             <th>Actual<br />Pickup</th>
             <th>Actual<br />Dropoff</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {displayedTrips.length === 0 ? (
             <tr>
-              <td colSpan={onDeleteMultiple ? 14 : 13} className="no-results">
+              <td colSpan={onDeleteMultiple ? 13 : 12} className="no-results">
                 No trips match the current filters. Try adjusting your search criteria.
               </td>
             </tr>
@@ -362,7 +361,11 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
               </td>
               <td>{trip.pickupLocation}</td>
               <td>{trip.dropoffLocation}</td>
-              <td>{trip.numberOfPassengers}</td>
+              <td className="passengers-cell">
+                <span className="passengers-count" title={`${trip.numberOfPassengers} passenger${trip.numberOfPassengers !== 1 ? 's' : ''}`}>
+                  👥 {trip.numberOfPassengers}
+                </span>
+              </td>
               <td>{getDriverName(trip.driverId)}</td>
               <td>
                 <span className={`status-badge ${getStatusBadgeClass(trip.status || 'Unassigned')}`}>
@@ -378,26 +381,6 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                 {trip.actualDropoffTime
                   ? format(new Date(trip.actualDropoffTime), 'HH:mm')
                   : '-'}
-              </td>
-              <td onClick={(e) => e.stopPropagation()}>
-                <div className="action-buttons" role="group" aria-label="Trip actions">
-                  <button
-                    className="btn-icon btn-edit"
-                    onClick={() => onEdit(trip)}
-                    title="Edit"
-                    aria-label={`Edit trip ${trip.flightNumber || trip.id}`}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="btn-icon btn-delete"
-                    onClick={() => onDelete(trip.id)}
-                    title="Delete"
-                    aria-label={`Delete trip ${trip.flightNumber || trip.id}`}
-                  >
-                    🗑️
-                  </button>
-                </div>
               </td>
             </tr>
             ))
@@ -451,24 +434,6 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                       </span>
                     )}
                   </span>
-                </div>
-                <div className="action-buttons" onClick={(e) => e.stopPropagation()} role="group" aria-label="Trip actions">
-                  <button
-                    className="btn-icon btn-edit"
-                    onClick={() => onEdit(trip)}
-                    title="Edit"
-                    aria-label={`Edit trip ${trip.flightNumber || trip.id}`}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="btn-icon btn-delete"
-                    onClick={() => onDelete(trip.id)}
-                    title="Delete"
-                    aria-label={`Delete trip ${trip.flightNumber || trip.id}`}
-                  >
-                    🗑️
-                  </button>
                 </div>
               </div>
               
@@ -535,7 +500,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
               
               <div className="trip-card-field">
                 <span className="trip-card-label">Passengers</span>
-                <span className="trip-card-value">{trip.numberOfPassengers}</span>
+                <span className="trip-card-value passengers-count">👥 {trip.numberOfPassengers}</span>
               </div>
               
               <div className="trip-card-field">
