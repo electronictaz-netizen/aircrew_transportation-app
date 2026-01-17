@@ -1302,7 +1302,7 @@ function ManagementDashboard() {
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'data' ? null : 'data')}
             >
-              Data Management ▼
+              Data Management
             </button>
             {openDropdown === 'data' && (
               <div className="dropdown-menu">
@@ -1341,7 +1341,7 @@ function ManagementDashboard() {
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'config' ? null : 'config')}
             >
-              Configuration ▼
+              Configuration
             </button>
             {openDropdown === 'config' && (
               <div className="dropdown-menu">
@@ -1382,7 +1382,7 @@ function ManagementDashboard() {
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'reports' ? null : 'reports')}
             >
-              Reports ▼
+              Reports
             </button>
             {openDropdown === 'reports' && (
               <div className="dropdown-menu">
@@ -1416,7 +1416,7 @@ function ManagementDashboard() {
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'actions' ? null : 'actions')}
             >
-              Actions ▼
+              Actions
             </button>
             {openDropdown === 'actions' && (
               <div className="dropdown-menu">
