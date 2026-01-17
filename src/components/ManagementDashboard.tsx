@@ -21,19 +21,10 @@ const TripCalendar = lazy(() => import('./TripCalendar'));
 const DriverReports = lazy(() => import('./DriverReports'));
 const TripReports = lazy(() => import('./TripReports'));
 
+import { PageSkeleton, TripListSkeleton, TripCalendarSkeleton } from './ui/skeleton-loaders';
+
 // Loading component for Suspense fallback
-const ComponentLoadingFallback = (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: '2rem',
-    fontSize: '1rem',
-    color: '#6b7280'
-  }}>
-    Loading...
-  </div>
-);
+const ComponentLoadingFallback = <PageSkeleton />;
 import { generateRecurringTrips, generateUpcomingRecurringTrips } from '../utils/recurringJobs';
 import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
@@ -1229,7 +1220,7 @@ function ManagementDashboard() {
   };
 
   if (companyLoading) {
-    return <div className="loading">Loading company data...</div>;
+    return <PageSkeleton />;
   }
 
   if (!companyId) {
@@ -1276,7 +1267,14 @@ function ManagementDashboard() {
   }
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="management-dashboard">
+        <div className="dashboard-header">
+          <h2>Management Dashboard</h2>
+        </div>
+        {viewMode === 'list' ? <TripListSkeleton /> : <TripCalendarSkeleton />}
+      </div>
+    );
   }
 
   return (

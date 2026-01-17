@@ -14,19 +14,10 @@ const DriverDashboard = lazy(() => import('./components/DriverDashboard'));
 const DriverManagement = lazy(() => import('./components/DriverManagement'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 
+import { PageSkeleton } from './components/ui/skeleton-loaders';
+
 // Loading component for Suspense fallback
-const LoadingFallback = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    minHeight: '50vh',
-    fontSize: '1.125rem',
-    color: '#6b7280'
-  }}>
-    Loading...
-  </div>
-);
+const LoadingFallback = () => <PageSkeleton />;
 
 function App() {
   return (
