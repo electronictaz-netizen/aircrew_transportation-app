@@ -8,7 +8,10 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "check-lambda": "npx ts-node --esm scripts/checkLambdaRuntimes.ts",
-    "check-lambda:update": "npx ts-node --esm scripts/checkLambdaRuntimes.ts --update"
+    "check-lambda:update": "npx ts-node --esm scripts/checkLambdaRuntimes.ts --update",
+    "check-deps": "npx ts-node --esm scripts/updateToLatest.ts",
+    "update-all": "npx ts-node --esm scripts/updateToLatest.ts",
+    "update-all:apply": "npx ts-node --esm scripts/updateToLatest.ts --apply"
   },
   "dependencies": {
     "@aws-amplify/backend": "^1.0.0",
