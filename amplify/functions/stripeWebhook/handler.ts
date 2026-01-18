@@ -4,11 +4,6 @@
  */
 
 import type { Handler } from 'aws-lambda';
-import { Amplify } from 'aws-amplify';
-import outputs from '../../../amplify_outputs.json';
-
-// Initialize Amplify
-Amplify.configure(outputs);
 
 interface StripeWebhookEvent {
   id: string;
@@ -62,14 +57,23 @@ async function mapPriceToTier(priceId: string): Promise<string> {
 }
 
 /**
+ * Configure Amplify and get data client
+ */
+async function getDataClient() {
+  const { generateClient } = await import('aws-amplify/data');
+  // In Lambda functions, Amplify is auto-configured by the backend
+  // No need to explicitly configure it
+  return generateClient<any>();
+}
+
+/**
  * Updates company subscription based on Stripe event
  */
 async function updateCompanySubscription(
   customerId: string,
   subscriptionData: any
 ): Promise<void> {
-  const { generateClient } = await import('aws-amplify/data');
-  const client = generateClient<any>();
+  const client = await getDataClient();
 
   try {
     // Find company by Stripe customer ID
@@ -199,8 +203,7 @@ export const handler: Handler = async (event) => {
           
           // Update subscription to past_due status
           if (invoice.subscription) {
-            const { generateClient } = await import('aws-amplify/data');
-            const client = generateClient<any>();
+            const client = await getDataClient();
             
             const { data: companies } = await client.models.Company.list({
               filter: { stripeCustomerId: { eq: customerId } },
