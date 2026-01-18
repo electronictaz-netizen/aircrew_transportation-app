@@ -92,14 +92,33 @@ export function SubscriptionManagement({ onClose }: SubscriptionManagementProps)
           return;
         }
 
-        showInfo('Redirecting to checkout...');
+        setLoading(true);
+        showInfo('Preparing checkout...');
+        
         const checkout = await createCheckoutSession(companyId, plan.stripePriceId);
         
         // Redirect to Stripe Checkout
-        window.location.href = checkout.checkoutUrl;
+        if (checkout && checkout.checkoutUrl) {
+          window.location.href = checkout.checkoutUrl;
+        } else {
+          throw new Error('Invalid checkout response received');
+        }
       } catch (error) {
         console.error('Error creating checkout session:', error);
-        showError('Failed to create checkout session. Please try again or contact support.');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Provide more helpful error messages
+        if (errorMessage.includes('not yet configured') || errorMessage.includes('not implemented')) {
+          showError(
+            'Checkout is currently being set up. ' +
+            'The Stripe integration is in progress. ' +
+            'Please contact support or check back later.'
+          );
+        } else {
+          showError(`Failed to create checkout session: ${errorMessage}`);
+        }
+      } finally {
+        setLoading(false);
       }
     }
   };
