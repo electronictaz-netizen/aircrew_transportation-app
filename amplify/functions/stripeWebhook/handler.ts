@@ -143,8 +143,59 @@ export const handler: Handler = async (event) => {
   console.log('Received Stripe webhook event:', JSON.stringify(event, null, 2));
 
   try {
-    // Parse webhook event
-    const webhookEvent: StripeWebhookEvent = JSON.parse(event.body || '{}');
+    // Verify webhook signature
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    if (!webhookSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET not configured');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Webhook secret not configured' }),
+      };
+    }
+
+    // Get signature header (handle different Lambda event formats)
+    const headers = event.headers || event.multiValueHeaders || {};
+    const stripeSignature = headers['stripe-signature'] || 
+                           headers['Stripe-Signature'] ||
+                           (Array.isArray(headers['stripe-signature']) ? headers['stripe-signature'][0] : null) ||
+                           (Array.isArray(headers['Stripe-Signature']) ? headers['Stripe-Signature'][0] : null);
+
+    if (!stripeSignature) {
+      console.error('Missing Stripe signature header');
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing signature' }),
+      };
+    }
+
+    // Verify signature using Stripe SDK
+    let webhookEvent: StripeWebhookEvent;
+    try {
+      const Stripe = (await import('stripe')).default;
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+        apiVersion: '2024-11-20.acacia',
+      });
+      
+      // Get raw body (Lambda Function URLs send body as string, API Gateway may encode it)
+      const rawBody = typeof event.body === 'string' ? event.body : JSON.stringify(event.body || {});
+      
+      // Construct event from raw body and signature
+      webhookEvent = stripeClient.webhooks.constructEvent(
+        rawBody,
+        typeof stripeSignature === 'string' ? stripeSignature : stripeSignature[0],
+        webhookSecret
+      ) as any;
+    } catch (error) {
+      console.error('Webhook signature verification failed:', error);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ 
+          error: 'Webhook signature verification failed',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      };
+    }
 
     // Handle different event types
     switch (webhookEvent.type) {

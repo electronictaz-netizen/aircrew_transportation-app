@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "aws-amplify": "^6.0.0"
+    "aws-amplify": "^6.0.0",
+    "stripe": "^14.0.0"
   }
 }
