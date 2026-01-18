@@ -37,13 +37,29 @@ This guide will help you set up Stripe for subscription management in the Aircre
 
 ### Frontend (Vite)
 
-Add to `.env.local` (create if it doesn't exist):
+**File Location**: Create `.env.local` in the **project root directory** (same level as `package.json`)
+
+```
+Aircrew transportation app/
+├── .env.local          ← CREATE THIS FILE HERE
+├── package.json
+├── vite.config.ts
+└── src/
+```
+
+**Contents** (add to `.env.local`):
 
 ```env
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 VITE_STRIPE_PRICE_ID_BASIC=price_...
 VITE_STRIPE_PRICE_ID_PREMIUM=price_...
 ```
+
+**Important**: 
+- The `.env.local` file must be in the **root directory** (same folder as `package.json`)
+- All Vite environment variables must start with `VITE_`
+- Restart your dev server after creating/updating `.env.local`
+- See `.env.example` for a template (already created)
 
 ### Backend (AWS Amplify)
 

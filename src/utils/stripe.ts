@@ -47,7 +47,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Location management',
       'Custom fields',
     ],
-    stripePriceId: process.env.VITE_STRIPE_PRICE_ID_BASIC || '', // Set in environment
+    stripePriceId: import.meta.env.VITE_STRIPE_PRICE_ID_BASIC || '', // Set in .env.local
   },
   {
     id: 'premium',
@@ -63,7 +63,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Priority support',
       'Advanced analytics',
     ],
-    stripePriceId: process.env.VITE_STRIPE_PRICE_ID_PREMIUM || '', // Set in environment
+    stripePriceId: import.meta.env.VITE_STRIPE_PRICE_ID_PREMIUM || '', // Set in .env.local
   },
 ];
 
