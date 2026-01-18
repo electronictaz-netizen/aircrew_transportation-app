@@ -15,6 +15,7 @@ import {
   getSubscriptionStatusColor,
   type SubscriptionPlan 
 } from '../utils/stripe';
+import { createCheckoutSession, createPortalSession } from '../utils/stripeCheckout';
 import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { Check, X, AlertCircle, CreditCard } from 'lucide-react';
@@ -85,14 +86,40 @@ export function SubscriptionManagement({ onClose }: SubscriptionManagementProps)
       }
     } else {
       // Paid plan - redirect to Stripe Checkout
-      // TODO: Implement Stripe Checkout integration
-      showInfo('Stripe Checkout integration coming soon. Please contact support to upgrade.');
+      try {
+        if (!plan.stripePriceId) {
+          showError('Stripe Price ID not configured for this plan. Please contact support.');
+          return;
+        }
+
+        showInfo('Redirecting to checkout...');
+        const checkout = await createCheckoutSession(companyId, plan.stripePriceId);
+        
+        // Redirect to Stripe Checkout
+        window.location.href = checkout.checkoutUrl;
+      } catch (error) {
+        console.error('Error creating checkout session:', error);
+        showError('Failed to create checkout session. Please try again or contact support.');
+      }
     }
   };
 
   const handleOpenCustomerPortal = async () => {
-    // TODO: Implement Stripe Customer Portal integration
-    showInfo('Stripe Customer Portal integration coming soon. Please contact support to manage your subscription.');
+    if (!companyId) {
+      showError('Company not found.');
+      return;
+    }
+
+    try {
+      showInfo('Opening customer portal...');
+      const portal = await createPortalSession(companyId);
+      
+      // Redirect to Stripe Customer Portal
+      window.location.href = portal.portalUrl;
+    } catch (error) {
+      console.error('Error creating portal session:', error);
+      showError('Failed to open customer portal. Please try again or contact support.');
+    }
   };
 
   if (loading) {

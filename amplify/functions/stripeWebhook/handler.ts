@@ -1,0 +1,240 @@
+/**
+ * Stripe Webhook Handler
+ * Processes Stripe webhook events and updates company subscriptions
+ */
+
+import type { Handler } from 'aws-lambda';
+import { Amplify } from 'aws-amplify';
+import outputs from '../../../amplify_outputs.json';
+
+// Initialize Amplify
+Amplify.configure(outputs);
+
+interface StripeWebhookEvent {
+  id: string;
+  type: string;
+  data: {
+    object: any;
+  };
+}
+
+interface CompanyUpdateData {
+  subscriptionStatus?: string;
+  subscriptionTier?: string;
+  stripeSubscriptionId?: string;
+  stripePriceId?: string;
+  subscriptionCurrentPeriodEnd?: Date;
+  subscriptionCancelAtPeriodEnd?: boolean;
+  subscriptionCanceledAt?: Date;
+}
+
+/**
+ * Maps Stripe subscription status to our internal status
+ */
+function mapSubscriptionStatus(stripeStatus: string): string {
+  const statusMap: Record<string, string> = {
+    active: 'active',
+    trialing: 'trialing',
+    past_due: 'past_due',
+    canceled: 'canceled',
+    unpaid: 'unpaid',
+    incomplete: 'past_due',
+    incomplete_expired: 'canceled',
+  };
+  return statusMap[stripeStatus] || stripeStatus;
+}
+
+/**
+ * Maps Stripe price ID to subscription tier
+ */
+async function mapPriceToTier(priceId: string): Promise<string> {
+  // This should match your Stripe Price IDs
+  // Update these with your actual Stripe Price IDs
+  const basicPriceId = process.env.STRIPE_PRICE_ID_BASIC || '';
+  const premiumPriceId = process.env.STRIPE_PRICE_ID_PREMIUM || '';
+
+  if (priceId === basicPriceId) {
+    return 'basic';
+  } else if (priceId === premiumPriceId) {
+    return 'premium';
+  }
+  return 'free';
+}
+
+/**
+ * Updates company subscription based on Stripe event
+ */
+async function updateCompanySubscription(
+  customerId: string,
+  subscriptionData: any
+): Promise<void> {
+  const { generateClient } = await import('aws-amplify/data');
+  const client = generateClient<any>();
+
+  try {
+    // Find company by Stripe customer ID
+    const { data: companies } = await client.models.Company.list({
+      filter: {
+        stripeCustomerId: { eq: customerId },
+      },
+    });
+
+    if (!companies || companies.length === 0) {
+      console.error(`No company found with Stripe customer ID: ${customerId}`);
+      return;
+    }
+
+    const company = companies[0];
+    const updateData: CompanyUpdateData = {};
+
+    // Update subscription status
+    if (subscriptionData.status) {
+      updateData.subscriptionStatus = mapSubscriptionStatus(subscriptionData.status);
+    }
+
+    // Update subscription tier based on price
+    if (subscriptionData.items?.data?.[0]?.price?.id) {
+      const priceId = subscriptionData.items.data[0].price.id;
+      updateData.stripePriceId = priceId;
+      updateData.subscriptionTier = await mapPriceToTier(priceId);
+    }
+
+    // Update subscription period
+    if (subscriptionData.current_period_end) {
+      updateData.subscriptionCurrentPeriodEnd = new Date(
+        subscriptionData.current_period_end * 1000
+      ).toISOString();
+    }
+
+    // Update cancellation flags
+    if (subscriptionData.cancel_at_period_end !== undefined) {
+      updateData.subscriptionCancelAtPeriodEnd = subscriptionData.cancel_at_period_end;
+    }
+
+    if (subscriptionData.canceled_at) {
+      updateData.subscriptionCanceledAt = new Date(
+        subscriptionData.canceled_at * 1000
+      ).toISOString();
+    }
+
+    // Update subscription ID if not set
+    if (subscriptionData.id && !company.stripeSubscriptionId) {
+      updateData.stripeSubscriptionId = subscriptionData.id;
+    }
+
+    // Update company
+    await client.models.Company.update({
+      id: company.id,
+      ...updateData,
+    });
+
+    console.log(`Updated company ${company.id} subscription:`, updateData);
+  } catch (error) {
+    console.error('Error updating company subscription:', error);
+    throw error;
+  }
+}
+
+export const handler: Handler = async (event) => {
+  console.log('Received Stripe webhook event:', JSON.stringify(event, null, 2));
+
+  try {
+    // Parse webhook event
+    const webhookEvent: StripeWebhookEvent = JSON.parse(event.body || '{}');
+
+    // Handle different event types
+    switch (webhookEvent.type) {
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        {
+          const subscription = webhookEvent.data.object;
+          const customerId = subscription.customer;
+          
+          await updateCompanySubscription(customerId, subscription);
+          
+          return {
+            statusCode: 200,
+            body: JSON.stringify({ received: true, type: webhookEvent.type }),
+          };
+        }
+
+      case 'customer.subscription.deleted':
+        {
+          const subscription = webhookEvent.data.object;
+          const customerId = subscription.customer;
+          
+          await updateCompanySubscription(customerId, {
+            ...subscription,
+            status: 'canceled',
+          });
+          
+          return {
+            statusCode: 200,
+            body: JSON.stringify({ received: true, type: webhookEvent.type }),
+          };
+        }
+
+      case 'invoice.payment_succeeded':
+        {
+          const invoice = webhookEvent.data.object;
+          const customerId = invoice.customer;
+          
+          // If this invoice is for a subscription, update it
+          if (invoice.subscription) {
+            // In a real implementation, you'd fetch the subscription from Stripe API
+            // For now, we'll just log it
+            console.log('Payment succeeded for subscription:', invoice.subscription);
+          }
+          
+          return {
+            statusCode: 200,
+            body: JSON.stringify({ received: true, type: webhookEvent.type }),
+          };
+        }
+
+      case 'invoice.payment_failed':
+        {
+          const invoice = webhookEvent.data.object;
+          const customerId = invoice.customer;
+          
+          // Update subscription to past_due status
+          if (invoice.subscription) {
+            const { generateClient } = await import('aws-amplify/data');
+            const client = generateClient<any>();
+            
+            const { data: companies } = await client.models.Company.list({
+              filter: { stripeCustomerId: { eq: customerId } },
+            });
+            
+            if (companies && companies.length > 0) {
+              await client.models.Company.update({
+                id: companies[0].id,
+                subscriptionStatus: 'past_due',
+              });
+            }
+          }
+          
+          return {
+            statusCode: 200,
+            body: JSON.stringify({ received: true, type: webhookEvent.type }),
+          };
+        }
+
+      default:
+        console.log(`Unhandled event type: ${webhookEvent.type}`);
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ received: true, type: 'unhandled' }),
+        };
+    }
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: 'Webhook processing failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    };
+  }
+};
