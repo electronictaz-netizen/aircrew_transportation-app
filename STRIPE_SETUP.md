@@ -72,12 +72,43 @@ STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_... (from Step 4)
 ```
 
-## Step 4: Set Up Webhook Endpoint
+## Step 4: Get Your Webhook URL
+
+After deploying your app, you need to get the webhook endpoint URL:
+
+### Option A: AWS Lambda Console (Easiest)
+
+1. Go to [AWS Lambda Console](https://console.aws.amazon.com/lambda/)
+2. Find your function: `[app-id]-[branch]-stripeWebhook-[hash]`
+3. Go to **Configuration** → **Function URL**
+4. If no URL exists, click **Create function URL**:
+   - **Auth type**: NONE (Stripe verifies signatures)
+   - **CORS**: Enable if needed
+5. Copy the **Function URL** (looks like: `https://[id].lambda-url.[region].on.aws/`)
+
+### Option B: AWS Amplify Console
+
+1. Go to AWS Amplify Console → Your App
+2. **Backend environments** → Your branch
+3. **Functions** → Find `stripeWebhook`
+4. View the function URL or endpoint
+
+### Option C: After First Deployment
+
+The URL will be available after you deploy:
+```bash
+npx ampx pipeline-deploy --branch main --app-id YOUR_APP_ID
+```
+
+Then check the function URL in AWS Lambda Console.
+
+**See `WEBHOOK_URL_GUIDE.md` for detailed instructions.**
+
+## Step 5: Configure Webhook in Stripe
 
 1. In Stripe Dashboard, go to **Developers** → **Webhooks**
 2. Click **Add endpoint**
-3. **Endpoint URL**: `https://your-amplify-app-url.com/stripe-webhook`
-   - You'll get this after deploying the webhook Lambda function
+3. **Endpoint URL**: Paste the Function URL from Step 4
 4. **Events to send**: Select these events:
    - `customer.subscription.created`
    - `customer.subscription.updated`
@@ -85,7 +116,7 @@ STRIPE_WEBHOOK_SECRET=whsec_... (from Step 4)
    - `invoice.payment_succeeded`
    - `invoice.payment_failed`
 5. Copy the **Signing secret** (starts with `whsec_`)
-   - Add this to AWS environment variables
+   - Add this to AWS Amplify Console → App Settings → Environment Variables as `STRIPE_WEBHOOK_SECRET`
 
 ## Step 5: Deploy Schema Changes
 
