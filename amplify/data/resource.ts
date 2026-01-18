@@ -8,8 +8,15 @@ const schema = a.schema({
       logoUrl: a.string(), // URL to company logo image
       subdomain: a.string(),
       isActive: a.boolean().default(true),
-      subscriptionTier: a.string().default('premium'),
-      subscriptionStatus: a.string().default('active'),
+      subscriptionTier: a.string().default('free'), // 'free', 'basic', 'premium'
+      subscriptionStatus: a.string().default('active'), // 'active', 'canceled', 'past_due', 'trialing'
+      // Stripe subscription fields
+      stripeCustomerId: a.string(), // Stripe customer ID
+      stripeSubscriptionId: a.string(), // Stripe subscription ID
+      stripePriceId: a.string(), // Current Stripe price ID
+      subscriptionCurrentPeriodEnd: a.datetime(), // When current period ends
+      subscriptionCancelAtPeriodEnd: a.boolean().default(false), // Whether subscription will cancel at period end
+      subscriptionCanceledAt: a.datetime(), // When subscription was canceled
       users: a.hasMany('CompanyUser', 'companyId'),
       trips: a.hasMany('Trip', 'companyId'),
       drivers: a.hasMany('Driver', 'companyId'),

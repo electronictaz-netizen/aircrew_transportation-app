@@ -1,0 +1,258 @@
+.subscription-management {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.subscription-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.subscription-header h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.subscription-loading,
+.subscription-error {
+  text-align: center;
+  padding: 3rem;
+  color: var(--muted-foreground);
+}
+
+.subscription-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.error-icon {
+  width: 3rem;
+  height: 3rem;
+  color: var(--destructive);
+}
+
+.subscription-current {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.subscription-current h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.subscription-current-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.plan-header h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-green {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-yellow {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-red {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-gray {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.plan-price {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.plan-interval {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
+.plan-period {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.cancel-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--destructive);
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.plan-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.icon-small {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--primary);
+}
+
+.subscription-actions {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.manage-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subscription-plans {
+  margin-top: 2rem;
+}
+
+.subscription-plans h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.plan-card {
+  padding: 1.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.2s;
+}
+
+.plan-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.plan-card.plan-current {
+  border-color: var(--primary);
+  background: var(--primary)/5;
+}
+
+.plan-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.plan-card-header h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.plan-description {
+  color: var(--muted-foreground);
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.plan-button {
+  width: 100%;
+  margin-top: auto;
+}
+
+/* Dark mode */
+.dark .status-green {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.dark .status-yellow {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+}
+
+.dark .status-red {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.dark .status-gray {
+  background-color: rgba(156, 163, 175, 0.2);
+  color: #d1d5db;
+}
+
+.dark .plan-card.plan-current {
+  background: var(--primary)/10;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .subscription-management {
+    padding: 1rem;
+  }
+
+  .subscription-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+}

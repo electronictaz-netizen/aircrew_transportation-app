@@ -1,0 +1,129 @@
+# Stripe Subscription Setup Guide
+
+This guide will help you set up Stripe for subscription management in the Aircrew Transportation app.
+
+## Prerequisites
+
+1. Stripe account (create one at https://stripe.com)
+2. AWS Amplify app deployed
+3. Access to AWS Console
+
+## Step 1: Create Stripe Products and Prices
+
+1. Log in to your Stripe Dashboard
+2. Go to **Products** → **Add Product**
+3. Create products for each subscription tier:
+
+### Basic Plan
+- **Name**: Basic Plan
+- **Price**: $29/month
+- **Billing period**: Monthly
+- **Copy the Price ID** (starts with `price_`)
+
+### Premium Plan
+- **Name**: Premium Plan
+- **Price**: $99/month
+- **Billing period**: Monthly
+- **Copy the Price ID** (starts with `price_`)
+
+## Step 2: Get Stripe API Keys
+
+1. In Stripe Dashboard, go to **Developers** → **API keys**
+2. Copy your **Publishable key** (starts with `pk_`)
+3. Copy your **Secret key** (starts with `sk_`)
+   - ⚠️ Keep this secret! Never commit it to version control
+
+## Step 3: Set Environment Variables
+
+### Frontend (Vite)
+
+Add to `.env.local` (create if it doesn't exist):
+
+```env
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+VITE_STRIPE_PRICE_ID_BASIC=price_...
+VITE_STRIPE_PRICE_ID_PREMIUM=price_...
+```
+
+### Backend (AWS Amplify)
+
+Add to AWS Amplify Console → App Settings → Environment Variables:
+
+```
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_... (from Step 4)
+```
+
+## Step 4: Set Up Webhook Endpoint
+
+1. In Stripe Dashboard, go to **Developers** → **Webhooks**
+2. Click **Add endpoint**
+3. **Endpoint URL**: `https://your-amplify-app-url.com/stripe-webhook`
+   - You'll get this after deploying the webhook Lambda function
+4. **Events to send**: Select these events:
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
+5. Copy the **Signing secret** (starts with `whsec_`)
+   - Add this to AWS environment variables
+
+## Step 5: Deploy Schema Changes
+
+After updating the schema with Stripe fields:
+
+```bash
+npx ampx sandbox
+```
+
+Or deploy to your branch:
+
+```bash
+npx ampx pipeline-deploy --branch main --app-id YOUR_APP_ID
+```
+
+## Step 6: Test Integration
+
+1. Create a test company with subscription tier "free"
+2. Try upgrading to Basic or Premium (will show placeholder message until Checkout is integrated)
+3. Monitor Stripe Dashboard for webhook events
+4. Check AWS CloudWatch logs for webhook processing
+
+## Next Steps
+
+1. **Implement Stripe Checkout**: Create checkout session Lambda function
+2. **Implement Customer Portal**: Create portal session Lambda function  
+3. **Test Webhooks**: Set up local webhook testing with Stripe CLI
+4. **Add Feature Gating**: Use subscription tier to control feature access
+
+## Stripe CLI for Local Testing
+
+Install Stripe CLI: https://stripe.com/docs/stripe-cli
+
+```bash
+# Login to Stripe
+stripe login
+
+# Forward webhooks to local server
+stripe listen --forward-to http://localhost:3000/stripe-webhook
+
+# Trigger test events
+stripe trigger customer.subscription.created
+```
+
+## Security Best Practices
+
+- ✅ Never commit Stripe keys to version control
+- ✅ Use environment variables for all keys
+- ✅ Verify webhook signatures
+- ✅ Use HTTPS for all API calls
+- ✅ Implement rate limiting on webhook endpoint
+- ✅ Use Stripe's test mode during development
+
+## Support Resources
+
+- [Stripe Documentation](https://stripe.com/docs)
+- [Stripe Billing Guide](https://stripe.com/docs/billing/subscriptions/overview)
+- [Stripe Webhooks Guide](https://stripe.com/docs/webhooks)
+- [AWS Amplify Functions](https://docs.amplify.aws/react/build-a-backend/functions/)
