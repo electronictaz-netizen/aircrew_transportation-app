@@ -37,6 +37,8 @@ This guide will help you set up Stripe for subscription management in the Aircre
 
 ### Frontend (Vite)
 
+**⚠️ IMPORTANT**: `.env.local` is for **PUBLIC** keys only! Never put secret keys here.
+
 **File Location**: Create `.env.local` in the **project root directory** (same level as `package.json`)
 
 ```
