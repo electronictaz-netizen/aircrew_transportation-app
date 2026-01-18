@@ -9,6 +9,11 @@ interface ImportMetaEnv {
   readonly VITE_FLIGHT_API_PROVIDERS?: string; // Comma-separated list: 'aviationstack,flightaware'
   readonly VITE_FLIGHT_API_KEY_AVIATIONSTACK?: string;
   readonly VITE_FLIGHT_API_KEY_FLIGHTAWARE?: string;
+  
+  // Stripe configuration
+  readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
+  readonly VITE_STRIPE_PRICE_ID_BASIC?: string;
+  readonly VITE_STRIPE_PRICE_ID_PREMIUM?: string;
 }
 
 interface ImportMeta {
