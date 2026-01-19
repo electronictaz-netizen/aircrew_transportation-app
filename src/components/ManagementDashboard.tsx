@@ -1424,6 +1424,15 @@ function ManagementDashboard() {
                 >
                   Company Settings
                 </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowSubscriptionManagement(true);
+                    setOpenDropdown(null);
+                  }}
+                >
+                  Subscription Management
+                </button>
               </motion.div>
               )}
             </AnimatePresence>
@@ -1597,6 +1606,12 @@ function ManagementDashboard() {
               // Refresh company context
               window.location.reload();
             }}
+          />
+        )}
+
+        {showSubscriptionManagement && (
+          <SubscriptionManagement
+            onClose={() => setShowSubscriptionManagement(false)}
           />
         )}
 
