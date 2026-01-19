@@ -39,6 +39,7 @@ const client = generateClient<Schema>();
 function ManagementDashboard() {
   const { companyId, loading: companyLoading, company, isAdminOverride } = useCompany();
   const hasAdminAccess = useAdminAccess();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
