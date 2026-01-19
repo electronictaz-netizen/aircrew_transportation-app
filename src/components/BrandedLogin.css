@@ -73,8 +73,9 @@
 .branded-login-tagline {
   font-size: 0.875rem;
   color: #6b7280;
-  margin: 0;
+  margin: 0.5rem 0 0 0;
   font-weight: 400;
+  display: block;
 }
 
 [data-amplify-authenticator][data-theme="dark"] .branded-login-tagline {
@@ -89,16 +90,56 @@
   text-align: center;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 [data-amplify-authenticator][data-theme="dark"] .branded-login-footer {
   border-top-color: #374151;
 }
 
-.branded-login-footer-text {
-  font-size: 0.75rem;
-  color: #9ca3af;
+.branded-login-footer-logo {
+  max-width: 60px;
+  max-height: 60px;
+  margin-bottom: 0.5rem;
+  object-fit: contain;
+}
+
+.branded-login-footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.branded-login-footer-provider {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
   margin: 0;
+}
+
+[data-amplify-authenticator][data-theme="dark"] .branded-login-footer-provider {
+  color: #e5e7eb;
+}
+
+.branded-login-footer-tagline {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 400;
+}
+
+[data-amplify-authenticator][data-theme="dark"] .branded-login-footer-tagline {
+  color: #9ca3af;
+}
+
+.branded-login-footer-text {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  margin: 0.25rem 0 0 0;
 }
 
 [data-amplify-authenticator][data-theme="dark"] .branded-login-footer-text {
