@@ -1,8 +1,6 @@
-import { useTheme } from '../contexts/ThemeContext';
 import './BrandedLogin.css';
 
 export function BrandedLoginHeader() {
-  const { theme } = useTheme();
   const companyName = import.meta.env.VITE_SERVICE_PROVIDER_NAME || 'Aircrew Transportation';
   const companyLogo = import.meta.env.VITE_SERVICE_PROVIDER_LOGO;
   const tagline = import.meta.env.VITE_SERVICE_PROVIDER_TAGLINE || 'Manage your transportation operations with ease';
