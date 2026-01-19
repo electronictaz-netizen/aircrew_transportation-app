@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { useCompany } from '../contexts/CompanyContext';
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
+import { hasFeatureAccess } from '../utils/stripe';
 import { validateFlightNumber, validateLocation, validatePassengers, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
 import { formatCoordinates } from '../utils/gpsLocation';
@@ -48,7 +49,7 @@ interface TripFormProps {
 }
 
 function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFormProps) {
-  const { companyId } = useCompany();
+  const { companyId, company } = useCompany();
   const { notification, showError, hideNotification } = useNotification();
   
   // Filter locations to ensure only locations for the current company are shown
@@ -768,7 +769,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
             </div>
 
             {/* Custom Fields */}
-            {customFields.length > 0 && (
+            {hasFeatureAccess(company?.subscriptionTier, 'custom_fields') && customFields.length > 0 && (
               <div className="mt-6 pt-6 border-t">
                 <h4 className="mb-4 text-base font-semibold text-foreground">Additional Information</h4>
                 {loadingCustomFields ? (

@@ -31,6 +31,7 @@ import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
 import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
 import { sendDailyAssignmentEmailsToAllDrivers, sendDailyAssignmentToDriver } from '../utils/dailyAssignmentEmail';
+import { hasFeatureAccess } from '../utils/stripe';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -239,6 +240,39 @@ function ManagementDashboard() {
     if (!companyId) {
       alert('Company not found. Please contact support.');
       return;
+    }
+
+    // Check trip limit for free tier
+    if (!hasFeatureAccess(company?.subscriptionTier, 'unlimited_trips')) {
+      // Free tier: Check monthly trip limit (10 trips per month)
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      
+      const { data: allTrips } = await client.models.Trip.list({
+        filter: { 
+          companyId: { eq: companyId! },
+          pickupDate: { 
+            between: [startOfMonth.toISOString(), endOfMonth.toISOString()] 
+          }
+        }
+      });
+      
+      const monthlyTripCount = allTrips?.length || 0;
+      const FREE_TIER_LIMIT = 10;
+      
+      if (monthlyTripCount >= FREE_TIER_LIMIT) {
+        const upgradeMessage = 
+          `⚠️ Trip Limit Reached\n\n` +
+          `You've reached the monthly limit of ${FREE_TIER_LIMIT} trips on the Free plan.\n\n` +
+          `To create unlimited trips, please upgrade to Basic or Premium.\n\n` +
+          `Would you like to upgrade now?`;
+        
+        if (confirm(upgradeMessage)) {
+          setShowSubscriptionManagement(true);
+        }
+        return;
+      }
     }
 
     // Prevent double submission
@@ -1357,11 +1391,25 @@ function ManagementDashboard() {
                 <button
                   className="dropdown-item"
                   onClick={() => {
+                    if (!hasFeatureAccess(company?.subscriptionTier, 'location_management')) {
+                      const upgradeMessage = 
+                        `⚠️ Feature Not Available\n\n` +
+                        `Location Management is available on Basic and Premium plans.\n\n` +
+                        `Would you like to upgrade?`;
+                      if (confirm(upgradeMessage)) {
+                        setShowSubscriptionManagement(true);
+                      }
+                      setOpenDropdown(null);
+                      return;
+                    }
                     setShowLocationManagement(true);
                     setOpenDropdown(null);
                   }}
+                  disabled={!hasFeatureAccess(company?.subscriptionTier, 'location_management')}
+                  title={!hasFeatureAccess(company?.subscriptionTier, 'location_management') ? 'Upgrade to Basic or Premium to access Location Management' : ''}
                 >
                   Manage Locations
+                  {!hasFeatureAccess(company?.subscriptionTier, 'location_management') && ' 🔒'}
                 </button>
                 <button
                   className="dropdown-item"
@@ -1400,20 +1448,48 @@ function ManagementDashboard() {
                 <button
                   className="dropdown-item"
                   onClick={() => {
+                    if (!hasFeatureAccess(company?.subscriptionTier, 'custom_fields')) {
+                      const upgradeMessage = 
+                        `⚠️ Feature Not Available\n\n` +
+                        `Custom Fields are available on Basic and Premium plans.\n\n` +
+                        `Would you like to upgrade?`;
+                      if (confirm(upgradeMessage)) {
+                        setShowSubscriptionManagement(true);
+                      }
+                      setOpenDropdown(null);
+                      return;
+                    }
                     setShowCustomFieldManagement(true);
                     setOpenDropdown(null);
                   }}
+                  disabled={!hasFeatureAccess(company?.subscriptionTier, 'custom_fields')}
+                  title={!hasFeatureAccess(company?.subscriptionTier, 'custom_fields') ? 'Upgrade to Basic or Premium to access Custom Fields' : ''}
                 >
                   Custom Fields
+                  {!hasFeatureAccess(company?.subscriptionTier, 'custom_fields') && ' 🔒'}
                 </button>
                 <button
                   className="dropdown-item"
                   onClick={() => {
+                    if (!hasFeatureAccess(company?.subscriptionTier, 'custom_report_config')) {
+                      const upgradeMessage = 
+                        `⚠️ Feature Not Available\n\n` +
+                        `Custom Report Configuration is available on Premium plan only.\n\n` +
+                        `Would you like to upgrade?`;
+                      if (confirm(upgradeMessage)) {
+                        setShowSubscriptionManagement(true);
+                      }
+                      setOpenDropdown(null);
+                      return;
+                    }
                     setShowReportConfigurationManagement(true);
                     setOpenDropdown(null);
                   }}
+                  disabled={!hasFeatureAccess(company?.subscriptionTier, 'custom_report_config')}
+                  title={!hasFeatureAccess(company?.subscriptionTier, 'custom_report_config') ? 'Upgrade to Premium to access Custom Report Configuration' : ''}
                 >
                   Report Configuration
+                  {!hasFeatureAccess(company?.subscriptionTier, 'custom_report_config') && ' 🔒'}
                 </button>
                 <button
                   className="dropdown-item"
