@@ -16,6 +16,7 @@ const FilterCategoryManagement = lazy(() => import('./FilterCategoryManagement')
 const CustomFieldManagement = lazy(() => import('./CustomFieldManagement'));
 const ReportConfigurationManagement = lazy(() => import('./ReportConfigurationManagement'));
 const CompanyManagement = lazy(() => import('./CompanyManagement'));
+const SubscriptionManagement = lazy(() => import('./SubscriptionManagement'));
 const TripList = lazy(() => import('./TripList'));
 const TripCalendar = lazy(() => import('./TripCalendar'));
 const DriverReports = lazy(() => import('./DriverReports'));
@@ -46,6 +47,7 @@ function ManagementDashboard() {
   const [showCustomFieldManagement, setShowCustomFieldManagement] = useState(false);
   const [showReportConfigurationManagement, setShowReportConfigurationManagement] = useState(false);
   const [showCompanyManagement, setShowCompanyManagement] = useState(false);
+  const [showSubscriptionManagement, setShowSubscriptionManagement] = useState(false);
   const [showDriverReports, setShowDriverReports] = useState(false);
   const [showTripReports, setShowTripReports] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Schema['Trip']['type'] | null>(null);
