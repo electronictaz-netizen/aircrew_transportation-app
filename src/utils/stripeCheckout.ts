@@ -71,6 +71,12 @@ export async function createCheckoutSession(
 
     // Get Lambda Function URL
     const functionUrl = getCheckoutUrl();
+    
+    // Log for debugging (only in development)
+    if (import.meta.env.DEV) {
+      console.log('[Stripe Checkout] Calling function URL:', functionUrl);
+      console.log('[Stripe Checkout] Request payload:', { companyId, priceId, successUrl, cancelUrl });
+    }
 
     const response = await fetch(functionUrl, {
       method: 'POST',
@@ -85,16 +91,36 @@ export async function createCheckoutSession(
       }),
     });
 
+    // Log response for debugging
+    if (import.meta.env.DEV) {
+      console.log('[Stripe Checkout] Response status:', response.status);
+      console.log('[Stripe Checkout] Response headers:', Object.fromEntries(response.headers.entries()));
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ 
-        error: `HTTP error! status: ${response.status}` 
-      }));
-      throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
+      let errorData;
+      try {
+        const text = await response.text();
+        errorData = text ? JSON.parse(text) : { error: `HTTP ${response.status}` };
+      } catch (parseError) {
+        errorData = { 
+          error: `HTTP error! status: ${response.status}`,
+          statusText: response.statusText
+        };
+      }
+      
+      console.error('[Stripe Checkout] Error response:', errorData);
+      throw new Error(
+        errorData.error || 
+        errorData.message || 
+        `HTTP error! status: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
     
     if (!data.checkoutUrl) {
+      console.error('[Stripe Checkout] Invalid response data:', data);
       throw new Error('Invalid response: missing checkoutUrl');
     }
 
@@ -105,12 +131,16 @@ export async function createCheckoutSession(
   } catch (error) {
     // Provide helpful error messages
     if (error instanceof TypeError && error.message.includes('fetch')) {
+      const functionUrl = import.meta.env.VITE_STRIPE_CHECKOUT_URL || 'not configured';
+      console.error('[Stripe Checkout] Network error:', error);
+      console.error('[Stripe Checkout] Function URL:', functionUrl);
       throw new Error(
         'Unable to connect to checkout service. ' +
-        'Please verify the Function URL is configured correctly.'
+        'Please verify the Function URL is configured correctly. ' +
+        `URL: ${functionUrl}`
       );
     }
-    console.error('Error creating checkout session:', error);
+    console.error('[Stripe Checkout] Error creating checkout session:', error);
     throw error;
   }
 }

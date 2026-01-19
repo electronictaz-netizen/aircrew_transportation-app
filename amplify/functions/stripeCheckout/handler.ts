@@ -108,11 +108,30 @@ async function createCheckoutSession(request: CheckoutRequest): Promise<Checkout
   };
 }
 
+// CORS headers helper
+const corsHeaders = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 export const handler: Handler = async (event) => {
   console.log('Stripe Checkout event:', JSON.stringify(event, null, 2));
 
+  // Handle CORS preflight
+  if (event.requestContext?.http?.method === 'OPTIONS' || event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      body: '',
+      headers: corsHeaders,
+    };
+  }
+
   try {
-    const request: CheckoutRequest = JSON.parse(event.body || '{}');
+    // Handle both API Gateway and Function URL event formats
+    const body = typeof event.body === 'string' ? event.body : JSON.stringify(event.body || {});
+    const request: CheckoutRequest = JSON.parse(body || '{}');
 
     if (!request.companyId || !request.priceId) {
       return {
