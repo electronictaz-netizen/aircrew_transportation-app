@@ -5,6 +5,9 @@
 
 import type { Handler } from 'aws-lambda';
 import Stripe from 'stripe';
+import { Amplify } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/data';
+import outputs from '../../outputs.json';
 
 interface CheckoutRequest {
   companyId: string;
@@ -22,10 +25,15 @@ interface CheckoutResponse {
  * Configure Amplify and get data client
  */
 async function getDataClient() {
+  const { Amplify } = await import('aws-amplify');
   const { generateClient } = await import('aws-amplify/data');
-  const type = await import('../../data/resource');
-  // In Lambda functions, Amplify is auto-configured by the backend
-  return generateClient<typeof type>({
+  const backendOutput = await import('../../backend-output.json');
+  
+  // Configure Amplify with backend output
+  Amplify.configure(backendOutput.default || backendOutput);
+  
+  // Generate client with IAM auth mode for Lambda
+  return generateClient({
     authMode: 'iam',
   });
 }
