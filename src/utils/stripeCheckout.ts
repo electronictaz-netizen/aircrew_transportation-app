@@ -16,8 +16,11 @@
  */
 function getCheckoutUrl(): string {
   // Check environment variable first (recommended for production)
-  if (import.meta.env.VITE_STRIPE_CHECKOUT_URL) {
-    return import.meta.env.VITE_STRIPE_CHECKOUT_URL;
+  const checkoutUrl = import.meta.env.VITE_STRIPE_CHECKOUT_URL;
+  
+  if (checkoutUrl && checkoutUrl.trim() !== '') {
+    // Ensure URL doesn't end with trailing slash (except root)
+    return checkoutUrl.trim().replace(/\/$/, '');
   }
 
   // TODO: Check amplify_outputs.json for function URLs after deployment
@@ -25,8 +28,9 @@ function getCheckoutUrl(): string {
 
   throw new Error(
     'Stripe Checkout URL not configured. ' +
-    'Please set VITE_STRIPE_CHECKOUT_URL environment variable to your Lambda Function URL. ' +
-    'You can find this in AWS Lambda Console after deployment.'
+    'Please set VITE_STRIPE_CHECKOUT_URL in your .env.local file. ' +
+    'Get the Function URL from AWS Lambda Console for the stripeCheckout function. ' +
+    'See STRIPE_SETUP.md for instructions.'
   );
 }
 
@@ -35,16 +39,20 @@ function getCheckoutUrl(): string {
  */
 function getPortalUrl(): string {
   // Check environment variable first (recommended for production)
-  if (import.meta.env.VITE_STRIPE_PORTAL_URL) {
-    return import.meta.env.VITE_STRIPE_PORTAL_URL;
+  const portalUrl = import.meta.env.VITE_STRIPE_PORTAL_URL;
+  
+  if (portalUrl && portalUrl.trim() !== '') {
+    // Ensure URL doesn't end with trailing slash (except root)
+    return portalUrl.trim().replace(/\/$/, '');
   }
 
   // TODO: Check amplify_outputs.json for function URLs after deployment
 
   throw new Error(
     'Stripe Portal URL not configured. ' +
-    'Please set VITE_STRIPE_PORTAL_URL environment variable to your Lambda Function URL. ' +
-    'You can find this in AWS Lambda Console after deployment.'
+    'Please set VITE_STRIPE_PORTAL_URL in your .env.local file. ' +
+    'Get the Function URL from AWS Lambda Console for the stripePortal function. ' +
+    'See STRIPE_SETUP.md for instructions.'
   );
 }
 
