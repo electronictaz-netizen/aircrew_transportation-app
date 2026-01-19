@@ -4,8 +4,7 @@ import { motion } from 'framer-motion';
 import { Check, ArrowRight, Zap, Shield, BarChart, Users, Clock, Globe } from 'lucide-react';
 import { SUBSCRIPTION_PLANS } from '../utils/stripe';
 import { Button } from './ui/button';
-import { createCheckoutSession } from '../utils/stripeCheckout';
-import { showSuccess, showError, showInfo } from '../utils/toast';
+import { showError, showInfo } from '../utils/toast';
 import './LandingPage.css';
 
 export function LandingPage() {

@@ -62,6 +62,22 @@ function ManagementDashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Check for plan parameter from external website sign-up
+  useEffect(() => {
+    const plan = searchParams.get('plan');
+    if (plan && companyId && !companyLoading) {
+      // User came from external website with plan selection
+      // Open subscription management after a short delay to ensure company is loaded
+      setTimeout(() => {
+        setShowSubscriptionManagement(true);
+        // Remove the plan parameter from URL
+        searchParams.delete('plan');
+        setSearchParams(searchParams, { replace: true });
+      }, 1000);
+    }
+  }, [searchParams, companyId, companyLoading, setSearchParams]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts([

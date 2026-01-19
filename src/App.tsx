@@ -12,7 +12,6 @@ import { Toaster } from './components/ui/toaster';
 import { BrandedLoginHeader, BrandedLoginFooter } from './components/BrandedLogin';
 
 // Lazy load route components for code splitting
-const LandingPage = lazy(() => import('./components/LandingPage'));
 const ManagementDashboard = lazy(() => import('./components/ManagementDashboard'));
 const DriverDashboard = lazy(() => import('./components/DriverDashboard'));
 const DriverManagement = lazy(() => import('./components/DriverManagement'));
