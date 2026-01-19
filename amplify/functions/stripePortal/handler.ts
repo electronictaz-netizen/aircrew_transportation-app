@@ -34,7 +34,8 @@ async function createPortalSession(request: PortalRequest): Promise<PortalRespon
   }
 
   // Initialize Stripe
-  const Stripe = (await import('stripe')).default;
+  const stripeModule = await import('stripe');
+  const Stripe = stripeModule.default;
   const stripe = new Stripe(stripeSecretKey, {
     apiVersion: '2024-11-20.acacia',
   });
