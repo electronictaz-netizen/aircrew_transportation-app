@@ -49,8 +49,8 @@ Use this checklist when onboarding a new company to ensure they're set up correc
 
 ## Training & Documentation
 
-- [ ] Share `TENANT_ONBOARDING_GUIDE.md` with company
-- [ ] Share `TENANT_QUICK_START.md` with company
+- [ ] Share `COMPANY_ONBOARDING_GUIDE.md` with company
+- [ ] Share `COMPANY_QUICK_START.md` with company
 - [ ] Provide application URL
 - [ ] Explain user roles (Admin, Manager, Driver)
 - [ ] Demonstrate key features:
@@ -81,7 +81,7 @@ Use this checklist when onboarding a new company to ensure they're set up correc
 
 - Application URL: `[Your App URL]`
 - Support Email: `[Your Support Email]`
-- Documentation: `TENANT_ONBOARDING_GUIDE.md` and `TENANT_QUICK_START.md`
+- Documentation: `COMPANY_ONBOARDING_GUIDE.md` and `COMPANY_QUICK_START.md`
 - Emergency Contact: `[Emergency Contact]`
 
 ## Notes

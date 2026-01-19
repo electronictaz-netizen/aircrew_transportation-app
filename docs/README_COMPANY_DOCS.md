@@ -1,4 +1,4 @@
-# Documentation for New Tenants
+# Documentation for New Companies
 
 This folder contains all documentation needed for onboarding new companies and training users.
 
@@ -6,12 +6,12 @@ This folder contains all documentation needed for onboarding new companies and t
 
 ### For New Companies
 
-1. **TENANT_QUICK_START.md**
+1. **COMPANY_QUICK_START.md**
    - Quick 5-minute guide to get started
    - Perfect for first-time users
    - Covers basic setup and common tasks
 
-2. **TENANT_ONBOARDING_GUIDE.md**
+2. **COMPANY_ONBOARDING_GUIDE.md**
    - Comprehensive user guide
    - Detailed instructions for all roles
    - FAQs and troubleshooting
@@ -35,24 +35,24 @@ This folder contains all documentation needed for onboarding new companies and t
    - Prepare support contact information
 
 2. **During Onboarding**:
-   - Share `TENANT_QUICK_START.md` with the company administrator
+   - Share `COMPANY_QUICK_START.md` with the company administrator
    - Walk through the quick start guide together
    - Answer any immediate questions
 
 3. **After Initial Setup**:
-   - Provide `TENANT_ONBOARDING_GUIDE.md` for reference
+   - Provide `COMPANY_ONBOARDING_GUIDE.md` for reference
    - Encourage them to bookmark it
    - Schedule a follow-up in 1 week
 
 ### For Company Administrators:
 
-1. **Start Here**: Read `TENANT_QUICK_START.md`
-2. **Deep Dive**: Review `TENANT_ONBOARDING_GUIDE.md` as needed
+1. **Start Here**: Read `COMPANY_QUICK_START.md`
+2. **Deep Dive**: Review `COMPANY_ONBOARDING_GUIDE.md` as needed
 3. **Share with Team**: Distribute relevant sections to managers and drivers
 
 ## Document Customization
 
-Before sharing with tenants, customize:
+Before sharing with companies, customize:
 
 - **Application URL**: Replace `[Your App URL]` with your actual URL
 - **Support Email**: Replace `[Your Support Email]` with your support contact
@@ -87,7 +87,7 @@ Before sharing with tenants, customize:
 
 ## Feedback
 
-Encourage tenants to provide feedback on:
+Encourage companies to provide feedback on:
 - Clarity of instructions
 - Missing information
 - Areas that need more detail

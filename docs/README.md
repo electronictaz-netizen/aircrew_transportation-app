@@ -5,7 +5,7 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 ## Quick Start
 
 **New to the system?** Start here:
-- **[TENANT_QUICK_START.md](./TENANT_QUICK_START.md)** - Get up and running in 5 minutes
+- **[COMPANY_QUICK_START.md](./COMPANY_QUICK_START.md)** - Get up and running in 5 minutes
 - **[SUBSCRIPTION_AND_TRIAL_GUIDE.md](./SUBSCRIPTION_AND_TRIAL_GUIDE.md)** - Understand subscriptions and free trials
 
 ## User Guides by Role
@@ -51,21 +51,21 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 
 ### For New Companies
 
-- **[TENANT_ONBOARDING_GUIDE.md](./TENANT_ONBOARDING_GUIDE.md)** - Comprehensive user guide
+- **[COMPANY_ONBOARDING_GUIDE.md](./COMPANY_ONBOARDING_GUIDE.md)** - Comprehensive user guide
   - Detailed instructions for all roles
   - FAQs and troubleshooting
   - Best practices
   - Complete feature overview
 
-- **[README_TENANT_DOCS.md](./README_TENANT_DOCS.md)** - Documentation index and guide
-  - Overview of all tenant documentation
+- **[README_COMPANY_DOCS.md](./README_COMPANY_DOCS.md)** - Documentation index and guide
+  - Overview of all company documentation
   - How to use these documents
   - Distribution methods
   - Customization instructions
 
-### Multi-Tenant Onboarding
+### Multi-Company Onboarding
 
-- **[MULTI_TENANT_ONBOARDING.md](./MULTI_TENANT_ONBOARDING.md)** - Multi-tenant onboarding strategies
+- **[MULTI_COMPANY_ONBOARDING.md](./MULTI_COMPANY_ONBOARDING.md)** - Multi-company onboarding strategies
   - Admin-managed onboarding
   - Self-service onboarding
   - Email-based onboarding
@@ -81,8 +81,8 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 ### By Purpose
 
 **Getting Started:**
-- TENANT_QUICK_START.md
-- TENANT_ONBOARDING_GUIDE.md
+- COMPANY_QUICK_START.md
+- COMPANY_ONBOARDING_GUIDE.md
 
 **Role-Specific Guides:**
 - DRIVER_USER_GUIDE.md
@@ -92,12 +92,12 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 
 **Administrative:**
 - ADMIN_ONBOARDING_CHECKLIST.md
-- MULTI_TENANT_ONBOARDING.md
+- MULTI_COMPANY_ONBOARDING.md
 - ONBOARDING_IMPLEMENTATION.md
 
 **Reference:**
 - SUBSCRIPTION_AND_TRIAL_GUIDE.md
-- README_TENANT_DOCS.md
+- README_COMPANY_DOCS.md
 - This file (README.md)
 
 ## How to Use These Documents
@@ -109,17 +109,17 @@ This folder contains all user-facing documentation for the Onyx Transportation A
    - Prepare support contact information
 
 2. **During Onboarding:**
-   - Share `TENANT_QUICK_START.md` with the company administrator
+   - Share `COMPANY_QUICK_START.md` with the company administrator
    - Walk through the quick start guide together
 
 3. **After Initial Setup:**
-   - Provide `TENANT_ONBOARDING_GUIDE.md` for reference
+   - Provide `COMPANY_ONBOARDING_GUIDE.md` for reference
    - Distribute role-specific guides to users
 
 ### For Company Administrators:
 
-1. **Start Here:** Read `TENANT_QUICK_START.md`
-2. **Deep Dive:** Review `TENANT_ONBOARDING_GUIDE.md` as needed
+1. **Start Here:** Read `COMPANY_QUICK_START.md`
+2. **Deep Dive:** Review `COMPANY_ONBOARDING_GUIDE.md` as needed
 3. **Share with Team:** Distribute relevant guides to managers and drivers
 
 ### For Managers:
@@ -135,7 +135,7 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 
 ## Document Customization
 
-Before sharing with tenants, customize:
+Before sharing with companies, customize:
 
 - **Application URL**: Replace placeholders with your actual URL
 - **Support Email**: Replace placeholders with your support contact

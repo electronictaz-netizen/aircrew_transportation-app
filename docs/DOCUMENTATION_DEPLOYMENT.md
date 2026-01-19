@@ -17,7 +17,7 @@ All documentation has been updated with recent changes:
    - Subscription management
    - FAQ
 
-2. **TENANT_ONBOARDING_GUIDE.md** - Updated with:
+2. **COMPANY_ONBOARDING_GUIDE.md** - Updated with:
    - Free trial sign-up process
    - Subscription management instructions
    - Links to subscription guide
@@ -202,13 +202,13 @@ Add documentation links in key places:
 ### Essential Files (Deploy First)
 
 1. **SUBSCRIPTION_AND_TRIAL_GUIDE.md** - Critical for trial users
-2. **TENANT_QUICK_START.md** - Getting started guide
+2. **COMPANY_QUICK_START.md** - Getting started guide
 3. **MANAGER_USER_GUIDE.md** - Main user guide
 4. **DRIVER_USER_GUIDE.md** - Driver-specific guide
 
 ### Supporting Files
 
-5. **TENANT_ONBOARDING_GUIDE.md** - Comprehensive onboarding
+5. **COMPANY_ONBOARDING_GUIDE.md** - Comprehensive onboarding
 6. **DRIVER_QUICK_REFERENCE.md** - Quick reference card
 7. **MANAGER_QUICK_REFERENCE.md** - Quick reference card
 8. **ADMIN_ONBOARDING_CHECKLIST.md** - Admin setup guide

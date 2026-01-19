@@ -75,7 +75,7 @@ Your company administrator will send you an invitation email. **Keep this email*
 
 ## Need Help?
 
-- **Full Documentation**: See `TENANT_ONBOARDING_GUIDE.md`
+- **Full Documentation**: See `COMPANY_ONBOARDING_GUIDE.md`
 - **Contact Your Administrator**: For account or permission issues
 - **Check FAQs**: In the full user guide
 

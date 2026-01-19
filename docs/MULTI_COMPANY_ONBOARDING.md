@@ -1,4 +1,4 @@
-# Multi-Tenant Onboarding Guide
+# Multi-Company Onboarding Guide
 
 ## Current State
 
