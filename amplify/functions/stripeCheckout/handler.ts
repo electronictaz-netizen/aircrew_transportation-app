@@ -108,19 +108,26 @@ async function createCheckoutSession(request: CheckoutRequest): Promise<Checkout
   };
 }
 
-// CORS headers helper
+// CORS headers helper - must match Function URL CORS settings
 const corsHeaders = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+  'Access-Control-Max-Age': '86400', // 24 hours
 };
 
 export const handler: Handler = async (event) => {
   console.log('Stripe Checkout event:', JSON.stringify(event, null, 2));
 
-  // Handle CORS preflight
-  if (event.requestContext?.http?.method === 'OPTIONS' || event.httpMethod === 'OPTIONS') {
+  // Handle CORS preflight - check multiple event formats
+  const method = event.requestContext?.http?.method || 
+                 event.httpMethod || 
+                 (event as any).method ||
+                 (event as any).requestContext?.httpMethod;
+  
+  if (method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request');
     return {
       statusCode: 200,
       body: '',
@@ -139,12 +146,7 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ 
           error: 'Missing required fields: companyId, priceId' 
         }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        },
+        headers: corsHeaders,
       };
     }
 
@@ -162,12 +164,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify(checkout),
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      },
+      headers: corsHeaders,
     };
   } catch (error) {
     console.error('Error creating checkout session:', error);
@@ -177,12 +174,7 @@ export const handler: Handler = async (event) => {
         error: 'Failed to create checkout session',
         message: error instanceof Error ? error.message : 'Unknown error',
       }),
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      },
+      headers: corsHeaders,
     };
   }
 };

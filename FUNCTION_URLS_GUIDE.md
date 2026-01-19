@@ -100,16 +100,27 @@ This means `VITE_STRIPE_CHECKOUT_URL` is missing from `.env.local`.
 
 ### Function URL Returns 403 or CORS Error
 
-The Function URL might not have CORS configured.
+The Function URL might not have CORS configured correctly.
 
 **Fix:**
-1. Go to AWS Lambda Console → Your function
+1. Go to AWS Lambda Console → Your function (`stripeCheckout`)
 2. Configuration → Function URL
-3. Edit CORS settings:
-   - **Allow origins**: `*` (or your domain)
-   - **Allow methods**: `POST`
-   - **Allow headers**: `Content-Type`
-4. Save and test again
+3. Click **Edit**
+4. Under **CORS**, configure:
+   - **Allow origins**: `*` (or your specific domain like `https://main.d1wxo3x0z5r1oq.amplifyapp.com`)
+   - **Allow methods**: `POST, OPTIONS, GET`
+   - **Allow headers**: `Content-Type, Authorization, X-Requested-With`
+   - **Expose headers**: (leave empty or add if needed)
+   - **Max age**: `86400` (24 hours)
+5. **Important**: Click **Save** at the bottom
+6. Wait a few seconds for changes to propagate
+7. Test again
+
+**Common CORS Error:**
+If you see: `Request header field content-type is not allowed by Access-Control-Allow-Headers`
+- Make sure `Content-Type` is in the **Allow headers** field (case-sensitive)
+- Make sure you saved the CORS settings
+- Try clearing browser cache or using incognito mode
 
 ### Can't Find the Functions
 
