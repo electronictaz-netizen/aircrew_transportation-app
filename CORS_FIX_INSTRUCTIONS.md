@@ -6,6 +6,10 @@ Access to fetch at 'https://...lambda-url...' from origin '...' has been blocked
 Request header field content-type is not allowed by Access-Control-Allow-Headers in preflight response.
 ```
 
+## Important Note
+
+**Lambda Function URLs automatically add CORS headers** when CORS is configured in the AWS Console. The handler code should NOT include CORS headers, as this causes duplicate header errors.
+
 ## The Fix (AWS Lambda Console)
 
 ### Step 1: Open Function URL Settings
@@ -24,7 +28,11 @@ Request header field content-type is not allowed by Access-Control-Allow-Headers
    ```
    *
    ```
-   (Or your specific domain: `https://main.d1wxo3x0z5r1oq.amplifyapp.com`)
+   ⚠️ **IMPORTANT**: Use `*` OR your specific domain, NOT both. If you use your specific domain, use:
+   ```
+   https://main.d1wxo3x0z5r1oq.amplifyapp.com
+   ```
+   (Don't include both `*` and your domain - that causes duplicate header errors)
 
    **Allow methods:**
    ```

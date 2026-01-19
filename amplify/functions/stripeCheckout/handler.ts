@@ -108,32 +108,11 @@ async function createCheckoutSession(request: CheckoutRequest): Promise<Checkout
   };
 }
 
-// CORS headers helper - must match Function URL CORS settings
-const corsHeaders = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
-  'Access-Control-Max-Age': '86400', // 24 hours
-};
-
 export const handler: Handler = async (event) => {
   console.log('Stripe Checkout event:', JSON.stringify(event, null, 2));
 
-  // Handle CORS preflight - check multiple event formats
-  const method = event.requestContext?.http?.method || 
-                 event.httpMethod || 
-                 (event as any).method ||
-                 (event as any).requestContext?.httpMethod;
-  
-  if (method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request');
-    return {
-      statusCode: 200,
-      body: '',
-      headers: corsHeaders,
-    };
-  }
+  // Note: CORS is handled automatically by Lambda Function URL configuration
+  // Do NOT add CORS headers here as it causes duplicate headers error
 
   try {
     // Handle both API Gateway and Function URL event formats
@@ -146,7 +125,9 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ 
           error: 'Missing required fields: companyId, priceId' 
         }),
-        headers: corsHeaders,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       };
     }
 
@@ -164,7 +145,9 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify(checkout),
-      headers: corsHeaders,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     };
   } catch (error) {
     console.error('Error creating checkout session:', error);
@@ -174,7 +157,9 @@ export const handler: Handler = async (event) => {
         error: 'Failed to create checkout session',
         message: error instanceof Error ? error.message : 'Unknown error',
       }),
-      headers: corsHeaders,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     };
   }
 };

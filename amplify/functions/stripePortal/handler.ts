@@ -69,6 +69,9 @@ async function createPortalSession(request: PortalRequest): Promise<PortalRespon
 export const handler: Handler = async (event) => {
   console.log('Stripe Portal event:', JSON.stringify(event, null, 2));
 
+  // Note: CORS is handled automatically by Lambda Function URL configuration
+  // Do NOT add CORS headers here as it causes duplicate headers error
+
   try {
     const request: PortalRequest = JSON.parse(event.body || '{}');
 
@@ -80,9 +83,6 @@ export const handler: Handler = async (event) => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
         },
       };
     }
@@ -101,9 +101,6 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify(portal),
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
     };
   } catch (error) {
