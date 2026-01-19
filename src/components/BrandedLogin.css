@@ -72,14 +72,14 @@
 
 .branded-login-tagline {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #000000;
   margin: 0.5rem 0 0 0;
   font-weight: 400;
   display: block;
 }
 
 [data-amplify-authenticator][data-theme="dark"] .branded-login-tagline {
-  color: #9ca3af;
+  color: #ffffff;
 }
 
 .branded-login-form {
@@ -117,33 +117,33 @@
 .branded-login-footer-provider {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: #000000;
   margin: 0;
 }
 
 [data-amplify-authenticator][data-theme="dark"] .branded-login-footer-provider {
-  color: #e5e7eb;
+  color: #ffffff;
 }
 
 .branded-login-footer-tagline {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #000000;
   margin: 0;
   font-weight: 400;
 }
 
 [data-amplify-authenticator][data-theme="dark"] .branded-login-footer-tagline {
-  color: #9ca3af;
+  color: #ffffff;
 }
 
 .branded-login-footer-text {
   font-size: 0.7rem;
-  color: #9ca3af;
+  color: #000000;
   margin: 0.25rem 0 0 0;
 }
 
 [data-amplify-authenticator][data-theme="dark"] .branded-login-footer-text {
-  color: #6b7280;
+  color: #ffffff;
 }
 
 /* Override Amplify Authenticator styles */
