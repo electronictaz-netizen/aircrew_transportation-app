@@ -26,13 +26,16 @@ Request header field content-type is not allowed by Access-Control-Allow-Headers
 
    **Allow origins:**
    ```
-   *
-   ```
-   ⚠️ **IMPORTANT**: Use `*` OR your specific domain, NOT both. If you use your specific domain, use:
-   ```
    https://main.d1wxo3x0z5r1oq.amplifyapp.com
+   https://www.onyxdispatch.us
+   https://onyxdispatch.us
+   https://app.onyxdispatch.us
    ```
-   (Don't include both `*` and your domain - that causes duplicate header errors)
+   ⚠️ **IMPORTANT**: 
+   - Use specific domains (recommended for security) OR `*` (allows all)
+   - Do NOT use both `*` and specific domains together
+   - If you have multiple domains, list them all (as shown above)
+   - The handler code should NOT send CORS headers (Lambda Function URLs handle this automatically)
 
    **Allow methods:**
    ```
