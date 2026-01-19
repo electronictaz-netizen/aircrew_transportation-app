@@ -4,6 +4,7 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useAdminAccess, isSystemAdmin } from '../utils/adminAccess';
 import { updateAppIcons } from '../utils/dynamicIcons';
+import { calculateTrialEndDate, isTrialExpired } from '../utils/stripe';
 
 interface CompanyContextType {
   company: Schema['Company']['type'] | null;
@@ -122,6 +123,66 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         });
 
         if (companyData && companyData.isActive) {
+          // Check if user came from trial signup and company doesn't have trial set up
+          const urlParams = new URLSearchParams(window.location.search);
+          const isTrialSignup = urlParams.get('trial') === 'true';
+          
+          if (isTrialSignup && !companyData.isTrialActive && !companyData.trialEndDate) {
+            // Set up trial period
+            try {
+              const trialEndDate = calculateTrialEndDate();
+              await client.models.Company.update({
+                id: companyData.id,
+                isTrialActive: true,
+                trialEndDate: trialEndDate.toISOString(),
+                subscriptionStatus: 'trialing',
+                subscriptionTier: 'basic', // Give them Basic tier features during trial
+              });
+              
+              // Reload company to get updated data
+              const { data: updatedCompany } = await client.models.Company.get({
+                id: companyData.id
+              });
+              
+              if (updatedCompany) {
+                setCompany(updatedCompany);
+                updateAppIcons(updatedCompany.logoUrl || null, updatedCompany.displayName || updatedCompany.name);
+                // Remove trial parameter from URL
+                urlParams.delete('trial');
+                window.history.replaceState({}, '', `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
+                return;
+              }
+            } catch (error) {
+              console.error('Error setting up trial:', error);
+            }
+          }
+          
+          // Check if trial has expired and downgrade if needed
+          if (companyData.isTrialActive && isTrialExpired(companyData.isTrialActive, companyData.trialEndDate)) {
+            // Trial has expired - downgrade to Free tier
+            try {
+              await client.models.Company.update({
+                id: companyData.id,
+                isTrialActive: false,
+                subscriptionStatus: 'active',
+                subscriptionTier: 'free', // Downgrade to Free tier
+              });
+              
+              // Reload company to get updated data
+              const { data: updatedCompany } = await client.models.Company.get({
+                id: companyData.id
+              });
+              
+              if (updatedCompany) {
+                setCompany(updatedCompany);
+                updateAppIcons(updatedCompany.logoUrl || null, updatedCompany.displayName || updatedCompany.name);
+                return;
+              }
+            } catch (error) {
+              console.error('Error downgrading expired trial:', error);
+            }
+          }
+          
           setCompany(companyData);
           // Update app icons with company logo
           updateAppIcons(companyData.logoUrl || null, companyData.displayName || companyData.name);

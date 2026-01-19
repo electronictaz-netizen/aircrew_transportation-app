@@ -17,6 +17,9 @@ const schema = a.schema({
       subscriptionCurrentPeriodEnd: a.datetime(), // When current period ends
       subscriptionCancelAtPeriodEnd: a.boolean().default(false), // Whether subscription will cancel at period end
       subscriptionCanceledAt: a.datetime(), // When subscription was canceled
+      // Trial period fields
+      trialEndDate: a.datetime(), // When the free trial period ends (if applicable)
+      isTrialActive: a.boolean().default(false), // Whether company is currently on a trial
       users: a.hasMany('CompanyUser', 'companyId'),
       trips: a.hasMany('Trip', 'companyId'),
       drivers: a.hasMany('Driver', 'companyId'),

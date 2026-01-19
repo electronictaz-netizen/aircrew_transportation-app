@@ -22,6 +22,8 @@ interface CompanyUpdateData {
   subscriptionCurrentPeriodEnd?: Date;
   subscriptionCancelAtPeriodEnd?: boolean;
   subscriptionCanceledAt?: Date;
+  isTrialActive?: boolean;
+  trialEndDate?: null;
 }
 
 /**
@@ -125,6 +127,12 @@ async function updateCompanySubscription(
     // Update subscription ID if not set
     if (subscriptionData.id && !company.stripeSubscriptionId) {
       updateData.stripeSubscriptionId = subscriptionData.id;
+    }
+
+    // If subscription becomes active, end the trial period
+    if (updateData.subscriptionStatus === 'active' && company.isTrialActive) {
+      updateData.isTrialActive = false;
+      updateData.trialEndDate = null;
     }
 
     // Update company

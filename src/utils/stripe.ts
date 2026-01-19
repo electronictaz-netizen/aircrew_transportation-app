@@ -143,3 +143,63 @@ export function getSubscriptionStatusColor(status: string | null | undefined): s
       return 'gray';
   }
 }
+
+/**
+ * Trial period configuration (in days)
+ */
+export const TRIAL_PERIOD_DAYS = 14; // 14-day free trial
+
+/**
+ * Check if company is currently on a trial
+ */
+export function isTrialActive(
+  isTrialActive: boolean | null | undefined,
+  trialEndDate: string | null | undefined
+): boolean {
+  if (!isTrialActive || !trialEndDate) return false;
+  
+  const endDate = new Date(trialEndDate);
+  const now = new Date();
+  
+  return now < endDate;
+}
+
+/**
+ * Check if trial has expired
+ */
+export function isTrialExpired(
+  isTrialActive: boolean | null | undefined,
+  trialEndDate: string | null | undefined
+): boolean {
+  if (!isTrialActive || !trialEndDate) return false;
+  
+  const endDate = new Date(trialEndDate);
+  const now = new Date();
+  
+  return now >= endDate;
+}
+
+/**
+ * Get days remaining in trial
+ */
+export function getTrialDaysRemaining(
+  trialEndDate: string | null | undefined
+): number | null {
+  if (!trialEndDate) return null;
+  
+  const endDate = new Date(trialEndDate);
+  const now = new Date();
+  const diffTime = endDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays > 0 ? diffDays : 0;
+}
+
+/**
+ * Calculate trial end date from start date
+ */
+export function calculateTrialEndDate(startDate: Date = new Date()): Date {
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + TRIAL_PERIOD_DAYS);
+  return endDate;
+}

@@ -31,7 +31,7 @@ import { deleteAllTrips } from '../utils/deleteAllTrips';
 import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications';
 import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
 import { sendDailyAssignmentEmailsToAllDrivers, sendDailyAssignmentToDriver } from '../utils/dailyAssignmentEmail';
-import { hasFeatureAccess } from '../utils/stripe';
+import { hasFeatureAccess, isTrialActive, isTrialExpired, getTrialDaysRemaining } from '../utils/stripe';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -1341,6 +1341,11 @@ function ManagementDashboard() {
     );
   }
 
+  // Trial status check
+  const trialActive = company ? isTrialActive(company.isTrialActive, company.trialEndDate) : false;
+  const trialExpired = company ? isTrialExpired(company.isTrialActive, company.trialEndDate) : false;
+  const trialDaysRemaining = company ? getTrialDaysRemaining(company.trialEndDate) : null;
+
   return (
     <div className="management-dashboard" id="main-content" role="main" aria-label="Management Dashboard">
       <div className="dashboard-header">
@@ -1641,6 +1646,68 @@ function ManagementDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Trial Expiration Banner */}
+      {(trialActive || trialExpired) && (
+        <div 
+          className={`trial-banner ${trialExpired ? 'trial-expired' : ''}`}
+          style={{
+            padding: '1rem',
+            margin: '1rem 0',
+            borderRadius: '8px',
+            backgroundColor: trialExpired ? '#fee2e2' : '#fef3c7',
+            border: `1px solid ${trialExpired ? '#fca5a5' : '#fcd34d'}`,
+            color: trialExpired ? '#991b1b' : '#92400e',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            {trialExpired ? (
+              <>
+                <strong style={{ fontSize: '1.1rem', display: 'block', marginBottom: '0.5rem' }}>
+                  ⚠️ Your free trial has ended
+                </strong>
+                <p style={{ margin: 0 }}>
+                  Subscribe now to continue using all features. Your account will be limited to the Free plan until you subscribe.
+                </p>
+              </>
+            ) : trialDaysRemaining !== null && trialDaysRemaining <= 3 ? (
+              <>
+                <strong style={{ fontSize: '1.1rem', display: 'block', marginBottom: '0.5rem' }}>
+                  ⏰ Your free trial ends in {trialDaysRemaining} {trialDaysRemaining === 1 ? 'day' : 'days'}
+                </strong>
+                <p style={{ margin: 0 }}>
+                  Subscribe now to continue enjoying all features without interruption.
+                </p>
+              </>
+            ) : (
+              <>
+                <strong style={{ fontSize: '1.1rem', display: 'block', marginBottom: '0.5rem' }}>
+                  🎉 You're on a free trial
+                </strong>
+                <p style={{ margin: 0 }}>
+                  {trialDaysRemaining !== null && `You have ${trialDaysRemaining} ${trialDaysRemaining === 1 ? 'day' : 'days'} remaining. `}
+                  Subscribe to continue using all features after your trial ends.
+                </p>
+              </>
+            )}
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowSubscriptionManagement(true)}
+            style={{
+              whiteSpace: 'nowrap',
+              fontWeight: '600'
+            }}
+          >
+            {trialExpired ? 'Subscribe Now' : 'Subscribe'}
+          </button>
+        </div>
+      )}
 
       <AnimatePresence>
         {showTripForm && (
