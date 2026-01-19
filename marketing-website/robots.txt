@@ -1,0 +1,21 @@
+# robots.txt for tazsoftware.biz
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://tazsoftware.biz/sitemap.xml
+
+# Disallow admin or private areas if any exist
+# Disallow: /admin/
+# Disallow: /private/
+
+# Allow all search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
