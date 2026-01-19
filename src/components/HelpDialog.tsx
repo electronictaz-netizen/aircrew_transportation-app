@@ -296,6 +296,15 @@ function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
                   tazsoftware.biz
                 </a>
               </div>
+              <div className="help-support-section">
+                <p className="help-link-text">Need help? Contact support:</p>
+                <a
+                  href="mailto:eric@tazsoftware.biz?subject=Support Request - Onyx Transportation App"
+                  className="help-support-link"
+                >
+                  eric@tazsoftware.biz
+                </a>
+              </div>
             </div>
           ) : (
             <div className="help-doc-viewer">

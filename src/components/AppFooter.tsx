@@ -6,6 +6,13 @@ export function AppFooter() {
       <div className="app-footer-content">
         <div className="app-footer-links">
           <a 
+            href="mailto:eric@tazsoftware.biz?subject=Support Request - Onyx Transportation App"
+            className="app-footer-link"
+          >
+            Contact Support
+          </a>
+          <span className="app-footer-separator">•</span>
+          <a 
             href="https://tazsoftware.biz/terms-of-service.html" 
             target="_blank" 
             rel="noopener noreferrer"

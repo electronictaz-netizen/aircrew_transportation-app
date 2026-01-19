@@ -84,6 +84,25 @@
   opacity: 0.8;
 }
 
+.help-support-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid hsl(var(--border));
+  text-align: center;
+}
+
+.help-support-link {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.help-support-link:hover {
+  color: hsl(var(--primary));
+  opacity: 0.8;
+}
+
 /* Documentation Viewer */
 .help-doc-viewer {
   display: flex;
