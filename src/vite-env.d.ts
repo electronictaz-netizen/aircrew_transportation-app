@@ -16,6 +16,9 @@ interface ImportMetaEnv {
   readonly VITE_STRIPE_PRICE_ID_PREMIUM?: string;
   readonly VITE_STRIPE_CHECKOUT_URL?: string; // Lambda Function URL for checkout
   readonly VITE_STRIPE_PORTAL_URL?: string; // Lambda Function URL for customer portal
+  readonly VITE_SERVICE_PROVIDER_NAME?: string; // Service provider company name for login screen
+  readonly VITE_SERVICE_PROVIDER_LOGO?: string; // Service provider logo URL for login screen
+  readonly VITE_SERVICE_PROVIDER_TAGLINE?: string; // Service provider tagline for login screen
 }
 
 interface ImportMeta {
