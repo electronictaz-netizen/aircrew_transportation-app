@@ -4,6 +4,7 @@
  */
 
 import type { Handler } from 'aws-lambda';
+import Stripe from 'stripe';
 
 interface StripeWebhookEvent {
   id: string;
@@ -172,8 +173,6 @@ export const handler: Handler = async (event) => {
     // Verify signature using Stripe SDK
     let webhookEvent: StripeWebhookEvent;
     try {
-      const stripeModule = await import('stripe');
-      const Stripe = stripeModule.default;
       const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
         apiVersion: '2024-11-20.acacia',
       });
