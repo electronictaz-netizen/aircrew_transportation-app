@@ -4,6 +4,7 @@
  */
 
 import { defineFunction } from '@aws-amplify/backend';
+import { data } from '../../data/resource';
 
 export const stripeCheckout = defineFunction({
   name: 'stripeCheckout',

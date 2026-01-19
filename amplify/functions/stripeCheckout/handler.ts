@@ -5,7 +5,6 @@
 
 import type { Handler } from 'aws-lambda';
 import Stripe from 'stripe';
-import { backend } from '../../backend';
 
 interface CheckoutRequest {
   companyId: string;
@@ -20,13 +19,17 @@ interface CheckoutResponse {
 }
 
 /**
- * Get data client from backend resource
- * In Amplify Gen 2, Lambda functions use the backend resource directly
+ * Get data client using Amplify data API
+ * In Amplify Gen 2 Lambda functions, we use generateClient with IAM auth
  */
-function getDataClient() {
-  // The backend.data resource provides the GraphQL client
-  // It's already configured with the correct auth mode for Lambda
-  return backend.data.models;
+async function getDataClient() {
+  const { generateClient } = await import('aws-amplify/data');
+  
+  // In Lambda, we use IAM auth mode
+  // The backend automatically configures the client with the correct endpoints
+  return generateClient({
+    authMode: 'iam',
+  });
 }
 
 /**
@@ -55,7 +58,7 @@ async function getOrCreateStripeCustomer(companyId: string, stripe: any): Promis
   });
 
   // Update company with Stripe customer ID
-  const updateResult = await models.Company.update({
+  const updateResult = await client.models.Company.update({
     id: companyId,
     stripeCustomerId: customer.id,
   });
