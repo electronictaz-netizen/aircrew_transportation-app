@@ -93,6 +93,41 @@
   color: white !important;
 }
 
+.help-btn {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.help-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.help-btn svg {
+  color: white !important;
+}
+
+.help-btn-text {
+  color: white !important;
+}
+
+@media (max-width: 768px) {
+  .help-btn-text {
+    display: none;
+  }
+  
+  .help-btn {
+    padding: 0.5rem;
+  }
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .navigation {

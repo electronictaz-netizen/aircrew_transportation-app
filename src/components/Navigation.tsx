@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { signOutWithCacheClear } from '../utils/cacheClear';
 import { useAdminAccess } from '../utils/adminAccess';
 import { useCompany } from '../contexts/CompanyContext';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ThemeToggle';
+import HelpDialog from './HelpDialog';
+import { HelpCircle } from 'lucide-react';
 import './Navigation.css';
 
 interface NavigationProps {
@@ -15,6 +18,7 @@ function Navigation({ signOut, user }: NavigationProps) {
   const location = useLocation();
   const hasAdminAccess = useAdminAccess();
   const { company } = useCompany();
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
 
   const handleSignOut = async () => {
     await signOutWithCacheClear(signOut);
@@ -68,6 +72,17 @@ function Navigation({ signOut, user }: NavigationProps) {
           )}
         </div>
         <div className="nav-user" aria-label="User menu">
+          <Button
+            onClick={() => setShowHelpDialog(true)}
+            variant="ghost"
+            size="sm"
+            className="help-btn"
+            aria-label="Help and documentation"
+            title="Help & Documentation"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="help-btn-text">Help</span>
+          </Button>
           <span aria-label="Current user">{user?.signInDetails?.loginId || user?.username}</span>
           <ThemeToggle />
           <Button 
@@ -80,6 +95,7 @@ function Navigation({ signOut, user }: NavigationProps) {
             Sign Out
           </Button>
         </div>
+        <HelpDialog open={showHelpDialog} onOpenChange={setShowHelpDialog} />
       </div>
     </nav>
   );
