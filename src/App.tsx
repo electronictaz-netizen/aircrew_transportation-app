@@ -25,10 +25,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 const LoadingFallback = () => <PageSkeleton />;
 
 function App() {
-  // Check for signup parameter in URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const isSignup = urlParams.get('signup') === 'true';
-
   return (
     <ThemeProvider>
       <Suspense fallback={<LoadingFallback />}>
@@ -38,7 +34,6 @@ function App() {
             path="/*"
             element={
               <Authenticator
-                initialSignIn={isSignup ? 'signUp' : 'signIn'}
                 components={{
                   Header() {
                     return <BrandedLoginHeader />;

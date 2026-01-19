@@ -4,7 +4,7 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { useAdminAccess } from '../utils/adminAccess';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Suspense, lazy } from 'react';
 import TripForm from './TripForm';
@@ -62,7 +62,6 @@ function ManagementDashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   // Check for plan parameter from external website sign-up
   useEffect(() => {
