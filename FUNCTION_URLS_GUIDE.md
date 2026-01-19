@@ -108,19 +108,25 @@ The Function URL might not have CORS configured correctly.
 3. Click **Edit**
 4. Under **CORS**, configure:
    - **Allow origins**: `*` (or your specific domain like `https://main.d1wxo3x0z5r1oq.amplifyapp.com`)
-   - **Allow methods**: `POST, OPTIONS, GET`
-   - **Allow headers**: `Content-Type, Authorization, X-Requested-With`
-   - **Expose headers**: (leave empty or add if needed)
+   - **Allow methods**: `POST, GET` (OPTIONS is handled automatically by Lambda Function URLs)
+   - **Allow headers**: `Content-Type` (this is the critical one - must be exactly `Content-Type`)
+   - **Expose headers**: (leave empty)
    - **Max age**: `86400` (24 hours)
-5. **Important**: Click **Save** at the bottom
-6. Wait a few seconds for changes to propagate
-7. Test again
+5. **Important**: 
+   - Make sure `Content-Type` is typed exactly as shown (case-sensitive)
+   - Click **Save** at the bottom
+   - Wait a few seconds for changes to propagate
+6. Test again
 
 **Common CORS Error:**
 If you see: `Request header field content-type is not allowed by Access-Control-Allow-Headers`
-- Make sure `Content-Type` is in the **Allow headers** field (case-sensitive)
-- Make sure you saved the CORS settings
+- **Most common issue**: `Content-Type` is missing or misspelled in **Allow headers**
+- Make sure it's exactly `Content-Type` (capital C, capital T, hyphen)
+- Try typing it manually instead of copy-paste
+- Make sure you clicked **Save** (changes don't auto-save)
+- Wait 10-30 seconds after saving for changes to propagate
 - Try clearing browser cache or using incognito mode
+- If still not working, try adding `*` to Allow headers (allows all headers)
 
 ### Can't Find the Functions
 
