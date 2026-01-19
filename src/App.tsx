@@ -10,6 +10,7 @@ import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import { Toaster } from './components/ui/toaster';
 import { BrandedLoginHeader, BrandedLoginFooter } from './components/BrandedLogin';
+import { AppFooter } from './components/AppFooter';
 
 // Lazy load route components for code splitting
 const ManagementDashboard = lazy(() => import('./components/ManagementDashboard'));
@@ -67,6 +68,7 @@ function App() {
                       <InstallPrompt />
                       <PWAUpdatePrompt />
                       <OfflineIndicator />
+                      <AppFooter />
                       <Toaster />
                     </div>
                   </CompanyProvider>

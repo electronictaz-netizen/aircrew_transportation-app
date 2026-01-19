@@ -31,6 +31,25 @@ export function BrandedLoginFooter() {
         <p className="branded-login-footer-text">
           Secure login powered by AWS Amplify
         </p>
+        <div className="branded-login-footer-legal">
+          <a 
+            href="https://tazsoftware.biz/terms-of-service.html" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="branded-login-footer-link"
+          >
+            Terms of Service
+          </a>
+          <span className="branded-login-footer-separator">•</span>
+          <a 
+            href="https://tazsoftware.biz/privacy-policy.html" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="branded-login-footer-link"
+          >
+            Privacy Policy
+          </a>
+        </div>
       </div>
     </div>
   );
