@@ -22,12 +22,16 @@ Aircrew transportation app/
    Aircrew transportation app/.env.local
    ```
 
-2. Add your Stripe keys:
+2. Add your Stripe keys and Function URLs:
    ```env
    VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
    VITE_STRIPE_PRICE_ID_BASIC=price_...
    VITE_STRIPE_PRICE_ID_PREMIUM=price_...
+   VITE_STRIPE_CHECKOUT_URL=https://[function-id].lambda-url.[region].on.aws/
+   VITE_STRIPE_PORTAL_URL=https://[function-id].lambda-url.[region].on.aws/
    ```
+   
+   **Note**: The Function URLs (`VITE_STRIPE_CHECKOUT_URL` and `VITE_STRIPE_PORTAL_URL`) need to be obtained from AWS Lambda Console after deployment. See STRIPE_SETUP.md for instructions.
 
 ### Important Notes
 
