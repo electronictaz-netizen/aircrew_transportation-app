@@ -12,6 +12,7 @@ import { Toaster } from './components/ui/toaster';
 import { BrandedLoginHeader, BrandedLoginFooter } from './components/BrandedLogin';
 
 // Lazy load route components for code splitting
+const LandingPage = lazy(() => import('./components/LandingPage'));
 const ManagementDashboard = lazy(() => import('./components/ManagementDashboard'));
 const DriverDashboard = lazy(() => import('./components/DriverDashboard'));
 const DriverManagement = lazy(() => import('./components/DriverManagement'));
@@ -27,45 +28,59 @@ const LoadingFallback = () => <PageSkeleton />;
 function App() {
   return (
     <ThemeProvider>
-      <Authenticator
-        components={{
-          Header() {
-            return <BrandedLoginHeader />;
-          },
-          Footer() {
-            return <BrandedLoginFooter />;
-          },
-        }}
-      >
-        {({ signOut, user }) => (
-          <CompanyProvider>
-            <div className="app">
-              <SkipLinks />
-              <Navigation signOut={signOut || (() => {})} user={user} />
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<Navigate to="/management" replace />} />
-                <Route path="/management" element={<ManagementDashboard />} />
-                <Route path="/drivers" element={<DriverManagement />} />
-                <Route path="/driver" element={<DriverDashboard />} />
-                <Route 
-                  path="/admin" 
-                  element={
-                    <ProtectedAdminRoute>
-                      <AdminDashboard />
-                    </ProtectedAdminRoute>
-                  } 
-                />
-              </Routes>
-            </Suspense>
-            <InstallPrompt />
-            <PWAUpdatePrompt />
-            <OfflineIndicator />
-            <Toaster />
-            </div>
-          </CompanyProvider>
-        )}
-      </Authenticator>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          {/* Public landing page - no authentication required */}
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/home" element={<LandingPage />} />
+          
+          {/* Authenticated routes */}
+          <Route
+            path="/*"
+            element={
+              <Authenticator
+                components={{
+                  Header() {
+                    return <BrandedLoginHeader />;
+                  },
+                  Footer() {
+                    return <BrandedLoginFooter />;
+                  },
+                }}
+              >
+                {({ signOut, user }) => (
+                  <CompanyProvider>
+                    <div className="app">
+                      <SkipLinks />
+                      <Navigation signOut={signOut || (() => {})} user={user} />
+                      <Suspense fallback={<LoadingFallback />}>
+                        <Routes>
+                          <Route path="/" element={<Navigate to="/management" replace />} />
+                          <Route path="/management" element={<ManagementDashboard />} />
+                          <Route path="/drivers" element={<DriverManagement />} />
+                          <Route path="/driver" element={<DriverDashboard />} />
+                          <Route 
+                            path="/admin" 
+                            element={
+                              <ProtectedAdminRoute>
+                                <AdminDashboard />
+                              </ProtectedAdminRoute>
+                            } 
+                          />
+                        </Routes>
+                      </Suspense>
+                      <InstallPrompt />
+                      <PWAUpdatePrompt />
+                      <OfflineIndicator />
+                      <Toaster />
+                    </div>
+                  </CompanyProvider>
+                )}
+              </Authenticator>
+            }
+          />
+        </Routes>
+      </Suspense>
     </ThemeProvider>
   );
 }
