@@ -9,7 +9,7 @@ import InstallPrompt from './components/InstallPrompt';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import { Toaster } from './components/ui/toaster';
-import { BrandedLogin } from './components/BrandedLogin';
+import { BrandedLoginHeader, BrandedLoginFooter, BrandedLoginWrapper } from './components/BrandedLogin';
 
 // Lazy load route components for code splitting
 const ManagementDashboard = lazy(() => import('./components/ManagementDashboard'));
@@ -27,44 +27,51 @@ const LoadingFallback = () => <PageSkeleton />;
 function App() {
   return (
     <ThemeProvider>
-      <BrandedLogin>
-        <Authenticator
-          components={{
-            Header() {
-              return null; // We'll use BrandedLogin wrapper instead
-            },
-          }}
-        >
-          {({ signOut, user }) => (
-            <CompanyProvider>
-              <div className="app">
-                <SkipLinks />
-                <Navigation signOut={signOut || (() => {})} user={user} />
-              <Suspense fallback={<LoadingFallback />}>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/management" replace />} />
-                  <Route path="/management" element={<ManagementDashboard />} />
-                  <Route path="/drivers" element={<DriverManagement />} />
-                  <Route path="/driver" element={<DriverDashboard />} />
-                  <Route 
-                    path="/admin" 
-                    element={
-                      <ProtectedAdminRoute>
-                        <AdminDashboard />
-                      </ProtectedAdminRoute>
-                    } 
-                  />
-                </Routes>
-              </Suspense>
-              <InstallPrompt />
-              <PWAUpdatePrompt />
-              <OfflineIndicator />
-              <Toaster />
-              </div>
-            </CompanyProvider>
-          )}
-        </Authenticator>
-      </BrandedLogin>
+      <Authenticator
+        components={{
+          Header() {
+            return <BrandedLoginHeader />;
+          },
+          Footer() {
+            return <BrandedLoginFooter />;
+          },
+        }}
+        containerStyles={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        {({ signOut, user }) => (
+          <CompanyProvider>
+            <div className="app">
+              <SkipLinks />
+              <Navigation signOut={signOut || (() => {})} user={user} />
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/management" replace />} />
+                <Route path="/management" element={<ManagementDashboard />} />
+                <Route path="/drivers" element={<DriverManagement />} />
+                <Route path="/driver" element={<DriverDashboard />} />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedAdminRoute>
+                      <AdminDashboard />
+                    </ProtectedAdminRoute>
+                  } 
+                />
+              </Routes>
+            </Suspense>
+            <InstallPrompt />
+            <PWAUpdatePrompt />
+            <OfflineIndicator />
+            <Toaster />
+            </div>
+          </CompanyProvider>
+        )}
+      </Authenticator>
     </ThemeProvider>
   );
 }
