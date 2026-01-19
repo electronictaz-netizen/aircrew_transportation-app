@@ -9,7 +9,7 @@ import InstallPrompt from './components/InstallPrompt';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import { Toaster } from './components/ui/toaster';
-import { BrandedLoginHeader, BrandedLoginFooter, BrandedLoginWrapper } from './components/BrandedLogin';
+import { BrandedLoginHeader, BrandedLoginFooter } from './components/BrandedLogin';
 
 // Lazy load route components for code splitting
 const ManagementDashboard = lazy(() => import('./components/ManagementDashboard'));
@@ -35,12 +35,6 @@ function App() {
           Footer() {
             return <BrandedLoginFooter />;
           },
-        }}
-        containerStyles={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
         }}
       >
         {({ signOut, user }) => (

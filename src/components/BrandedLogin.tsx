@@ -34,18 +34,3 @@ export function BrandedLoginFooter() {
   );
 }
 
-interface BrandedLoginWrapperProps {
-  children: React.ReactNode;
-}
-
-export function BrandedLoginWrapper({ children }: BrandedLoginWrapperProps) {
-  const { theme } = useTheme();
-
-  return (
-    <div className={`branded-login-container ${theme}`}>
-      <div className="branded-login-content">
-        {children}
-      </div>
-    </div>
-  );
-}

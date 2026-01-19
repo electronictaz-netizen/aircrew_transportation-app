@@ -1,23 +1,19 @@
-.branded-login-container {
+/* Style the Authenticator container */
+[data-amplify-authenticator] {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2rem;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
 }
 
-.branded-login-container.dark {
+[data-amplify-authenticator][data-theme="dark"] {
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
 }
 
-.branded-login-content {
+/* Style the Authenticator router (form container) */
+[data-amplify-authenticator] [data-amplify-router] {
   background: white;
   border-radius: 1rem;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -27,7 +23,7 @@
   animation: fadeInUp 0.5s ease-out;
 }
 
-.branded-login-container.dark .branded-login-content {
+[data-amplify-authenticator][data-theme="dark"] [data-amplify-router] {
   background: #1f2937;
   color: #f9fafb;
 }
@@ -50,7 +46,7 @@
   border-bottom: 2px solid #e5e7eb;
 }
 
-.branded-login-container.dark .branded-login-header {
+[data-amplify-authenticator][data-theme="dark"] .branded-login-header {
   border-bottom-color: #374151;
 }
 
@@ -70,7 +66,7 @@
   letter-spacing: -0.025em;
 }
 
-.branded-login-container.dark .branded-login-title {
+[data-amplify-authenticator][data-theme="dark"] .branded-login-title {
   color: #f9fafb;
 }
 
@@ -81,7 +77,7 @@
   font-weight: 400;
 }
 
-.branded-login-container.dark .branded-login-tagline {
+[data-amplify-authenticator][data-theme="dark"] .branded-login-tagline {
   color: #9ca3af;
 }
 
@@ -95,7 +91,7 @@
   border-top: 1px solid #e5e7eb;
 }
 
-.branded-login-container.dark .branded-login-footer {
+[data-amplify-authenticator][data-theme="dark"] .branded-login-footer {
   border-top-color: #374151;
 }
 
@@ -105,7 +101,7 @@
   margin: 0;
 }
 
-.branded-login-container.dark .branded-login-footer-text {
+[data-amplify-authenticator][data-theme="dark"] .branded-login-footer-text {
   color: #6b7280;
 }
 
@@ -120,7 +116,7 @@
   --amplify-components-fieldcontrol-focus-border-color: #3b82f6;
 }
 
-.branded-login-container.dark .branded-login-form [data-amplify-authenticator] {
+[data-amplify-authenticator][data-theme="dark"] {
   --amplify-components-authenticator-router-background-color: transparent;
   --amplify-components-fieldcontrol-background-color: #374151;
   --amplify-components-fieldcontrol-border-color: #4b5563;
