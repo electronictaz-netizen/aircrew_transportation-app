@@ -230,7 +230,7 @@ A: No, the free trial requires no credit card. You can explore all features risk
 A: Your account automatically moves to the Free tier. You can subscribe at any time to regain premium features.
 
 **Q: Can I extend my trial?**  
-A: Trial periods are fixed at 14 days. If you need more time, contact support at eric@tazsoftware.biz.
+A: Trial periods are fixed at 14 days. If you need more time, contact support at support@tazsoftware.biz.
 
 **Q: Will I lose my data if I don't subscribe?**  
 A: Your data is retained for 30 days after your trial ends. If you don't subscribe within 30 days, data may be archived or deleted. We recommend exporting your data before your trial expires if you're not planning to subscribe immediately.
@@ -272,7 +272,8 @@ A: Saved locations are preserved, but you won't be able to add new locations on 
 
 ### Support Contacts
 
-- **Email**: eric@tazsoftware.biz
+- **Support**: support@tazsoftware.biz
+- **Sales**: sales@tazsoftware.biz
 - **Website**: https://tazsoftware.biz
 
 ### Common Issues

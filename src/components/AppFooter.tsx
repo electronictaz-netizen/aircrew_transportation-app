@@ -6,7 +6,7 @@ export function AppFooter() {
       <div className="app-footer-content">
         <div className="app-footer-links">
           <a 
-            href="mailto:eric@tazsoftware.biz?subject=Support Request - Onyx Transportation App"
+            href="mailto:support@tazsoftware.biz?subject=Support Request - Onyx Transportation App"
             className="app-footer-link"
           >
             Contact Support

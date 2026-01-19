@@ -286,7 +286,8 @@ Create a help modal or page:
 ## Support Contact
 
 For questions about documentation:
-- **Email**: eric@tazsoftware.biz
+- **Support**: support@tazsoftware.biz
+- **Sales**: sales@tazsoftware.biz
 - **Website**: https://tazsoftware.biz
 
 ---

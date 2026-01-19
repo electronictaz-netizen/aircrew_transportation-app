@@ -299,10 +299,10 @@ function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
               <div className="help-support-section">
                 <p className="help-link-text">Need help? Contact support:</p>
                 <a
-                  href="mailto:eric@tazsoftware.biz?subject=Support Request - Onyx Transportation App"
+                  href="mailto:support@tazsoftware.biz?subject=Support Request - Onyx Transportation App"
                   className="help-support-link"
                 >
-                  eric@tazsoftware.biz
+                  support@tazsoftware.biz
                 </a>
               </div>
             </div>
