@@ -17,8 +17,52 @@ interface CheckoutResponse {
   sessionId: string;
 }
 
-// Note: Stripe SDK would be imported here in a real implementation
-// For now, we'll make HTTP requests to Stripe API
+/**
+ * Configure Amplify and get data client
+ */
+async function getDataClient() {
+  const { generateClient } = await import('aws-amplify/data');
+  // In Lambda functions, Amplify is auto-configured by the backend
+  return generateClient<any>();
+}
+
+/**
+ * Get or create Stripe customer for a company
+ */
+async function getOrCreateStripeCustomer(companyId: string, stripe: any): Promise<string> {
+  const client = await getDataClient();
+
+  // Get company
+  const { data: company } = await client.models.Company.get({ id: companyId });
+  if (!company) {
+    throw new Error(`Company not found: ${companyId}`);
+  }
+
+  // If company already has a Stripe customer ID, return it
+  if (company.stripeCustomerId) {
+    return company.stripeCustomerId;
+  }
+
+  // Create new Stripe customer
+  const customer = await stripe.customers.create({
+    name: company.displayName || company.name,
+    metadata: {
+      companyId: company.id,
+    },
+  });
+
+  // Update company with Stripe customer ID
+  await client.models.Company.update({
+    id: companyId,
+    stripeCustomerId: customer.id,
+  });
+
+  return customer.id;
+}
+
+/**
+ * Create Stripe Checkout session
+ */
 async function createCheckoutSession(request: CheckoutRequest): Promise<CheckoutResponse> {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   
@@ -26,20 +70,42 @@ async function createCheckoutSession(request: CheckoutRequest): Promise<Checkout
     throw new Error('STRIPE_SECRET_KEY not configured');
   }
 
-  // In a real implementation, you would:
-  // 1. Get or create Stripe customer for the company
-  // 2. Create checkout session using Stripe SDK
-  // 3. Return checkout URL
-  
-  // For now, return a placeholder response
-  // You'll need to install stripe npm package and implement this
-  console.log('Creating checkout session for:', request);
-  
-  // TODO: Implement actual Stripe checkout session creation
-  // const stripe = new Stripe(stripeSecretKey);
-  // const session = await stripe.checkout.sessions.create({...});
-  
-  throw new Error('Stripe Checkout not yet implemented. Please install stripe package and implement createCheckoutSession.');
+  // Initialize Stripe
+  const Stripe = (await import('stripe')).default;
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2024-11-20.acacia',
+  });
+
+  // Get or create Stripe customer
+  const customerId = await getOrCreateStripeCustomer(request.companyId, stripe);
+
+  // Create checkout session
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price: request.priceId,
+        quantity: 1,
+      },
+    ],
+    mode: 'subscription',
+    success_url: request.successUrl,
+    cancel_url: request.cancelUrl,
+    allow_promotion_codes: true,
+    metadata: {
+      companyId: request.companyId,
+    },
+  });
+
+  if (!session.url) {
+    throw new Error('Failed to create checkout session URL');
+  }
+
+  return {
+    checkoutUrl: session.url,
+    sessionId: session.id,
+  };
 }
 
 export const handler: Handler = async (event) => {
@@ -54,14 +120,35 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ 
           error: 'Missing required fields: companyId, priceId' 
         }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        },
       };
     }
 
-    const checkout = await createCheckoutSession(request);
+    // Set default URLs if not provided
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const successUrl = request.successUrl || `${baseUrl}/management?checkout=success`;
+    const cancelUrl = request.cancelUrl || `${baseUrl}/management?checkout=canceled`;
+
+    const checkout = await createCheckoutSession({
+      ...request,
+      successUrl,
+      cancelUrl,
+    });
 
     return {
       statusCode: 200,
       body: JSON.stringify(checkout),
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
     };
   } catch (error) {
     console.error('Error creating checkout session:', error);
@@ -71,6 +158,12 @@ export const handler: Handler = async (event) => {
         error: 'Failed to create checkout session',
         message: error instanceof Error ? error.message : 'Unknown error',
       }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
     };
   }
 };

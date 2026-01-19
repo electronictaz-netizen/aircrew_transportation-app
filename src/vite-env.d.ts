@@ -14,6 +14,8 @@ interface ImportMetaEnv {
   readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
   readonly VITE_STRIPE_PRICE_ID_BASIC?: string;
   readonly VITE_STRIPE_PRICE_ID_PREMIUM?: string;
+  readonly VITE_STRIPE_CHECKOUT_URL?: string; // Lambda Function URL for checkout
+  readonly VITE_STRIPE_PORTAL_URL?: string; // Lambda Function URL for customer portal
 }
 
 interface ImportMeta {
