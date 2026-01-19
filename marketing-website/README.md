@@ -79,7 +79,9 @@ Replace `[YOUR-APP-URL]` in the HTML file with your actual app URL:
 In `index.html`, you can customize:
 
 - **Company Name**: Change "Taz Software, LLC" to your preferred name
-- **Contact Email**: Update `support@tazsoftware.biz` to your email
+- **Contact Emails**: 
+  - Support: `support@tazsoftware.biz`
+  - Sales: `sales@tazsoftware.biz`
 - **Colors**: Modify CSS variables in `styles.css`:
   ```css
   :root {
