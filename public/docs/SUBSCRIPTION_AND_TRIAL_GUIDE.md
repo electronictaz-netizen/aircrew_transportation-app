@@ -148,6 +148,18 @@ In Subscription Management, you'll see:
 4. Your subscription will remain active until the end of your current billing period
 5. After cancellation, your account will automatically move to the Free tier
 
+### Data Retention After Cancellation
+
+**Important:** Please understand what happens to your data when you cancel:
+
+- **Grace Period:** You retain full access until the end of your current billing period
+- **30-Day Retention:** Your data is retained for 30 days after your subscription ends, allowing you to reactivate and regain access
+- **Data Export:** We strongly recommend exporting your data before canceling your subscription
+- **After 30 Days:** Data may be archived or deleted in accordance with our Terms of Service
+- **Account Deletion:** If your account remains inactive for 90 days, we may permanently delete your account and all associated data
+
+**For complete details on data retention, deletion policies, and your rights, please review our Terms of Service and Privacy Policy.**
+
 ---
 
 ## Feature Access by Plan
@@ -221,7 +233,7 @@ A: Your account automatically moves to the Free tier. You can subscribe at any t
 A: Trial periods are fixed at 14 days. If you need more time, contact support at eric@tazsoftware.biz.
 
 **Q: Will I lose my data if I don't subscribe?**  
-A: No, all your data is preserved. You'll just have limited access to features on the Free tier.
+A: Your data is retained for 30 days after your trial ends. If you don't subscribe within 30 days, data may be archived or deleted. We recommend exporting your data before your trial expires if you're not planning to subscribe immediately.
 
 ### Subscription Questions
 
@@ -238,7 +250,7 @@ A: We accept all major credit cards through Stripe's secure payment processing.
 A: Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your current billing period.
 
 **Q: What happens to my data if I cancel?**  
-A: All your data is preserved. Your account moves to the Free tier, and you can resubscribe anytime to regain premium features.
+A: After cancellation, your data is retained for 30 days to allow for account reactivation. We strongly recommend exporting your data before canceling. After 30 days, data may be archived or deleted in accordance with our Terms of Service. Please see our Terms of Service for complete details on data retention and deletion policies.
 
 **Q: Are there any setup fees or hidden costs?**  
 A: No, there are no setup fees or hidden costs. The price you see is the price you pay.
