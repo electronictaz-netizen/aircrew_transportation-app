@@ -2,7 +2,7 @@
 
 ## Summary
 
-Multi-tenancy has been successfully implemented in the Aircrew Transportation App. The default company is set to **GLS**, and all existing data will be automatically associated with this company when users log in.
+Multi-tenancy has been successfully implemented in the Onyx Transportation App. The default company is set to **GLS**, and all existing data will be automatically associated with this company when users log in.
 
 ## What Was Implemented
 

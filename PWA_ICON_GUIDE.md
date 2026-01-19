@@ -69,7 +69,7 @@ If you don't have a logo yet, you can create simple icons:
 
 #### Using Online Icon Generators:
 1. **Favicon.io**: https://favicon.io/favicon-generator/
-   - Enter text (e.g., "AT" for Aircrew Transportation)
+   - Enter text (e.g., "OT" for Onyx Transportation)
    - Choose colors matching your app theme (#3b82f6)
    - Download and resize to required sizes
 

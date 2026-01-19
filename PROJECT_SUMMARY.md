@@ -1,8 +1,8 @@
-# Project Summary: Aircrew Transportation Management System
+# Project Summary: Onyx Transportation App
 
 ## Overview
 
-A complete React application built with AWS Amplify Gen 2 for managing aircrew transportation scheduling, driver assignments, and trip tracking.
+A complete React application built with AWS Amplify Gen 2 for managing transportation scheduling, driver assignments, and trip tracking.
 
 ## Project Structure
 

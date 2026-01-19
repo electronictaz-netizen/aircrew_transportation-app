@@ -1,6 +1,6 @@
 # Manager Quick Reference Card
 
-A one-page quick reference for managers using the Aircrew Transportation app.
+A one-page quick reference for managers using the Onyx Transportation App.
 
 ## Logging In
 

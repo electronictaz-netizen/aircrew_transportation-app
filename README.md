@@ -1,6 +1,6 @@
-# Aircrew Transportation Management System
+# Onyx Transportation App
 
-A comprehensive React application built with AWS Amplify Gen 2 for managing aircrew transportation scheduling and assignments.
+A comprehensive React application built with AWS Amplify Gen 2 for managing transportation scheduling and assignments.
 
 ## Features
 
@@ -24,6 +24,8 @@ A comprehensive React application built with AWS Amplify Gen 2 for managing airc
 - **Real-time Flight Status**: Integration with flight status APIs (premium tier) or FlightRadar24 links (standard tier)
 - **Trip Tracking**: View actual pickup and dropoff times recorded by drivers
 - **Daily Assignment Emails**: Send daily summaries to all drivers or specific drivers
+- **Subscription Management**: Free trial, tiered plans (Free, Basic, Premium), and Stripe integration
+- **Feature Gating**: Features restricted by subscription tier with upgrade prompts
 
 ### Driver Dashboard
 - **Assigned Jobs View**: Drivers see all their assigned transportation jobs
@@ -144,7 +146,7 @@ git init
 git add .
 
 # Commit
-git commit -m "Initial commit: Aircrew Transportation App"
+git commit -m "Initial commit: Onyx Transportation App"
 
 # Add your GitHub repository as remote
 git remote add origin https://github.com/yourusername/aircrew-transportation.git
@@ -215,11 +217,19 @@ After the first deployment:
 
 ### First-Time Setup
 
-1. **Sign Up**:
-   - Visit your deployed app URL
+1. **Sign Up for Free Trial**:
+   - Visit **https://tazsoftware.biz** and click "Start Free Trial"
+   - Or visit your deployed app URL directly
    - Click "Create account"
    - Enter your email and password
    - Verify your email (if email verification is enabled)
+   - **Your 14-day free trial starts automatically** with Basic tier features
+
+2. **Subscription Plans**:
+   - **Free**: 10 trips/month, basic features
+   - **Basic** ($49/month): Unlimited trips, location management, custom fields
+   - **Premium** ($99/month): Everything in Basic plus advanced reports and flight status API
+   - See [docs/SUBSCRIPTION_AND_TRIAL_GUIDE.md](./docs/SUBSCRIPTION_AND_TRIAL_GUIDE.md) for details
 
 2. **Add Drivers**:
    - Go to Management Dashboard

@@ -1,6 +1,6 @@
 # Custom Domain Setup Guide for AWS Amplify
 
-This guide will walk you through setting up a custom domain for your Aircrew Transportation App in AWS Amplify.
+This guide will walk you through setting up a custom domain for your Onyx Transportation App in AWS Amplify.
 
 ## Prerequisites
 

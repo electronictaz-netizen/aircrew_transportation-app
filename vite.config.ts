@@ -85,9 +85,9 @@ export default defineConfig({
         ]
       },
       manifest: {
-        name: 'Aircrew Transportation Management',
-        short_name: 'Aircrew Transport',
-        description: 'Manage aircrew transportation trips and assignments',
+        name: 'Onyx Transportation App',
+        short_name: 'Onyx',
+        description: 'Manage transportation trips and assignments',
         theme_color: '#3b82f6',
         background_color: '#ffffff',
         display: 'standalone',

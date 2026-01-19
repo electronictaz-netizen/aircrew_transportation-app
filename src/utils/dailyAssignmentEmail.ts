@@ -80,14 +80,14 @@ export function generateDailyAssignmentEmail(data: DailyAssignmentData): { subje
     body += `\n`;
   }
   
-  body += `Please log into the Aircrew Transportation App for complete trip details including:\n`;
+  body += `Please log into the Onyx Transportation App for complete trip details including:\n`;
   body += `- Full pickup and dropoff addresses\n`;
   body += `- Flight status information\n`;
   body += `- Airport details\n`;
   body += `- Ability to record pickup and dropoff times\n\n`;
   body += `If you have any questions or need to make changes, please contact management.\n\n`;
   body += `Thank you!\n`;
-  body += `Aircrew Transportation Team`;
+  body += `Onyx Transportation Team`;
   
   return { subject, body };
 }

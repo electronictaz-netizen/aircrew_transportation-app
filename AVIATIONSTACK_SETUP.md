@@ -1,6 +1,6 @@
 # AviationStack API Setup Guide
 
-This guide will walk you through setting up the AviationStack API for real-time flight status tracking in the Aircrew Transportation app.
+This guide will walk you through setting up the AviationStack API for real-time flight status tracking in the Onyx Transportation App.
 
 ## Step 1: Create an AviationStack Account
 

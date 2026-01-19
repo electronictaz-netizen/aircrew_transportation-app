@@ -21,7 +21,7 @@ function Navigation({ signOut, user }: NavigationProps) {
   };
 
   // Get display name - use displayName if set, otherwise use name, otherwise default
-  const displayName = company?.displayName || company?.name || 'Aircrew Transportation';
+  const displayName = company?.displayName || company?.name || 'Onyx Transportation';
 
   return (
     <nav className="navigation" id="navigation" aria-label="Main navigation">

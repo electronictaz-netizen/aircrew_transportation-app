@@ -1,7 +1,7 @@
-# Git Commit Script for Aircrew Transportation App
+# Git Commit Script for Onyx Transportation App
 # This script commits and pushes all recent changes
 
-Write-Host "=== Aircrew Transportation App - Git Commit Script ===" -ForegroundColor Cyan
+Write-Host "=== Onyx Transportation App - Git Commit Script ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Navigate to project directory

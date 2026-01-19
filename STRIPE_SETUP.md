@@ -1,6 +1,6 @@
 # Stripe Subscription Setup Guide
 
-This guide will help you set up Stripe for subscription management in the Aircrew Transportation app.
+This guide will help you set up Stripe for subscription management in the Onyx Transportation App.
 
 ## Prerequisites
 

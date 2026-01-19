@@ -1,8 +1,8 @@
 #!/bin/bash
-# Git Commit Script for Aircrew Transportation App
+# Git Commit Script for Onyx Transportation App
 # This script commits and pushes all recent changes
 
-echo "=== Aircrew Transportation App - Git Commit Script ==="
+echo "=== Onyx Transportation App - Git Commit Script ==="
 echo ""
 
 # Navigate to project directory

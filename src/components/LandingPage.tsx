@@ -105,7 +105,7 @@ export function LandingPage() {
               <span className="landing-hero-highlight"> with Ease</span>
             </h1>
             <p className="landing-hero-description">
-              Streamline your aircrew transportation management with powerful tools for trip planning, 
+              Streamline your transportation management with powerful tools for trip planning, 
               driver assignment, and comprehensive reporting. Built for teams that need reliability and efficiency.
             </p>
             <div className="landing-hero-cta">

@@ -81,7 +81,7 @@ You have 3 trips scheduled:
      Pickup: Syracuse Airport
      Passengers: 6
 
-Please log into the Aircrew Transportation App for complete trip details including:
+Please log into the Onyx Transportation App for complete trip details including:
 - Full pickup and dropoff addresses
 - Flight status information
 - Airport details
@@ -90,7 +90,7 @@ Please log into the Aircrew Transportation App for complete trip details includi
 If you have any questions or need to make changes, please contact management.
 
 Thank you!
-Aircrew Transportation Team
+Onyx Transportation Team
 ```
 
 ## Automated Daily Execution

@@ -1,7 +1,7 @@
 # Subscription Management Integration Plan
 
 ## Overview
-Integration of Stripe for subscription management in the Aircrew Transportation app. This will allow companies to subscribe to different tiers (free, basic, premium) and manage their subscriptions through the app.
+Integration of Stripe for subscription management in the Onyx Transportation App. This will allow companies to subscribe to different tiers (free, basic, premium) and manage their subscriptions through the app.
 
 ## Architecture
 

@@ -213,7 +213,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
       <EmptyState
         icon="calendar"
         title="No Trips Scheduled"
-        description="You don't have any trips scheduled yet. Create your first trip to get started managing aircrew transportation."
+        description="You don't have any trips scheduled yet. Create your first trip to get started managing transportation."
         actionLabel="Create New Trip"
         onAction={() => {
           // This will be handled by the parent component

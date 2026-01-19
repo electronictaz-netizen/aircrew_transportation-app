@@ -1,6 +1,6 @@
-# Deployment Guide: Aircrew Transportation App
+# Deployment Guide: Onyx Transportation App
 
-This guide provides step-by-step instructions for deploying the Aircrew Transportation App to AWS Amplify Gen 2.
+This guide provides step-by-step instructions for deploying the Onyx Transportation App to AWS Amplify Gen 2.
 
 ## Prerequisites Checklist
 
@@ -27,7 +27,7 @@ git init
 git add .
 
 # Create initial commit
-git commit -m "Initial commit: Aircrew Transportation App"
+git commit -m "Initial commit: Onyx Transportation App"
 ```
 
 #### 1.2 Push to GitHub
@@ -340,4 +340,4 @@ For issues or questions:
 
 ---
 
-**Congratulations!** Your Aircrew Transportation App should now be live and accessible via the provided Amplify URL.
+**Congratulations!** Your Onyx Transportation App should now be live and accessible via the provided Amplify URL.

@@ -1,6 +1,6 @@
 # Multi-Tenant Implementation Code Examples
 
-This document provides concrete code examples for implementing multi-tenancy in the Aircrew Transportation app.
+This document provides concrete code examples for implementing multi-tenancy in the Onyx Transportation App.
 
 ## 1. Updated Schema Example
 

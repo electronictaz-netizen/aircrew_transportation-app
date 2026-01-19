@@ -1,6 +1,6 @@
-# Aircrew Transportation App - User Guide
+# Onyx Transportation App - User Guide
 
-Welcome to the Aircrew Transportation Management System! This guide will help you get started and make the most of the platform.
+Welcome to the Onyx Transportation App! This guide will help you get started and make the most of the platform.
 
 ## Table of Contents
 
@@ -17,14 +17,28 @@ Welcome to the Aircrew Transportation Management System! This guide will help yo
 
 ## Getting Started
 
-### Step 1: Receive Your Invitation
+### Step 1: Sign Up for Free Trial
 
-Your company administrator will send you an invitation email. This email contains:
+**New Companies**: Start with a 14-day free trial!
+
+1. Visit **https://tazsoftware.biz**
+2. Click **"Start Free Trial"**
+3. You'll be redirected to the app sign-up page
+4. Create your account with:
+   - Your email address
+   - A secure password
+5. Your **14-day free trial** starts automatically with Basic tier features
+
+**Note**: No credit card required for the trial. You'll have full access to Basic tier features for 14 days.
+
+### Step 2: Receive Your Invitation (For Team Members)
+
+If you're joining an existing company, your administrator will send you an invitation email containing:
 - Your login credentials
 - A link to access the application
 - Your assigned role (Admin, Manager, or Driver)
 
-### Step 2: Sign Up / Log In
+### Step 3: Sign Up / Log In
 
 1. Click the link in your invitation email, or navigate to the application URL
 2. If this is your first time:
@@ -36,11 +50,19 @@ Your company administrator will send you an invitation email. This email contain
    - Click "Sign In"
    - Enter your email and password
 
-### Step 3: Access Your Dashboard
+### Step 4: Access Your Dashboard
 
 After logging in, you'll be taken to your dashboard based on your role:
 - **Administrators & Managers**: Management Dashboard
 - **Drivers**: Driver Dashboard
+
+### Step 5: Understand Your Subscription
+
+- **On Trial**: You'll see a banner showing days remaining. Subscribe anytime during your trial.
+- **Free Tier**: Limited to 10 trips/month. Upgrade anytime for unlimited trips and premium features.
+- **Paid Subscription**: Full access to all features in your plan tier.
+
+**For detailed subscription information, see [SUBSCRIPTION_AND_TRIAL_GUIDE.md](./SUBSCRIPTION_AND_TRIAL_GUIDE.md)**
 
 ---
 
@@ -77,7 +99,13 @@ The system has three user roles, each with different permissions:
 
 1. **Access Company Settings**
    - Click "Company Settings" in the Management Dashboard
-   - Update company name, subscription tier, and status as needed
+   - Update company name, logo, and display settings
+
+2. **Manage Subscription**
+   - Click "Configuration" → "Subscription Management"
+   - View your current plan and subscription status
+   - Upgrade, downgrade, or manage billing
+   - See trial expiration date and days remaining
 
 2. **Invite New Users**
    - Go to the Admin Dashboard (if you have admin access)
@@ -371,12 +399,12 @@ If you need assistance:
 
 ## Version Information
 
-This guide is for Aircrew Transportation Management System v1.0
+This guide is for Onyx Transportation App v1.0
 
 Last Updated: January 2025
 
 ---
 
-**Thank you for using Aircrew Transportation Management System!**
+**Thank you for using the Onyx Transportation App!**
 
 For additional support or questions not covered in this guide, please contact your system administrator.

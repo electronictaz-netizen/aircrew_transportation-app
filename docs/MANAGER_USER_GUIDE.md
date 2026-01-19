@@ -1,6 +1,6 @@
-# Manager User Guide - Aircrew Transportation App
+# Manager User Guide - Onyx Transportation App
 
-Welcome! This guide will help you manage trips, drivers, and locations in the Aircrew Transportation system.
+Welcome! This guide will help you manage trips, drivers, and locations in the Onyx Transportation App.
 
 ## Table of Contents
 
@@ -14,7 +14,8 @@ Welcome! This guide will help you manage trips, drivers, and locations in the Ai
 8. [Daily Assignment Emails](#daily-assignment-emails)
 9. [Recurring Trips](#recurring-trips)
 10. [Best Practices](#best-practices)
-11. [Troubleshooting](#troubleshooting)
+11. [Subscription Management](#subscription-management)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -65,9 +66,13 @@ The Management Dashboard provides:
 1. **Header Bar**
    - Create Trip button
    - Manage Drivers button
-   - Manage Locations button
+   - Manage Locations button (Basic/Premium plans)
    - Filter Categories button (manage custom filters)
-   - Company Settings button (if you're an admin)
+   - Configuration dropdown:
+     - Custom Fields (Basic/Premium plans)
+     - Report Configuration (Premium plan)
+     - Company Settings (if you're an admin)
+     - **Subscription Management** (view and manage your subscription)
    - Driver Reports button (view driver statistics)
    - Trip Reports button (view trip analytics)
    - Send Daily Assignment Emails button
@@ -836,6 +841,62 @@ When editing a trip, you can see:
 
 ---
 
+## Subscription Management
+
+### Understanding Your Subscription
+
+Your company's subscription determines which features you have access to:
+
+- **Free Tier**: Up to 10 trips/month, basic features
+- **Basic Plan** ($49/month): Unlimited trips, location management, custom fields
+- **Premium Plan** ($99/month): Everything in Basic plus advanced reports and flight status API
+
+### Accessing Subscription Management
+
+1. Click **Configuration** in the Management Dashboard header
+2. Select **Subscription Management**
+3. View your current plan, status, and features
+
+### Trial Period
+
+If you're on a free trial:
+- You'll see a banner at the top of your dashboard
+- The banner shows days remaining in your trial
+- Subscribe anytime during your trial to continue using premium features
+- If your trial expires, your account automatically moves to the Free tier
+
+### Upgrading Your Plan
+
+1. Go to **Configuration** → **Subscription Management**
+2. Review available plans and their features
+3. Click **"Upgrade to [Plan Name]"** on the plan you want
+4. Complete checkout through Stripe
+5. Your subscription activates immediately
+
+### Managing Billing
+
+1. Go to **Subscription Management**
+2. Click **"Manage Billing"**
+3. You'll be redirected to Stripe Customer Portal where you can:
+   - Update payment methods
+   - View billing history
+   - Download invoices
+   - Cancel your subscription
+
+### Feature Access
+
+Some features are restricted by subscription tier:
+- **Location Management**: Available on Basic and Premium plans
+- **Custom Fields**: Available on Basic and Premium plans
+- **Custom Report Configuration**: Available on Premium plan only
+- **Unlimited Trips**: Available on Basic and Premium plans (Free tier limited to 10/month)
+
+If you try to access a restricted feature, you'll see a lock icon (🔒) and an upgrade prompt.
+
+**For complete subscription details, see [SUBSCRIPTION_AND_TRIAL_GUIDE.md](./SUBSCRIPTION_AND_TRIAL_GUIDE.md)**
+
+---
+
 ## Troubleshooting
 
 ### Can't Create a Trip
@@ -1084,6 +1145,6 @@ Contact your system administrator or support email.
 
 ---
 
-**Thank you for using the Aircrew Transportation Management System!**
+**Thank you for using the Onyx Transportation App!**
 
 For additional support, contact your system administrator.

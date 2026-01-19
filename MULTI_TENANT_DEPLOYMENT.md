@@ -1,6 +1,6 @@
 # Multi-Tenant Deployment Guide
 
-This document outlines the changes required to transform the Aircrew Transportation app from a single-company application to a multi-tenant SaaS application that can serve multiple companies.
+This document outlines the changes required to transform the Onyx Transportation App from a single-company application to a multi-tenant SaaS application that can serve multiple companies.
 
 ## Current Architecture
 

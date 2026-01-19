@@ -1,11 +1,12 @@
 # Documentation Index
 
-This folder contains all user-facing documentation for the Aircrew Transportation app.
+This folder contains all user-facing documentation for the Onyx Transportation App.
 
 ## Quick Start
 
 **New to the system?** Start here:
 - **[TENANT_QUICK_START.md](./TENANT_QUICK_START.md)** - Get up and running in 5 minutes
+- **[SUBSCRIPTION_AND_TRIAL_GUIDE.md](./SUBSCRIPTION_AND_TRIAL_GUIDE.md)** - Understand subscriptions and free trials
 
 ## User Guides by Role
 
@@ -95,6 +96,7 @@ This folder contains all user-facing documentation for the Aircrew Transportatio
 - ONBOARDING_IMPLEMENTATION.md
 
 **Reference:**
+- SUBSCRIPTION_AND_TRIAL_GUIDE.md
 - README_TENANT_DOCS.md
 - This file (README.md)
 
