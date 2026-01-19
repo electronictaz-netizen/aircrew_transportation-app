@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { BookOpen, FileText, Users, CreditCard, X } from 'lucide-react';
+import { BookOpen, FileText, Users, CreditCard } from 'lucide-react';
 import './HelpDialog.css';
 
 interface HelpDialogProps {
