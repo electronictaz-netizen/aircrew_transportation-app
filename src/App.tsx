@@ -26,19 +26,20 @@ import { ThemeProvider } from './contexts/ThemeContext';
 const LoadingFallback = () => <PageSkeleton />;
 
 function App() {
+  // Check for signup parameter in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const isSignup = urlParams.get('signup') === 'true';
+
   return (
     <ThemeProvider>
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          {/* Public landing page - no authentication required */}
-          <Route path="/landing" element={<LandingPage />} />
-          <Route path="/home" element={<LandingPage />} />
-          
           {/* Authenticated routes */}
           <Route
             path="/*"
             element={
               <Authenticator
+                initialSignIn={isSignup ? 'signUp' : 'signIn'}
                 components={{
                   Header() {
                     return <BrandedLoginHeader />;
