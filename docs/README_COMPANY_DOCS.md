@@ -19,7 +19,7 @@ This folder contains all documentation needed for onboarding new companies and t
 
 ### For Administrators
 
-3. **ADMIN_ONBOARDING_CHECKLIST.md**
+3. **internal/ADMIN_ONBOARDING_CHECKLIST.md** (Internal - for administrators only)
    - Step-by-step onboarding checklist
    - Ensures complete setup
    - Verification steps
@@ -30,7 +30,7 @@ This folder contains all documentation needed for onboarding new companies and t
 ### When Onboarding a New Company:
 
 1. **Before Onboarding**:
-   - Review `ADMIN_ONBOARDING_CHECKLIST.md`
+   - Review `internal/ADMIN_ONBOARDING_CHECKLIST.md` (Internal documentation)
    - Create the company in Admin Dashboard
    - Prepare support contact information
 

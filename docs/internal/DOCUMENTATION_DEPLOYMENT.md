@@ -211,7 +211,7 @@ Add documentation links in key places:
 5. **COMPANY_ONBOARDING_GUIDE.md** - Comprehensive onboarding
 6. **DRIVER_QUICK_REFERENCE.md** - Quick reference card
 7. **MANAGER_QUICK_REFERENCE.md** - Quick reference card
-8. **ADMIN_ONBOARDING_CHECKLIST.md** - Admin setup guide
+8. **internal/ADMIN_ONBOARDING_CHECKLIST.md** - Admin setup guide (Internal)
 
 ---
 

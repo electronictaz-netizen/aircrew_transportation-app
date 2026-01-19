@@ -42,10 +42,8 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 
 ### For Administrators
 
-- **[ADMIN_ONBOARDING_CHECKLIST.md](./ADMIN_ONBOARDING_CHECKLIST.md)** - Step-by-step onboarding checklist
-  - Complete setup process
-  - Verification steps
-  - Support information template
+- **Company Settings**: Access via Configuration → Company Settings in the Management Dashboard
+- **Subscription Management**: Access via Configuration → Subscription Management
 
 ## Onboarding Documentation
 
@@ -63,18 +61,6 @@ This folder contains all user-facing documentation for the Onyx Transportation A
   - Distribution methods
   - Customization instructions
 
-### Multi-Company Onboarding
-
-- **[MULTI_COMPANY_ONBOARDING.md](./MULTI_COMPANY_ONBOARDING.md)** - Multi-company onboarding strategies
-  - Admin-managed onboarding
-  - Self-service onboarding
-  - Email-based onboarding
-  - Implementation examples
-
-- **[ONBOARDING_IMPLEMENTATION.md](./ONBOARDING_IMPLEMENTATION.md)** - Quick reference for onboarding
-  - Console scripts
-  - Step-by-step instructions
-  - Troubleshooting
 
 ## Document Organization
 
@@ -91,9 +77,7 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 - MANAGER_QUICK_REFERENCE.md
 
 **Administrative:**
-- ADMIN_ONBOARDING_CHECKLIST.md
-- MULTI_COMPANY_ONBOARDING.md
-- ONBOARDING_IMPLEMENTATION.md
+- Internal documentation (see `internal/` folder)
 
 **Reference:**
 - SUBSCRIPTION_AND_TRIAL_GUIDE.md
@@ -105,7 +89,7 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 ### When Onboarding a New Company:
 
 1. **Before Onboarding:**
-   - Review `ADMIN_ONBOARDING_CHECKLIST.md`
+   - Review internal onboarding checklist (see `internal/ADMIN_ONBOARDING_CHECKLIST.md`)
    - Prepare support contact information
 
 2. **During Onboarding:**
