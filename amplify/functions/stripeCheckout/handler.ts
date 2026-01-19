@@ -67,8 +67,11 @@ async function getOrCreateStripeCustomer(companyId: string, stripe: any): Promis
 async function createCheckoutSession(request: CheckoutRequest): Promise<CheckoutResponse> {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   
+  console.log('Stripe secret key configured:', !!stripeSecretKey);
+  console.log('Stripe secret key length:', stripeSecretKey?.length || 0);
+  
   if (!stripeSecretKey) {
-    throw new Error('STRIPE_SECRET_KEY not configured');
+    throw new Error('STRIPE_SECRET_KEY not configured in Lambda environment variables');
   }
 
   // Initialize Stripe
@@ -110,14 +113,26 @@ async function createCheckoutSession(request: CheckoutRequest): Promise<Checkout
 
 export const handler: Handler = async (event) => {
   console.log('Stripe Checkout event:', JSON.stringify(event, null, 2));
+  console.log('Event body type:', typeof event.body);
+  console.log('Event body:', event.body);
 
   // Note: CORS is handled automatically by Lambda Function URL configuration
   // Do NOT add CORS headers here as it causes duplicate headers error
 
   try {
     // Handle both API Gateway and Function URL event formats
-    const body = typeof event.body === 'string' ? event.body : JSON.stringify(event.body || {});
-    const request: CheckoutRequest = JSON.parse(body || '{}');
+    let body: string;
+    if (typeof event.body === 'string') {
+      body = event.body;
+    } else if (event.body) {
+      body = JSON.stringify(event.body);
+    } else {
+      body = '{}';
+    }
+    
+    console.log('Parsed body string:', body);
+    const request: CheckoutRequest = JSON.parse(body);
+    console.log('Parsed request:', JSON.stringify(request, null, 2));
 
     if (!request.companyId || !request.priceId) {
       return {
@@ -151,11 +166,18 @@ export const handler: Handler = async (event) => {
     };
   } catch (error) {
     console.error('Error creating checkout session:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : typeof error,
+    });
+    
     return {
       statusCode: 500,
       body: JSON.stringify({ 
         error: 'Failed to create checkout session',
         message: error instanceof Error ? error.message : 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : String(error)) : undefined,
       }),
       headers: {
         'Content-Type': 'application/json',
