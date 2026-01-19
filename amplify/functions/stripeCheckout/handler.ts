@@ -23,8 +23,11 @@ interface CheckoutResponse {
  */
 async function getDataClient() {
   const { generateClient } = await import('aws-amplify/data');
+  const type = await import('../../data/resource');
   // In Lambda functions, Amplify is auto-configured by the backend
-  return generateClient<any>();
+  return generateClient<typeof type>({
+    authMode: 'iam',
+  });
 }
 
 /**
@@ -53,10 +56,16 @@ async function getOrCreateStripeCustomer(companyId: string, stripe: any): Promis
   });
 
   // Update company with Stripe customer ID
-  await client.models.Company.update({
+  const updateResult = await client.models.Company.update({
     id: companyId,
     stripeCustomerId: customer.id,
   });
+  
+  if (updateResult.errors && updateResult.errors.length > 0) {
+    console.error('Error updating company with Stripe customer ID:', updateResult.errors);
+    // Don't throw - customer was created, we can continue
+    console.warn('Stripe customer created but failed to save customer ID to company');
+  }
 
   return customer.id;
 }
