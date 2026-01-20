@@ -28,6 +28,7 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
 import LoadingButton from './LoadingButton';
+import { AddressAutocompleteInput } from './AddressAutocompleteInput';
 import {
   Select,
   SelectContent,
@@ -486,10 +487,13 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Input
+                      <AddressAutocompleteInput
+                        value={field.value || ''}
+                        onChange={field.onChange}
                         placeholder="Enter pickup location"
                         maxLength={MAX_LENGTHS.LOCATION}
-                        {...field}
+                        aria-label="Pickup location"
+                        aria-describedby={form.formState.errors.pickupLocation ? 'pickup-location-error' : undefined}
                       />
                     )}
                   </FormControl>
@@ -549,10 +553,13 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Input
+                      <AddressAutocompleteInput
+                        value={field.value || ''}
+                        onChange={field.onChange}
                         placeholder="Enter dropoff location"
                         maxLength={MAX_LENGTHS.LOCATION}
-                        {...field}
+                        aria-label="Dropoff location"
+                        aria-describedby={form.formState.errors.dropoffLocation ? 'dropoff-location-error' : undefined}
                       />
                     )}
                   </FormControl>

@@ -6,6 +6,7 @@ import { useNotification, useConfirm, ConfirmDialog } from './Notification';
 import NotificationComponent from './Notification';
 import { validateName, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
+import { AddressAutocompleteInput } from './AddressAutocompleteInput';
 import './LocationManagement.css';
 
 const client = generateClient<Schema>();
@@ -339,17 +340,15 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
 
             <div className="form-group">
               <label htmlFor="address">Address</label>
-              <input
-                type="text"
-                id="address"
+              <AddressAutocompleteInput
                 value={formData.address}
-                onChange={(e) => {
-                  setFormData({ ...formData, address: e.target.value });
+                onChange={(value) => {
+                  setFormData({ ...formData, address: value });
                   if (errors.address) setErrors({ ...errors, address: '' });
                 }}
                 placeholder="e.g., 123 Main St, City, State 12345"
                 maxLength={MAX_LENGTHS.LOCATION}
-                aria-invalid={!!errors.address}
+                aria-label="Location address"
                 aria-describedby={errors.address ? 'address-error' : undefined}
               />
               {errors.address && <span id="address-error" className="error-message" role="alert">{errors.address}</span>}
