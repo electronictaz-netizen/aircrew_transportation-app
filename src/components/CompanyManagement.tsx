@@ -6,6 +6,8 @@ import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
 import { validateUrl, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
+import { sendInvitationEmailViaLambda } from '../utils/sendInvitationEmail';
+import { sendInvitationEmail } from '../utils/invitationEmail';
 import './CompanyManagement.css';
 
 const client = generateClient<Schema>();
@@ -28,6 +30,14 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [companyUsers, setCompanyUsers] = useState<Schema['CompanyUser']['type'][]>([]);
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteData, setInviteData] = useState({
+    email: '',
+    role: 'driver' as 'admin' | 'manager' | 'driver',
+  });
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
     if (company) {
@@ -39,8 +49,134 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         subscriptionTier: (company.subscriptionTier as 'free' | 'basic' | 'premium') || 'premium',
         subscriptionStatus: (company.subscriptionStatus as 'active' | 'suspended' | 'cancelled') || 'active',
       });
+      if (showUserManagement) {
+        loadCompanyUsers();
+      }
     }
-  }, [company]);
+  }, [company, showUserManagement]);
+
+  const loadCompanyUsers = async () => {
+    if (!company) return;
+    
+    try {
+      setLoadingUsers(true);
+      const { data } = await client.models.CompanyUser.list({
+        filter: { companyId: { eq: company.id } },
+      });
+      setCompanyUsers(data || []);
+    } catch (error) {
+      logger.error('Error loading company users:', error);
+      showError('Failed to load company users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleInviteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!company) {
+      showError('No company found');
+      return;
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteData.email)) {
+      showError('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      // Check if user already exists for this company
+      const { data: existing } = await client.models.CompanyUser.list({
+        filter: {
+          companyId: { eq: company.id },
+          email: { eq: inviteData.email.toLowerCase().trim() },
+        },
+      });
+
+      if (existing && existing.length > 0) {
+        showError('User with this email is already associated with this company');
+        return;
+      }
+
+      // Create CompanyUser record (user will be linked when they sign up)
+      const { errors: createErrors } = await client.models.CompanyUser.create({
+        companyId: company.id,
+        userId: 'pending', // Placeholder until user signs up
+        email: inviteData.email.toLowerCase().trim(),
+        role: inviteData.role,
+        isActive: false, // Inactive until user signs up and confirms
+      } as any); // Type assertion needed because userId is required but we're using 'pending'
+
+      if (createErrors && createErrors.length > 0) {
+        showError('Error inviting user: ' + createErrors[0].message);
+        return;
+      }
+
+      // Try to send invitation email via Lambda function, fall back to mailto if not configured
+      try {
+        const emailResult = await sendInvitationEmailViaLambda({
+          email: inviteData.email.toLowerCase().trim(),
+          companyName: company.name,
+          role: inviteData.role,
+        });
+        
+        // If Lambda is not configured (null), fall back to mailto
+        if (emailResult === null) {
+          // Lambda not configured - use mailto fallback
+          sendInvitationEmail({
+            email: inviteData.email.toLowerCase().trim(),
+            companyName: company.name,
+            role: inviteData.role,
+          });
+          showSuccess(
+            `Invitation created for ${inviteData.email}!\n\n` +
+            `An email has been opened in your email client. Please review and send it to complete the invitation.\n\n` +
+            `They will be linked to the company when they sign up.`
+          );
+        } else if (emailResult.success) {
+          // Lambda succeeded
+          showSuccess(`Invitation sent successfully to ${inviteData.email}! They will receive an email with signup instructions.`);
+        } else {
+          // Lambda failed - fall back to mailto
+          throw new Error(emailResult.error || 'Failed to send email');
+        }
+      } catch (emailError: any) {
+        logger.error('Error sending invitation email via Lambda, falling back to mailto:', emailError);
+        // Fall back to mailto if Lambda fails
+        try {
+          sendInvitationEmail({
+            email: inviteData.email.toLowerCase().trim(),
+            companyName: company.name,
+            role: inviteData.role,
+          });
+          showSuccess(
+            `Invitation created for ${inviteData.email}!\n\n` +
+            `Automatic email sending failed, but an email has been opened in your email client as a fallback.\n\n` +
+            `Please review and send it to complete the invitation. They will be linked to the company when they sign up.`
+          );
+        } catch (mailtoError) {
+          // Even mailto failed - just show the invitation was created
+          logger.error('Error opening mailto link:', mailtoError);
+          showSuccess(
+            `Invitation created for ${inviteData.email}!\n\n` +
+            `However, we couldn't open your email client automatically. Please send them an invitation manually with this signup link:\n\n` +
+            `${window.location.origin}/?signup=true&email=${encodeURIComponent(inviteData.email.toLowerCase().trim())}\n\n` +
+            `They will be linked to the company when they sign up.`
+          );
+        }
+      }
+      
+      setShowInviteForm(false);
+      setInviteData({ email: '', role: 'driver' });
+      await loadCompanyUsers(); // Reload users list
+    } catch (error: any) {
+      logger.error('Error inviting user:', error);
+      showError('Failed to invite user. Please try again.');
+    }
+  };
 
   const handleSubdomainChange = (value: string) => {
     // Sanitize subdomain (lowercase, alphanumeric and hyphens only)
@@ -153,6 +289,48 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
           <h3>Company Information</h3>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
+
+        {/* Tabs */}
+        <div className="tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+          <button
+            type="button"
+            className={!showUserManagement ? 'tab-active' : 'tab-inactive'}
+            onClick={() => setShowUserManagement(false)}
+            style={{
+              padding: '0.5rem 1rem',
+              border: 'none',
+              background: 'none',
+              borderBottom: !showUserManagement ? '2px solid #3b82f6' : '2px solid transparent',
+              color: !showUserManagement ? '#3b82f6' : '#6b7280',
+              cursor: 'pointer',
+              fontWeight: !showUserManagement ? '600' : '400',
+            }}
+          >
+            Company Settings
+          </button>
+          <button
+            type="button"
+            className={showUserManagement ? 'tab-active' : 'tab-inactive'}
+            onClick={() => {
+              setShowUserManagement(true);
+              loadCompanyUsers();
+            }}
+            style={{
+              padding: '0.5rem 1rem',
+              border: 'none',
+              background: 'none',
+              borderBottom: showUserManagement ? '2px solid #3b82f6' : '2px solid transparent',
+              color: showUserManagement ? '#3b82f6' : '#6b7280',
+              cursor: 'pointer',
+              fontWeight: showUserManagement ? '600' : '400',
+            }}
+          >
+            User Management
+          </button>
+        </div>
+
+        {!showUserManagement ? (
+          /* Company Settings Form */
 
         <form onSubmit={handleSubmit} className="company-form">
           <div className="form-group">
@@ -276,6 +454,143 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
             </button>
           </div>
         </form>
+        ) : (
+          /* User Management Section */
+          <div className="user-management">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h4>Company Users</h4>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setShowInviteForm(true)}
+                style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+              >
+                + Invite User
+              </button>
+            </div>
+
+            {showInviteForm && (
+              <div className="invite-form" style={{ 
+                border: '1px solid #e5e7eb', 
+                borderRadius: '0.5rem', 
+                padding: '1.5rem', 
+                marginBottom: '1.5rem',
+                backgroundColor: '#f9fafb'
+              }}>
+                <h5 style={{ marginTop: 0, marginBottom: '1rem' }}>Invite New User</h5>
+                <form onSubmit={handleInviteUser}>
+                  <div className="form-group">
+                    <label htmlFor="invite-email">Email Address *</label>
+                    <input
+                      type="email"
+                      id="invite-email"
+                      value={inviteData.email}
+                      onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                      required
+                      placeholder="user@example.com"
+                      style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="invite-role">Role *</label>
+                    <select
+                      id="invite-role"
+                      value={inviteData.role}
+                      onChange={(e) => setInviteData({ ...inviteData, role: e.target.value as 'admin' | 'manager' | 'driver' })}
+                      required
+                      style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                    >
+                      <option value="driver">Driver</option>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <small style={{ display: 'block', marginTop: '0.25rem', color: '#6b7280' }}>
+                      Managers can perform all actions except system admin capabilities. Drivers can only view their assigned trips.
+                    </small>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setShowInviteForm(false);
+                        setInviteData({ email: '', role: 'driver' });
+                      }}
+                      style={{ fontSize: '0.875rem' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      style={{ fontSize: '0.875rem' }}
+                    >
+                      Send Invitation
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {loadingUsers ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>Loading users...</div>
+            ) : companyUsers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                <p>No users found. Invite users to get started.</p>
+              </div>
+            ) : (
+              <div className="users-list" style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead style={{ backgroundColor: '#f9fafb' }}>
+                    <tr>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Email</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Role</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {companyUsers.map((user) => (
+                      <tr key={user.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '0.75rem' }}>{user.email}</td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            backgroundColor: user.role === 'admin' ? '#dbeafe' : user.role === 'manager' ? '#d1fae5' : '#f3f4f6',
+                            color: user.role === 'admin' ? '#1e40af' : user.role === 'manager' ? '#065f46' : '#374151',
+                            textTransform: 'capitalize'
+                          }}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            backgroundColor: user.isActive ? '#d1fae5' : '#fef3c7',
+                            color: user.isActive ? '#065f46' : '#92400e'
+                          }}>
+                            {user.isActive ? 'Active' : user.userId === 'pending' ? 'Pending Invitation' : 'Inactive'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="form-actions" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            Close
+          </button>
+        </div>
       </div>
       {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
     </div>

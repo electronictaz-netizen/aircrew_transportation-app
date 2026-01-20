@@ -4,8 +4,7 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { useAdminAccess } from '../utils/adminAccess';
-import { canAccessManagement, getDefaultRoute, canManageTrips, canManageDrivers, canManageLocations, canAccessReports, canViewAllTrips } from '../utils/rolePermissions';
-import { Navigate } from 'react-router-dom';
+import { canManageTrips, canManageDrivers, canManageLocations, canAccessReports, canManageCompanySettings } from '../utils/rolePermissions';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getCurrentUser } from 'aws-amplify/auth';
 import { format } from 'date-fns';
@@ -1511,6 +1510,7 @@ function ManagementDashboard() {
               )}
             </AnimatePresence>
           </div>
+          )}
 
           {/* Configuration Dropdown - Only for managers/admins */}
           {(canManageCompanySettings(userRole) || isAdminOverride) && (

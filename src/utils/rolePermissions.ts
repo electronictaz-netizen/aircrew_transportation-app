@@ -18,7 +18,7 @@ export function canAccessManagement(role?: UserRole | null): boolean {
  * Check if a role has permission to access driver view
  * All roles can access driver view
  */
-export function canAccessDriverView(role?: UserRole | null): boolean {
+export function canAccessDriverView(_role?: UserRole | null): boolean {
   return true; // All roles can see driver view
 }
 
@@ -59,7 +59,7 @@ export function canViewAllTrips(role?: UserRole | null): boolean {
  * Drivers can only start/complete their assigned trips
  * Managers and admins can start/complete any trip
  */
-export function canStartCompleteTrip(role?: UserRole | null): boolean {
+export function canStartCompleteTrip(_role?: UserRole | null): boolean {
   return true; // All roles can start/complete trips (with restrictions on which trips)
 }
 

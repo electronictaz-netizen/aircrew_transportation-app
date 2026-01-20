@@ -33,6 +33,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const hasAdminAccess = useAdminAccess();
   const [company, setCompany] = useState<Schema['Company']['type'] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'admin' | 'manager' | 'driver' | null>(null);
   const [adminSelectedCompanyId, setAdminSelectedCompanyId] = useState<string | null>(null);
 
   const loadUserCompany = async () => {
