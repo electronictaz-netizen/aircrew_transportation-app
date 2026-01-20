@@ -12,7 +12,7 @@ import { logger } from './logger';
  * Add your email address here to grant admin access
  */
 const AUTHORIZED_ADMIN_EMAILS: string[] = [
-  'electronictaz@gmail.com',
+  'support@tazsoftware.biz',
   
 ];
 
