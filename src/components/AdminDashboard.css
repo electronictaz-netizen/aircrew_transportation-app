@@ -353,3 +353,134 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Dark mode styles */
+.dark .admin-dashboard {
+  color: #f9fafb;
+}
+
+.dark .admin-header h1 {
+  color: #f9fafb;
+}
+
+.dark .companies-list {
+  background: #1f2937;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark .companies-list h2 {
+  color: #f9fafb;
+}
+
+.dark .companies-table th {
+  background: #374151;
+  color: #e5e7eb;
+  border-bottom-color: #4b5563;
+}
+
+.dark .companies-table td {
+  color: #f9fafb;
+  border-bottom-color: #4b5563;
+}
+
+.dark .companies-table tr:hover {
+  background-color: #374151;
+}
+
+.dark .companies-table tr.selected {
+  background-color: #1e3a8a;
+}
+
+.dark .company-details {
+  background: #1f2937;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark .company-details-header {
+  border-bottom-color: #4b5563;
+}
+
+.dark .company-details-header h2 {
+  color: #f9fafb;
+}
+
+.dark .info-item label {
+  color: #d1d5db;
+}
+
+.dark .info-item span {
+  color: #f9fafb;
+}
+
+.dark .info-item select,
+.dark .info-item input[type="checkbox"] {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.dark .company-users-section {
+  border-top-color: #4b5563;
+}
+
+.dark .section-header h3 {
+  color: #f9fafb;
+}
+
+.dark .invite-form {
+  background: #374151;
+}
+
+.dark .users-table th {
+  background: #374151;
+  color: #e5e7eb;
+  border-bottom-color: #4b5563;
+}
+
+.dark .users-table td {
+  color: #f9fafb;
+  border-bottom-color: #4b5563;
+}
+
+.dark .users-table select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.dark .modal-content {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.dark .modal-content h2 {
+  color: #f9fafb;
+}
+
+.dark .form-group label {
+  color: #e5e7eb;
+}
+
+.dark .form-group input,
+.dark .form-group select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.dark .form-group small {
+  color: #d1d5db;
+}
+
+.dark .loading {
+  color: #d1d5db;
+}
+
+.dark .access-denied {
+  background: #1f2937;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark .access-denied p {
+  color: #d1d5db;
+}

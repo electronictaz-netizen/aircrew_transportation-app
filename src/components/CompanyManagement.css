@@ -148,3 +148,147 @@
     width: 100%;
   }
 }
+
+/* Dark mode styles */
+.dark .modal-content {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.dark .modal-content h3 {
+  color: #f9fafb;
+}
+
+.dark .close-btn {
+  color: #d1d5db;
+}
+
+.dark .close-btn:hover {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .form-group label {
+  color: #e5e7eb;
+}
+
+.dark .form-group input,
+.dark .form-group select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.dark .form-group input:focus,
+.dark .form-group select:focus {
+  border-color: #3b82f6;
+  background: #4b5563;
+}
+
+.dark .form-group small {
+  color: #d1d5db;
+}
+
+.dark .subdomain-suffix {
+  color: #9ca3af;
+}
+
+.dark .logo-preview {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.dark .form-actions {
+  border-top-color: #4b5563;
+}
+
+.dark .error-message p {
+  color: #d1d5db;
+}
+
+.dark .tabs button.tab-active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}
+
+.dark .tabs button.tab-inactive {
+  color: #9ca3af;
+}
+
+.dark .user-management h4 {
+  color: #f9fafb;
+}
+
+.dark .invite-form {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.dark .users-list {
+  border-color: #4b5563;
+}
+
+.dark .users-list table thead {
+  background-color: #374151;
+}
+
+.dark .users-list table th {
+  color: #e5e7eb;
+  border-bottom-color: #4b5563;
+}
+
+.dark .users-list table td {
+  color: #f9fafb;
+  border-bottom-color: #4b5563;
+}
+
+.dark .users-list table tr:hover {
+  background-color: #374151;
+}
+
+/* Override inline styles in dark mode - use attribute selectors for inline styles */
+.dark .tabs[style*="border"] {
+  border-bottom-color: #4b5563 !important;
+}
+
+.dark .invite-form {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+}
+
+.dark .users-list {
+  border-color: #4b5563 !important;
+}
+
+.dark .users-list table thead {
+  background-color: #374151 !important;
+}
+
+.dark .users-list table th {
+  border-bottom-color: #4b5563 !important;
+  color: #e5e7eb !important;
+}
+
+.dark .users-list table td {
+  color: #f9fafb !important;
+}
+
+.dark .users-list table tr {
+  border-bottom-color: #4b5563 !important;
+}
+
+.dark .user-management small {
+  color: #d1d5db !important;
+}
+
+.dark .user-management > div[style*="color"] {
+  color: #d1d5db !important;
+}
+
+.dark .user-management h4 {
+  color: #f9fafb !important;
+}
+
+.dark .user-management h5 {
+  color: #f9fafb !important;
+}
