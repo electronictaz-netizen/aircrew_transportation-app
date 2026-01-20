@@ -3,8 +3,6 @@
  * Calls the Lambda function to send invitation emails via AWS SES
  */
 
-import { getInvitationEmailContent } from './invitationEmail';
-
 interface SendInvitationRequest {
   email: string;
   companyName: string;

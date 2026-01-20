@@ -52,7 +52,8 @@ export function generateInvitationEmail(data: InvitationEmailData): { subject: s
  * Note: This opens the user's email client. For automated sending, use a Lambda function.
  */
 export function sendInvitationEmail(data: InvitationEmailData): void {
-  const { email, subject, body } = generateInvitationEmail(data);
+  const { subject, body } = generateInvitationEmail(data);
+  const { email } = data;
   
   // Create mailto link
   // Note: Some email clients have limits on body length, so we'll keep it reasonable
@@ -86,7 +87,8 @@ export function sendInvitationEmail(data: InvitationEmailData): void {
  * Get invitation email content (for use with Lambda function or other email service)
  */
 export function getInvitationEmailContent(data: InvitationEmailData): { to: string; subject: string; body: string; signupUrl: string } {
-  const { email, subject, body, signupUrl } = generateInvitationEmail(data);
+  const { subject, body, signupUrl } = generateInvitationEmail(data);
+  const { email } = data;
   
   return {
     to: email,
