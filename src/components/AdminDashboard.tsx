@@ -4,6 +4,8 @@ import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { useAdminAccess, isSystemAdmin } from '../utils/adminAccess';
 import { Navigate, Link } from 'react-router-dom';
+import { sendInvitationEmailViaLambda } from '../utils/sendInvitationEmail';
+import { sendInvitationEmail } from '../utils/invitationEmail';
 import './AdminDashboard.css';
 
 const client = generateClient<Schema>();
@@ -184,7 +186,61 @@ function AdminDashboard() {
         return;
       }
 
-      alert(`Invitation sent to ${inviteData.email}! They will be linked to the company when they sign up.`);
+      // Try to send invitation email via Lambda function, fall back to mailto if not configured
+      try {
+        const emailResult = await sendInvitationEmailViaLambda({
+          email: inviteData.email.toLowerCase().trim(),
+          companyName: selectedCompany.name,
+          role: inviteData.role,
+        });
+        
+        // If Lambda is not configured (null), fall back to mailto
+        if (emailResult === null) {
+          // Lambda not configured - use mailto fallback
+          sendInvitationEmail({
+            email: inviteData.email.toLowerCase().trim(),
+            companyName: selectedCompany.name,
+            role: inviteData.role,
+          });
+          alert(
+            `Invitation created for ${inviteData.email}!\n\n` +
+            `An email has been opened in your email client. Please review and send it to complete the invitation.\n\n` +
+            `They will be linked to the company when they sign up.`
+          );
+        } else if (emailResult.success) {
+          // Lambda succeeded
+          alert(`Invitation sent successfully to ${inviteData.email}! They will receive an email with signup instructions.`);
+        } else {
+          // Lambda failed - fall back to mailto
+          throw new Error(emailResult.error || 'Failed to send email');
+        }
+      } catch (emailError: any) {
+        console.error('Error sending invitation email via Lambda, falling back to mailto:', emailError);
+        // Fall back to mailto if Lambda fails
+        try {
+          sendInvitationEmail({
+            email: inviteData.email.toLowerCase().trim(),
+            companyName: selectedCompany.name,
+            role: inviteData.role,
+          });
+          alert(
+            `Invitation created for ${inviteData.email}!\n\n` +
+            `Automatic email sending failed, but an email has been opened in your email client as a fallback.\n\n` +
+            `Please review and send it to complete the invitation. They will be linked to the company when they sign up.\n\n` +
+            `Error: ${emailError.message || 'Unknown error'}`
+          );
+        } catch (mailtoError) {
+          // Even mailto failed - just show the invitation was created
+          console.error('Error opening mailto link:', mailtoError);
+          alert(
+            `Invitation created for ${inviteData.email}!\n\n` +
+            `However, we couldn't open your email client automatically. Please send them an invitation manually with this signup link:\n\n` +
+            `${window.location.origin}/?signup=true&email=${encodeURIComponent(inviteData.email.toLowerCase().trim())}\n\n` +
+            `They will be linked to the company when they sign up.`
+          );
+        }
+      }
+      
       setShowInviteForm(null);
       setInviteData({ email: '', role: 'driver' });
       loadCompanyUsers(selectedCompany.id);
