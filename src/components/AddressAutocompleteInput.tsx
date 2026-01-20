@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AutocompleteInput, AutocompleteOption } from './ui/autocomplete-input';
-import { getAddressSuggestions, isGooglePlacesAvailable } from '../utils/addressAutocomplete';
+import { getAddressSuggestions } from '../utils/addressAutocomplete';
 import { logger } from '../utils/logger';
 
 interface AddressAutocompleteInputProps {

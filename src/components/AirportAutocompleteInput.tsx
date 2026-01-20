@@ -3,7 +3,7 @@
  * Wraps AutocompleteInput with airport-specific logic
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { AutocompleteInput, AutocompleteOption } from './ui/autocomplete-input';
 import { searchAirports } from '../utils/airportAutocomplete';
 
