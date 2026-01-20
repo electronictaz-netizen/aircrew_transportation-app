@@ -14,8 +14,8 @@ interface TripListProps {
   trips: Array<Schema['Trip']['type']>;
   drivers: Array<Schema['Driver']['type']>;
   locations?: Array<Schema['Location']['type']>;
-  onEdit: (trip: Schema['Trip']['type']) => void;
-  onDelete: (tripId: string) => void;
+  onEdit?: (trip: Schema['Trip']['type']) => void;
+  onDelete?: (tripId: string) => void;
   onDeleteMultiple?: (tripIds: string[]) => void;
   onAssignMultiple?: (tripIds: string[]) => void;
   onUpdate: () => void;
@@ -199,7 +199,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
     if (onDeleteMultiple) {
       onDeleteMultiple(tripsToDelete);
       setSelectedTrips(new Set());
-    } else {
+    } else if (onDelete) {
       // Fallback to individual deletes
       tripsToDelete.forEach(tripId => onDelete(tripId));
       setSelectedTrips(new Set());
@@ -313,19 +313,23 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                 if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.closest('button') || target.closest('a')) {
                   return;
                 }
-                onEdit(trip);
+                if (onEdit) {
+                  onEdit(trip);
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   const target = e.target as HTMLElement;
                   if (target.tagName !== 'INPUT' && target.tagName !== 'BUTTON' && !target.closest('button') && !target.closest('a')) {
-                    onEdit(trip);
+                    if (onEdit) {
+                      onEdit(trip);
+                    }
                   }
                 }
               }}
-              style={{ cursor: 'pointer' }}
-              title="Click to view/edit trip details"
+              style={{ cursor: onEdit ? 'pointer' : 'default' }}
+              title={onEdit ? "Click to view/edit trip details" : "Trip details"}
               role="row"
               tabIndex={0}
               aria-label={`Trip ${trip.flightNumber || 'N/A'} on ${trip.pickupDate ? format(new Date(trip.pickupDate), 'MMM dd, yyyy') : 'N/A'}. Click to edit.`}
@@ -342,10 +346,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
               <td
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit(trip);
+                  if (onEdit) {
+                    onEdit(trip);
+                  }
                 }}
-                style={{ cursor: 'pointer', fontWeight: '500', color: '#3b82f6' }}
-                title="Click to view/edit trip"
+                style={{ cursor: onEdit ? 'pointer' : 'default', fontWeight: '500', color: onEdit ? '#3b82f6' : '#6b7280' }}
+                title={onEdit ? "Click to view/edit trip" : "Trip category"}
               >
                 {trip.primaryLocationCategory || trip.airport || 'N/A'}
               </td>
@@ -444,10 +450,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                 if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.closest('button') || target.closest('a')) {
                   return;
                 }
-                onEdit(trip);
+                if (onEdit) {
+                  onEdit(trip);
+                }
               }}
-              style={{ cursor: 'pointer' }}
-              title="Click to view/edit trip details"
+              style={{ cursor: onEdit ? 'pointer' : 'default' }}
+              title={onEdit ? "Click to view/edit trip details" : "Trip details"}
             >
               <div className="trip-card-header">
                 <div className="trip-card-title">
@@ -476,10 +484,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   className="trip-card-field"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEdit(trip);
+                    if (onEdit) {
+                      onEdit(trip);
+                    }
                   }}
-                  style={{ cursor: 'pointer' }}
-                  title="Click to view/edit trip"
+                  style={{ cursor: onEdit ? 'pointer' : 'default' }}
+                  title={onEdit ? "Click to view/edit trip" : "Trip category"}
                 >
                   <span className="trip-card-label">Category</span>
                   <span className="trip-card-value" style={{ color: '#3b82f6', fontWeight: '500' }}>

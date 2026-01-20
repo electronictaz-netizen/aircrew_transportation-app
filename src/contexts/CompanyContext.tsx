@@ -10,6 +10,7 @@ interface CompanyContextType {
   company: Schema['Company']['type'] | null;
   companyId: string | null;
   loading: boolean;
+  userRole: 'admin' | 'manager' | 'driver' | null;
   refreshCompany: () => Promise<void>;
   setAdminSelectedCompany: (companyId: string | null) => void;
   isAdminOverride: boolean;
@@ -19,6 +20,7 @@ const CompanyContext = createContext<CompanyContextType>({
   company: null,
   companyId: null,
   loading: true,
+  userRole: null,
   refreshCompany: async () => {},
   setAdminSelectedCompany: () => {},
   isAdminOverride: false,
@@ -116,6 +118,10 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
       if (companyUsers && companyUsers.length > 0) {
         const companyUser = companyUsers[0];
+        
+        // Set user role
+        const role = (companyUser.role || 'driver') as 'admin' | 'manager' | 'driver';
+        setUserRole(role);
         
         // Load the company
         const { data: companyData } = await client.models.Company.get({
@@ -369,6 +375,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         company,
         companyId: company?.id || null,
         loading,
+        userRole,
         refreshCompany: loadUserCompany,
         setAdminSelectedCompany,
         isAdminOverride: hasAdminAccess && adminSelectedCompanyId !== null,

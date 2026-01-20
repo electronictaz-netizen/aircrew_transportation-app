@@ -4,7 +4,10 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { useAdminAccess } from '../utils/adminAccess';
+import { canAccessManagement, getDefaultRoute, canManageTrips, canManageDrivers, canManageLocations, canAccessReports, canViewAllTrips } from '../utils/rolePermissions';
+import { Navigate } from 'react-router-dom';
 import { Link, useSearchParams } from 'react-router-dom';
+import { getCurrentUser } from 'aws-amplify/auth';
 import { format } from 'date-fns';
 import { Suspense, lazy } from 'react';
 import TripForm from './TripForm';
@@ -37,12 +40,13 @@ import './ManagementDashboard.css';
 const client = generateClient<Schema>();
 
 function ManagementDashboard() {
-  const { companyId, loading: companyLoading, company, isAdminOverride } = useCompany();
+  const { companyId, loading: companyLoading, company, isAdminOverride, userRole } = useCompany();
   const hasAdminAccess = useAdminAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
+  const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
   const [showTripForm, setShowTripForm] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
@@ -104,15 +108,47 @@ function ManagementDashboard() {
 
   useEffect(() => {
     if (companyId) {
+      // If user is a driver, find their driver record to filter trips
+      if (userRole === 'driver' && !isAdminOverride) {
+        loadCurrentDriver();
+      }
       loadTrips();
       loadDrivers();
       loadLocations();
-      // Generate upcoming recurring trips on load
-      generateUpcomingRecurringTrips(companyId || undefined).then(() => {
-        loadTrips(); // Reload trips after generating recurring ones
-      });
+      // Generate upcoming recurring trips on load (only for managers/admins)
+      if (canManageTrips(userRole) || isAdminOverride) {
+        generateUpcomingRecurringTrips(companyId || undefined).then(() => {
+          loadTrips(); // Reload trips after generating recurring ones
+        });
+      }
     }
-  }, [companyId]);
+  }, [companyId, userRole, isAdminOverride]);
+
+  // Load current driver if user is a driver
+  const loadCurrentDriver = async () => {
+    if (!companyId) return;
+    
+    try {
+      const user = await getCurrentUser();
+      const email = user.signInDetails?.loginId || user.username;
+      
+      if (email) {
+        const { data: driversData } = await client.models.Driver.list({
+          filter: { 
+            companyId: { eq: companyId },
+            email: { eq: email }
+          }
+        });
+        
+        const driver = driversData?.find((d: Schema['Driver']['type']) => d.email === email);
+        if (driver) {
+          setCurrentDriverId(driver.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading current driver:', error);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -138,8 +174,16 @@ function ManagementDashboard() {
       if (forceRefresh) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
+      
+      // Build filter - drivers can only see their assigned trips
+      const filter: any = { companyId: { eq: companyId! } };
+      if (userRole === 'driver' && !isAdminOverride && currentDriverId) {
+        // Drivers can only see trips assigned to them
+        filter.driverId = { eq: currentDriverId };
+      }
+      
       const { data: tripsData, errors } = await client.models.Trip.list({
-        filter: { companyId: { eq: companyId! } }
+        filter
       });
       
       if (errors && errors.length > 0) {
@@ -1384,19 +1428,22 @@ function ManagementDashboard() {
           )}
         </div>
         <div className="header-actions">
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              setEditingTrip(null);
-              setShowTripForm(true);
-            }}
-            aria-label="Create new trip"
-          >
-            + New Trip
-          </button>
+          {(canManageTrips(userRole) || isAdminOverride) && (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setEditingTrip(null);
+                setShowTripForm(true);
+              }}
+              aria-label="Create new trip"
+            >
+              + New Trip
+            </button>
+          )}
           
-          {/* Data Management Dropdown */}
-          <div className="dropdown-container">
+          {/* Data Management Dropdown - Only for managers/admins */}
+          {(canManageDrivers(userRole) || canManageLocations(userRole) || isAdminOverride) && (
+            <div className="dropdown-container">
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'data' ? null : 'data')}
@@ -1415,52 +1462,59 @@ function ManagementDashboard() {
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                 >
-                <Link
-                  to="/drivers"
-                  className="dropdown-item"
-                  onClick={() => setOpenDropdown(null)}
-                >
-                  Manage Drivers
-                </Link>
-                <button
-                  className="dropdown-item"
-                  onClick={() => {
-                    if (!hasFeatureAccess(company?.subscriptionTier, 'location_management')) {
-                      const upgradeMessage = 
-                        `⚠️ Feature Not Available\n\n` +
-                        `Location Management is available on Basic and Premium plans.\n\n` +
-                        `Would you like to upgrade?`;
-                      if (confirm(upgradeMessage)) {
-                        setShowSubscriptionManagement(true);
-                      }
-                      setOpenDropdown(null);
-                      return;
-                    }
-                    setShowLocationManagement(true);
-                    setOpenDropdown(null);
-                  }}
-                  disabled={!hasFeatureAccess(company?.subscriptionTier, 'location_management')}
-                  title={!hasFeatureAccess(company?.subscriptionTier, 'location_management') ? 'Upgrade to Basic or Premium to access Location Management' : ''}
-                >
-                  Manage Locations
-                  {!hasFeatureAccess(company?.subscriptionTier, 'location_management') && ' 🔒'}
-                </button>
-                <button
-                  className="dropdown-item"
-                  onClick={() => {
-                    setShowFilterCategoryManagement(true);
-                    setOpenDropdown(null);
-                  }}
-                >
-                  Filter Categories
-                </button>
+                {canManageDrivers(userRole) && (
+                  <Link
+                    to="/drivers"
+                    className="dropdown-item"
+                    onClick={() => setOpenDropdown(null)}
+                  >
+                    Manage Drivers
+                  </Link>
+                )}
+                {canManageLocations(userRole) && (
+                  <>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        if (!hasFeatureAccess(company?.subscriptionTier, 'location_management')) {
+                          const upgradeMessage = 
+                            `⚠️ Feature Not Available\n\n` +
+                            `Location Management is available on Basic and Premium plans.\n\n` +
+                            `Would you like to upgrade?`;
+                          if (confirm(upgradeMessage)) {
+                            setShowSubscriptionManagement(true);
+                          }
+                          setOpenDropdown(null);
+                          return;
+                        }
+                        setShowLocationManagement(true);
+                        setOpenDropdown(null);
+                      }}
+                      disabled={!hasFeatureAccess(company?.subscriptionTier, 'location_management')}
+                      title={!hasFeatureAccess(company?.subscriptionTier, 'location_management') ? 'Upgrade to Basic or Premium to access Location Management' : ''}
+                    >
+                      Manage Locations
+                      {!hasFeatureAccess(company?.subscriptionTier, 'location_management') && ' 🔒'}
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setShowFilterCategoryManagement(true);
+                        setOpenDropdown(null);
+                      }}
+                    >
+                      Filter Categories
+                    </button>
+                  </>
+                )}
               </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Configuration Dropdown */}
-          <div className="dropdown-container">
+          {/* Configuration Dropdown - Only for managers/admins */}
+          {(canManageCompanySettings(userRole) || isAdminOverride) && (
+            <div className="dropdown-container">
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'config' ? null : 'config')}
@@ -1547,9 +1601,11 @@ function ManagementDashboard() {
               )}
             </AnimatePresence>
           </div>
+          )}
 
-          {/* Reports Dropdown */}
-          <div className="dropdown-container">
+          {/* Reports Dropdown - Only for managers/admins */}
+          {canAccessReports(userRole) && (
+            <div className="dropdown-container">
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'reports' ? null : 'reports')}
@@ -1592,9 +1648,11 @@ function ManagementDashboard() {
               )}
             </AnimatePresence>
           </div>
+          )}
 
-          {/* Actions Dropdown */}
-          <div className="dropdown-container">
+          {/* Actions Dropdown - Only for managers/admins */}
+          {(canManageTrips(userRole) || isAdminOverride) && (
+            <div className="dropdown-container">
             <button
               className="btn btn-secondary dropdown-toggle"
               onClick={() => setOpenDropdown(openDropdown === 'actions' ? null : 'actions')}
@@ -1637,6 +1695,7 @@ function ManagementDashboard() {
               )}
             </AnimatePresence>
           </div>
+          )}
         </div>
 
         {/* View Toggle */}
@@ -1821,10 +1880,10 @@ function ManagementDashboard() {
             trips={trips}
             drivers={drivers}
             locations={locations}
-            onEdit={handleEditTrip}
-            onDelete={handleDeleteTrip}
-            onDeleteMultiple={handleDeleteMultipleTrips}
-            onAssignMultiple={handleAssignMultipleTrips}
+            onEdit={canManageTrips(userRole) || isAdminOverride ? handleEditTrip : undefined}
+            onDelete={canManageTrips(userRole) || isAdminOverride ? handleDeleteTrip : undefined}
+            onDeleteMultiple={canManageTrips(userRole) || isAdminOverride ? handleDeleteMultipleTrips : undefined}
+            onAssignMultiple={canManageTrips(userRole) || isAdminOverride ? handleAssignMultipleTrips : undefined}
             onUpdate={loadTrips}
           />
         ) : (

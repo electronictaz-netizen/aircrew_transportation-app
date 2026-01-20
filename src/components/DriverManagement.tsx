@@ -6,6 +6,8 @@ import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { useNotification, useConfirm, ConfirmDialog } from './Notification';
 import NotificationComponent from './Notification';
+import { canManageDrivers } from '../utils/rolePermissions';
+import { Navigate } from 'react-router-dom';
 import { validateName, validateEmail, validatePhone, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
 import { Link } from 'react-router-dom';
@@ -35,9 +37,14 @@ import './DriverManagement.css';
 const client = generateClient<Schema>();
 
 function DriverManagement() {
-  const { companyId } = useCompany();
+  const { companyId, userRole, loading: companyLoading } = useCompany();
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Redirect drivers - they can't manage drivers
+  if (!companyLoading && !canManageDrivers(userRole)) {
+    return <Navigate to="/driver" replace />;
+  }
   const { notification, showSuccess, showError, showWarning, hideNotification } = useNotification();
   const { confirmState, confirm, handleCancel } = useConfirm();
   const [showForm, setShowForm] = useState(false);

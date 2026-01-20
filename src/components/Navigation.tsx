@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { signOutWithCacheClear } from '../utils/cacheClear';
 import { useAdminAccess } from '../utils/adminAccess';
 import { useCompany } from '../contexts/CompanyContext';
+import { canAccessManagement } from '../utils/rolePermissions';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ThemeToggle';
 import HelpDialog from './HelpDialog';
@@ -17,8 +18,9 @@ interface NavigationProps {
 function Navigation({ signOut, user }: NavigationProps) {
   const location = useLocation();
   const hasAdminAccess = useAdminAccess();
-  const { company } = useCompany();
+  const { company, userRole } = useCompany();
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const canAccessManagementView = canAccessManagement(userRole);
 
   const handleSignOut = async () => {
     await signOutWithCacheClear(signOut);
@@ -44,14 +46,16 @@ function Navigation({ signOut, user }: NavigationProps) {
           )}
         </div>
         <div className="nav-links" role="menubar">
-          <Link
-            to="/management"
-            className={location.pathname === '/management' ? 'active' : ''}
-            role="menuitem"
-            aria-current={location.pathname === '/management' ? 'page' : undefined}
-          >
-            Management
-          </Link>
+          {canAccessManagementView && (
+            <Link
+              to="/management"
+              className={location.pathname === '/management' ? 'active' : ''}
+              role="menuitem"
+              aria-current={location.pathname === '/management' ? 'page' : undefined}
+            >
+              Management
+            </Link>
+          )}
           <Link
             to="/driver"
             className={location.pathname === '/driver' ? 'active' : ''}

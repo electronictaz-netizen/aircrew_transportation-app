@@ -2,9 +2,10 @@ import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import { CompanyProvider } from './contexts/CompanyContext';
+import { CompanyProvider, useCompany } from './contexts/CompanyContext';
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import Navigation from './components/Navigation';
+import { getDefaultRoute } from './utils/rolePermissions';
 import InstallPrompt from './components/InstallPrompt';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
@@ -24,6 +25,18 @@ import { ThemeProvider } from './contexts/ThemeContext';
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => <PageSkeleton />;
+
+// Default redirect component that uses role to determine route
+function DefaultRedirect() {
+  const { userRole, loading } = useCompany();
+  
+  if (loading) {
+    return <LoadingFallback />;
+  }
+  
+  const defaultRoute = getDefaultRoute(userRole);
+  return <Navigate to={defaultRoute} replace />;
+}
 
 function App() {
   return (
@@ -51,7 +64,7 @@ function App() {
                       <Navigation signOut={signOut || (() => {})} user={user} />
                       <Suspense fallback={<LoadingFallback />}>
                         <Routes>
-                          <Route path="/" element={<Navigate to="/management" replace />} />
+                          <Route path="/" element={<DefaultRedirect />} />
                           <Route path="/management" element={<ManagementDashboard />} />
                           <Route path="/drivers" element={<DriverManagement />} />
                           <Route path="/driver" element={<DriverDashboard />} />
