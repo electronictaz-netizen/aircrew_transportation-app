@@ -89,6 +89,19 @@ function ManagementDashboard() {
     },
   ]);
 
+  // Listen for "create-trip" events from child components (e.g., empty state button)
+  useEffect(() => {
+    const handleCreateTripEvent = (_event: Event) => {
+      setEditingTrip(null);
+      setShowTripForm(true);
+    };
+
+    window.addEventListener('create-trip', handleCreateTripEvent);
+    return () => {
+      window.removeEventListener('create-trip', handleCreateTripEvent);
+    };
+  }, []);
+
   useEffect(() => {
     if (companyId) {
       loadTrips();
