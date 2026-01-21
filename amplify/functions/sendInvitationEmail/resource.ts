@@ -1,6 +1,6 @@
 /**
  * Send Invitation Email Lambda Function
- * Sends invitation emails via AWS SES
+ * Sends invitation emails via Postmark API
  */
 
 import { defineFunction } from '@aws-amplify/backend';
@@ -10,7 +10,10 @@ export const sendInvitationEmail = defineFunction({
   entry: './handler.ts',
   timeoutSeconds: 30,
   environment: {
-    // Optional: Configure sender email (defaults to support@tazsoftware.biz)
-    SES_SENDER_EMAIL: process.env.SES_SENDER_EMAIL || 'support@tazsoftware.biz',
+    // Postmark configuration
+    // POSTMARK_FROM_EMAIL: defaults to noreply@onyxdispatch.us
+    // NOTE: Do NOT hardcode POSTMARK_API_KEY here. Set it as a secure env var
+    // in the Amplify console or via `amplify function update` so it is not committed.
+    POSTMARK_FROM_EMAIL: process.env.POSTMARK_FROM_EMAIL || 'noreply@onyxdispatch.us',
   },
 });

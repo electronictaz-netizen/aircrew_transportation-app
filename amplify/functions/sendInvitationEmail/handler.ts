@@ -1,10 +1,10 @@
 /**
  * Send Invitation Email Lambda Handler
- * Sends invitation emails via AWS SES
+ * Sends invitation emails via Postmark API
  */
 
 import type { Handler } from 'aws-lambda';
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { ServerClient } from 'postmark';
 
 interface InvitationRequest {
   to: string;
@@ -136,21 +136,31 @@ function generateInvitationEmailText(data: InvitationRequest): string {
 }
 
 /**
- * Get sender email address from environment or use default
+ * Get Postmark configuration from environment variables.
+ *
+ * Required:
+ * - POSTMARK_API_KEY: Server API token from Postmark
+ * - POSTMARK_FROM_EMAIL: Verified sender email address (defaults to noreply@onyxdispatch.us)
  */
-function getSenderEmail(): string {
-  // Check for configured sender email
-  const senderEmail = process.env.SES_SENDER_EMAIL;
-  if (senderEmail) {
-    return senderEmail;
-  }
+function getPostmarkConfig() {
+  const apiKey = process.env.POSTMARK_API_KEY;
   
-  // Default to support email
-  return 'support@tazsoftware.biz';
+  if (!apiKey) {
+    throw new Error(
+      'POSTMARK_API_KEY environment variable must be set for email sending.'
+    );
+  }
+
+  const fromEmail = process.env.POSTMARK_FROM_EMAIL || 'noreply@onyxdispatch.us';
+
+  return {
+    apiKey,
+    fromEmail,
+  };
 }
 
 /**
- * Lambda handler for sending invitation emails
+ * Lambda handler for sending invitation emails via Postmark API
  */
 export const handler: Handler = async (event: any): Promise<InvitationResponse> => {
   try {
@@ -182,65 +192,45 @@ export const handler: Handler = async (event: any): Promise<InvitationResponse> 
       };
     }
 
-    // Get sender email
-    const senderEmail = getSenderEmail();
-    
+    // Get Postmark configuration
+    const config = getPostmarkConfig();
+    const client = new ServerClient(config.apiKey);
+
     // Generate email content
     const subject = `You've been invited to join ${requestBody.companyName} on Onyx Transportation App`;
     const htmlBody = generateInvitationEmailHtml(requestBody);
     const textBody = generateInvitationEmailText(requestBody);
 
-    // Initialize SES client
-    const sesClient = new SESClient({ region: process.env.AWS_REGION || 'us-east-1' });
-
-    // Send email via SES
-    const sendEmailCommand = new SendEmailCommand({
-      Source: senderEmail,
-      Destination: {
-        ToAddresses: [requestBody.to],
-      },
-      Message: {
-        Subject: {
-          Data: subject,
-          Charset: 'UTF-8',
-        },
-        Body: {
-          Html: {
-            Data: htmlBody,
-            Charset: 'UTF-8',
-          },
-          Text: {
-            Data: textBody,
-            Charset: 'UTF-8',
-          },
-        },
-      },
+    // Send email via Postmark
+    const response = await client.sendEmail({
+      From: config.fromEmail,
+      To: requestBody.to,
+      Subject: subject,
+      HtmlBody: htmlBody,
+      TextBody: textBody,
+      MessageStream: 'outbound', // Use 'outbound' for transactional emails
     });
 
-    const response = await sesClient.send(sendEmailCommand);
-
-    console.log('Invitation email sent successfully:', {
+    console.log('Invitation email sent successfully via Postmark:', {
       to: requestBody.to,
       companyName: requestBody.companyName,
-      messageId: response.MessageId,
+      messageId: response.MessageID,
     });
 
     return {
       success: true,
-      messageId: response.MessageId,
+      messageId: response.MessageID,
     };
   } catch (error: any) {
-    console.error('Error sending invitation email:', error);
-    
-    // Provide helpful error messages
-    let errorMessage = 'Unknown error occurred';
-    
-    if (error.name === 'MessageRejected') {
-      errorMessage = 'Email was rejected. Please verify the recipient email address and SES configuration.';
-    } else if (error.name === 'MailFromDomainNotVerifiedException') {
-      errorMessage = 'Sender email domain not verified in SES. Please verify your domain or email address in AWS SES.';
-    } else if (error.message) {
+    console.error('Error sending invitation email via Postmark:', error);
+
+    let errorMessage = 'Unknown error occurred while sending email via Postmark.';
+
+    if (error && typeof error.message === 'string') {
       errorMessage = error.message;
+    } else if (error && error.ErrorCode) {
+      // Postmark-specific error format
+      errorMessage = `${error.Message || errorMessage} (Error Code: ${error.ErrorCode})`;
     }
 
     return {

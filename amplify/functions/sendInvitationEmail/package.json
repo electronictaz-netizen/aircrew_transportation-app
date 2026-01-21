@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@aws-sdk/client-ses": "^3.700.0"
+    "postmark": "^3.0.19"
   }
 }
