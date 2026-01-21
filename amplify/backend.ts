@@ -14,3 +14,13 @@ export const backend = defineBackend({
   stripePortal,
   sendInvitationEmail,
 });
+
+// Add Function URL for sendInvitationEmail
+backend.sendInvitationEmail.addFunctionUrl({
+  authType: 'NONE', // Public endpoint (frontend will call it)
+  cors: {
+    allowedOrigins: ['*'], // Allow all origins (adjust for production)
+    allowedMethods: ['POST'],
+    allowedHeaders: ['content-type'],
+  },
+});
