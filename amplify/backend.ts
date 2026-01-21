@@ -16,11 +16,6 @@ export const backend = defineBackend({
 });
 
 // Add Function URL for sendInvitationEmail
-backend.sendInvitationEmail.addFunctionUrl({
-  authType: 'NONE', // Public endpoint (frontend will call it)
-  cors: {
-    allowedOrigins: ['*'], // Allow all origins (adjust for production)
-    allowedMethods: ['POST'],
-    allowedHeaders: ['content-type'],
-  },
-});
+// Note: Function URLs need to be created manually in AWS Lambda Console
+// or via AWS CLI/CDK. The URL will be available after first deployment.
+// See EMAIL_FUNCTION_URL_SETUP.md for instructions.

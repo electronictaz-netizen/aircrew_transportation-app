@@ -24,10 +24,11 @@ After your backend deploys, get the Function URL using one of these methods:
 3. Click on the function
 4. Go to **Configuration** tab → **Function URL**
 5. If you see a URL, **copy it** (it looks like `https://[id].lambda-url.[region].on.aws/`)
-6. If you don't see a Function URL, it should be created automatically by the backend configuration. If not, click **Create function URL**:
-   - Auth type: **NONE**
-   - CORS: Enable
+6. If you don't see a Function URL, **click "Create function URL"**:
+   - Auth type: **NONE** (allows public access from frontend)
+   - CORS: **Enable** (allows browser requests)
    - Click **Save**
+   - Copy the generated URL
 
 #### Method 2: AWS CLI
 
