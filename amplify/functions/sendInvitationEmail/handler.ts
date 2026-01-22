@@ -245,32 +245,48 @@ export const handler: Handler = async (event: any): Promise<any> => {
 
     // Get Postmark configuration
     const config = getPostmarkConfig();
-    const client = new ServerClient(config.apiKey);
 
     // Generate email content
     const subject = `You've been invited to join ${requestBody.companyName} on Onyx Transportation App`;
     const htmlBody = generateInvitationEmailHtml(requestBody);
     const textBody = generateInvitationEmailText(requestBody);
 
-    // Send email via Postmark
-    const response = await client.sendEmail({
-      From: config.fromEmail,
-      To: requestBody.to,
-      Subject: subject,
-      HtmlBody: htmlBody,
-      TextBody: textBody,
-      MessageStream: 'outbound', // Use 'outbound' for transactional emails
+    // Send email via Postmark REST API
+    const postmarkResponse = await fetch('https://api.postmarkapp.com/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Postmark-Server-Token': config.apiKey,
+      },
+      body: JSON.stringify({
+        From: config.fromEmail,
+        To: requestBody.to,
+        Subject: subject,
+        HtmlBody: htmlBody,
+        TextBody: textBody,
+        MessageStream: 'outbound',
+      }),
     });
+
+    if (!postmarkResponse.ok) {
+      const errorData = await postmarkResponse.json().catch(() => ({ 
+        Message: `HTTP ${postmarkResponse.status}: ${postmarkResponse.statusText}` 
+      }));
+      throw new Error(errorData.Message || `Postmark API error: ${postmarkResponse.status}`);
+    }
+
+    const postmarkResult = await postmarkResponse.json();
 
     console.log('Invitation email sent successfully via Postmark:', {
       to: requestBody.to,
       companyName: requestBody.companyName,
-      messageId: response.MessageID,
+      messageId: postmarkResult.MessageID,
     });
 
     const successResponse = {
       success: true,
-      messageId: response.MessageID,
+      messageId: postmarkResult.MessageID,
     };
 
     return {
