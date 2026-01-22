@@ -4,6 +4,7 @@
  */
 
 import type { Handler } from 'aws-lambda';
+import { ServerClient } from 'postmark';
 
 interface InvitationRequest {
   to: string;
@@ -245,9 +246,6 @@ export const handler: Handler = async (event: any): Promise<any> => {
 
     // Get Postmark configuration
     const config = getPostmarkConfig();
-    
-    // Use dynamic import to avoid bundling issues with Postmark
-    const { ServerClient } = await import('postmark');
     const client = new ServerClient(config.apiKey);
 
     // Generate email content
