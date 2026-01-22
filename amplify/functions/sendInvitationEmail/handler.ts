@@ -1,10 +1,9 @@
 /**
  * Send Invitation Email Lambda Handler
- * Sends invitation emails via Postmark API
+ * Sends invitation emails via Postmark REST API
  */
 
 import type { Handler } from 'aws-lambda';
-import { ServerClient } from 'postmark';
 
 interface InvitationRequest {
   to: string;
@@ -287,8 +286,8 @@ export const handler: Handler = async (event: any): Promise<any> => {
     if (error && typeof error.message === 'string') {
       errorMessage = error.message;
     } else if (error && error.ErrorCode) {
-      // Postmark-specific error format
-      errorMessage = `${error.Message || errorMessage} (Error Code: ${error.ErrorCode})`;
+      // Postmark-specific error format (from API response)
+      errorMessage = `${error.Message || error.message || errorMessage} (Error Code: ${error.ErrorCode})`;
     }
 
     const errorResponse = {

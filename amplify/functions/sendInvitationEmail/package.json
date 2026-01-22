@@ -2,7 +2,5 @@
   "name": "send-invitation-email",
   "version": "1.0.0",
   "type": "module",
-  "dependencies": {
-    "postmark": "^3.0.19"
-  }
+  "dependencies": {}
 }
