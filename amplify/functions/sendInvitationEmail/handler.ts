@@ -173,8 +173,15 @@ function getPostmarkConfig() {
  * Handles CORS for Lambda Function URL requests
  */
 export const handler: Handler = async (event: any): Promise<any> => {
+  // Detect HTTP method from various event formats
+  const httpMethod = 
+    event.requestContext?.http?.method || 
+    event.requestContext?.httpMethod ||
+    event.httpMethod ||
+    (event.requestContext?.requestContext?.http?.method);
+
   // Handle CORS preflight (OPTIONS) requests
-  if (event.requestContext?.http?.method === 'OPTIONS' || event.httpMethod === 'OPTIONS') {
+  if (httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -186,17 +193,39 @@ export const handler: Handler = async (event: any): Promise<any> => {
     // Parse request body (handle both API Gateway and Function URL formats)
     let requestBody: InvitationRequest;
     
-    // Lambda Function URL format
+    // Lambda Function URL format (has requestContext.http)
     if (event.requestContext?.http) {
-      // Function URL format - body is a string
+      // Function URL format - body is always a string
       if (typeof event.body === 'string') {
-        requestBody = JSON.parse(event.body);
+        try {
+          requestBody = event.body ? JSON.parse(event.body) : {};
+        } catch (parseError) {
+          return {
+            statusCode: 400,
+            headers: corsHeaders,
+            body: JSON.stringify({ 
+              success: false, 
+              error: 'Invalid JSON in request body' 
+            }),
+          };
+        }
       } else {
         requestBody = event.body || {};
       }
     } else if (typeof event.body === 'string') {
       // API Gateway format
-      requestBody = JSON.parse(event.body);
+      try {
+        requestBody = event.body ? JSON.parse(event.body) : {};
+      } catch (parseError) {
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ 
+            success: false, 
+            error: 'Invalid JSON in request body' 
+          }),
+        };
+      }
     } else if (event.body) {
       requestBody = event.body;
     } else {
