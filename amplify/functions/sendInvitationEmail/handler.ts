@@ -142,31 +142,42 @@ function generateInvitationEmailText(data: InvitationRequest): string {
 }
 
 /**
- * Get Postmark configuration from environment variables.
+ * Get email service configuration from environment variables.
+ * Supports both SendGrid and Postmark (SendGrid preferred for speed).
  *
  * Required:
- * - POSTMARK_API_KEY: Server API token from Postmark
- * - POSTMARK_FROM_EMAIL: Verified sender email address (defaults to noreply@onyxdispatch.us)
+ * - SENDGRID_API_KEY: API key from SendGrid (preferred)
+ * - OR POSTMARK_API_KEY: Server API token from Postmark (fallback)
+ * - EMAIL_FROM: Verified sender email address (defaults to noreply@onyxdispatch.us)
  */
-function getPostmarkConfig() {
-  const apiKey = process.env.POSTMARK_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error(
-      'POSTMARK_API_KEY environment variable must be set for email sending.'
-    );
+function getEmailConfig() {
+  // Prefer SendGrid (faster, more reliable)
+  const sendGridApiKey = process.env.SENDGRID_API_KEY;
+  if (sendGridApiKey) {
+    return {
+      provider: 'sendgrid',
+      apiKey: sendGridApiKey,
+      fromEmail: process.env.EMAIL_FROM || 'noreply@onyxdispatch.us',
+    };
   }
 
-  const fromEmail = process.env.POSTMARK_FROM_EMAIL || 'noreply@onyxdispatch.us';
+  // Fallback to Postmark
+  const postmarkApiKey = process.env.POSTMARK_API_KEY;
+  if (postmarkApiKey) {
+    return {
+      provider: 'postmark',
+      apiKey: postmarkApiKey,
+      fromEmail: process.env.EMAIL_FROM || process.env.POSTMARK_FROM_EMAIL || 'noreply@onyxdispatch.us',
+    };
+  }
 
-  return {
-    apiKey,
-    fromEmail,
-  };
+  throw new Error(
+    'SENDGRID_API_KEY or POSTMARK_API_KEY environment variable must be set for email sending.'
+  );
 }
 
 /**
- * Lambda handler for sending invitation emails via Postmark API
+ * Lambda handler for sending invitation emails via SendGrid (preferred) or Postmark (fallback)
  * Note: CORS is handled by Lambda Function URL settings in AWS Console
  */
 export const handler: Handler = async (event: any): Promise<any> => {
@@ -243,50 +254,98 @@ export const handler: Handler = async (event: any): Promise<any> => {
       };
     }
 
-    // Get Postmark configuration
-    const config = getPostmarkConfig();
+    // Get email service configuration
+    const config = getEmailConfig();
 
     // Generate email content
     const subject = `You've been invited to join ${requestBody.companyName} on Onyx Transportation App`;
     const htmlBody = generateInvitationEmailHtml(requestBody);
     const textBody = generateInvitationEmailText(requestBody);
 
-    // Send email via Postmark REST API
-    const postmarkResponse = await fetch('https://api.postmarkapp.com/email', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-Postmark-Server-Token': config.apiKey,
-      },
-      body: JSON.stringify({
-        From: config.fromEmail,
-        To: requestBody.to,
-        Subject: subject,
-        HtmlBody: htmlBody,
-        TextBody: textBody,
-        MessageStream: 'outbound',
-      }),
-    });
+    let emailResponse;
+    let messageId;
 
-    if (!postmarkResponse.ok) {
-      const errorData = await postmarkResponse.json().catch(() => ({ 
-        Message: `HTTP ${postmarkResponse.status}: ${postmarkResponse.statusText}` 
-      }));
-      throw new Error(errorData.Message || `Postmark API error: ${postmarkResponse.status}`);
+    if (config.provider === 'sendgrid') {
+      // Send via SendGrid API (faster, more reliable)
+      const sendGridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: { email: config.fromEmail },
+          personalizations: [{
+            to: [{ email: requestBody.to }],
+            subject: subject,
+          }],
+          content: [
+            { type: 'text/plain', value: textBody },
+            { type: 'text/html', value: htmlBody },
+          ],
+        }),
+      });
+
+      if (!sendGridResponse.ok) {
+        const errorText = await sendGridResponse.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { errors: [{ message: `HTTP ${sendGridResponse.status}: ${sendGridResponse.statusText}` }] };
+        }
+        throw new Error(errorData.errors?.[0]?.message || `SendGrid API error: ${sendGridResponse.status}`);
+      }
+
+      // SendGrid returns 202 Accepted with X-Message-Id header
+      messageId = sendGridResponse.headers.get('X-Message-Id') || 'unknown';
+      emailResponse = sendGridResponse;
+
+      console.log('Invitation email sent successfully via SendGrid:', {
+        to: requestBody.to,
+        companyName: requestBody.companyName,
+        messageId,
+      });
+    } else {
+      // Fallback to Postmark
+      const postmarkResponse = await fetch('https://api.postmarkapp.com/email', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-Postmark-Server-Token': config.apiKey,
+        },
+        body: JSON.stringify({
+          From: config.fromEmail,
+          To: requestBody.to,
+          Subject: subject,
+          HtmlBody: htmlBody,
+          TextBody: textBody,
+          MessageStream: 'outbound',
+        }),
+      });
+
+      if (!postmarkResponse.ok) {
+        const errorData = await postmarkResponse.json().catch(() => ({ 
+          Message: `HTTP ${postmarkResponse.status}: ${postmarkResponse.statusText}` 
+        }));
+        throw new Error(errorData.Message || `Postmark API error: ${postmarkResponse.status}`);
+      }
+
+      const postmarkResult = await postmarkResponse.json();
+      messageId = postmarkResult.MessageID;
+      emailResponse = postmarkResponse;
+
+      console.log('Invitation email sent successfully via Postmark:', {
+        to: requestBody.to,
+        companyName: requestBody.companyName,
+        messageId,
+      });
     }
-
-    const postmarkResult = await postmarkResponse.json();
-
-    console.log('Invitation email sent successfully via Postmark:', {
-      to: requestBody.to,
-      companyName: requestBody.companyName,
-      messageId: postmarkResult.MessageID,
-    });
 
     const successResponse = {
       success: true,
-      messageId: postmarkResult.MessageID,
+      messageId,
     };
 
     return {
@@ -295,9 +354,9 @@ export const handler: Handler = async (event: any): Promise<any> => {
       body: JSON.stringify(successResponse),
     };
   } catch (error: any) {
-    console.error('Error sending invitation email via Postmark:', error);
+    console.error('Error sending invitation email:', error);
 
-    let errorMessage = 'Unknown error occurred while sending email via Postmark.';
+    let errorMessage = 'Unknown error occurred while sending email.';
 
     if (error && typeof error.message === 'string') {
       errorMessage = error.message;

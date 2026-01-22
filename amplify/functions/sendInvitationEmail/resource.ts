@@ -10,10 +10,11 @@ export const sendInvitationEmail = defineFunction({
   entry: './handler.ts',
   timeoutSeconds: 30,
   environment: {
-    // Postmark configuration
-    // POSTMARK_FROM_EMAIL: defaults to noreply@onyxdispatch.us
-    // NOTE: Do NOT hardcode POSTMARK_API_KEY here. Set it as a secure env var
-    // in the Amplify console or via `amplify function update` so it is not committed.
-    POSTMARK_FROM_EMAIL: process.env.POSTMARK_FROM_EMAIL || 'noreply@onyxdispatch.us',
+    // Email service configuration
+    // EMAIL_FROM: defaults to noreply@onyxdispatch.us
+    // NOTE: Do NOT hardcode API keys here. Set them as secure env vars
+    // in the Lambda console so they are not committed.
+    // Prefer SENDGRID_API_KEY (faster), fallback to POSTMARK_API_KEY
+    EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@onyxdispatch.us',
   },
 });
