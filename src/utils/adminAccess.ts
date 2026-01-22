@@ -13,7 +13,7 @@ import { logger } from './logger';
  */
 const AUTHORIZED_ADMIN_EMAILS: string[] = [
   'support@tazsoftware.biz',
-  'electronictaz@gmail.com'
+  
   
 ];
 
