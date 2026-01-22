@@ -20,12 +20,9 @@ interface InvitationResponse {
 }
 
 /**
- * CORS headers for Lambda Function URL responses
+ * Response headers (CORS is handled by Lambda Function URL settings in AWS Console)
  */
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const responseHeaders = {
   'Content-Type': 'application/json',
 };
 
@@ -170,24 +167,11 @@ function getPostmarkConfig() {
 
 /**
  * Lambda handler for sending invitation emails via Postmark API
- * Handles CORS for Lambda Function URL requests
+ * Note: CORS is handled by Lambda Function URL settings in AWS Console
  */
 export const handler: Handler = async (event: any): Promise<any> => {
-  // Detect HTTP method from various event formats
-  const httpMethod = 
-    event.requestContext?.http?.method || 
-    event.requestContext?.httpMethod ||
-    event.httpMethod ||
-    (event.requestContext?.requestContext?.http?.method);
-
-  // Handle CORS preflight (OPTIONS) requests
-  if (httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({ message: 'OK' }),
-    };
-  }
+  // OPTIONS requests are handled automatically by AWS when CORS is enabled in Function URL settings
+  // No need to handle them in the handler code
 
   try {
     // Parse request body (handle both API Gateway and Function URL formats)
@@ -219,7 +203,7 @@ export const handler: Handler = async (event: any): Promise<any> => {
       } catch (parseError) {
         return {
           statusCode: 400,
-          headers: corsHeaders,
+          headers: responseHeaders,
           body: JSON.stringify({ 
             success: false, 
             error: 'Invalid JSON in request body' 
@@ -240,7 +224,7 @@ export const handler: Handler = async (event: any): Promise<any> => {
       };
       return {
         statusCode: 400,
-        headers: corsHeaders,
+        headers: responseHeaders,
         body: JSON.stringify(errorResponse),
       };
     }
@@ -254,7 +238,7 @@ export const handler: Handler = async (event: any): Promise<any> => {
       };
       return {
         statusCode: 400,
-        headers: corsHeaders,
+        headers: responseHeaders,
         body: JSON.stringify(errorResponse),
       };
     }
@@ -294,7 +278,7 @@ export const handler: Handler = async (event: any): Promise<any> => {
 
     return {
       statusCode: 200,
-      headers: corsHeaders,
+      headers: responseHeaders,
       body: JSON.stringify(successResponse),
     };
   } catch (error: any) {
@@ -316,7 +300,7 @@ export const handler: Handler = async (event: any): Promise<any> => {
 
     return {
       statusCode: 500,
-      headers: corsHeaders,
+      headers: responseHeaders,
       body: JSON.stringify(errorResponse),
     };
   }
