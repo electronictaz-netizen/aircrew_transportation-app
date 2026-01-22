@@ -20,6 +20,16 @@ interface InvitationResponse {
 }
 
 /**
+ * CORS headers for Lambda Function URL responses
+ */
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json',
+};
+
+/**
  * Generate HTML email content for invitation
  */
 function generateInvitationEmailHtml(data: InvitationRequest): string {
@@ -160,13 +170,32 @@ function getPostmarkConfig() {
 
 /**
  * Lambda handler for sending invitation emails via Postmark API
+ * Handles CORS for Lambda Function URL requests
  */
-export const handler: Handler = async (event: any): Promise<InvitationResponse> => {
+export const handler: Handler = async (event: any): Promise<any> => {
+  // Handle CORS preflight (OPTIONS) requests
+  if (event.requestContext?.http?.method === 'OPTIONS' || event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'OK' }),
+    };
+  }
+
   try {
     // Parse request body (handle both API Gateway and Function URL formats)
     let requestBody: InvitationRequest;
     
-    if (typeof event.body === 'string') {
+    // Lambda Function URL format
+    if (event.requestContext?.http) {
+      // Function URL format - body is a string
+      if (typeof event.body === 'string') {
+        requestBody = JSON.parse(event.body);
+      } else {
+        requestBody = event.body || {};
+      }
+    } else if (typeof event.body === 'string') {
+      // API Gateway format
       requestBody = JSON.parse(event.body);
     } else if (event.body) {
       requestBody = event.body;
@@ -176,18 +205,28 @@ export const handler: Handler = async (event: any): Promise<InvitationResponse> 
 
     // Validate required fields
     if (!requestBody.to || !requestBody.companyName || !requestBody.signupUrl) {
-      return {
+      const errorResponse = {
         success: false,
         error: 'Missing required fields: to, companyName, and signupUrl are required',
+      };
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify(errorResponse),
       };
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(requestBody.to)) {
-      return {
+      const errorResponse = {
         success: false,
         error: 'Invalid email address format',
+      };
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify(errorResponse),
       };
     }
 
@@ -219,9 +258,15 @@ export const handler: Handler = async (event: any): Promise<InvitationResponse> 
       messageId: response.MessageID,
     });
 
-    return {
+    const successResponse = {
       success: true,
       messageId: response.MessageID,
+    };
+
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify(successResponse),
     };
   } catch (error: any) {
     console.error('Error sending invitation email via Postmark:', error);
@@ -235,9 +280,15 @@ export const handler: Handler = async (event: any): Promise<InvitationResponse> 
       errorMessage = `${error.Message || errorMessage} (Error Code: ${error.ErrorCode})`;
     }
 
-    return {
+    const errorResponse = {
       success: false,
       error: errorMessage,
+    };
+
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify(errorResponse),
     };
   }
 };
