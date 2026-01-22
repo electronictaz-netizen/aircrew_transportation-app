@@ -113,17 +113,17 @@ export async function sendInvitationEmailViaLambda(
       );
     }
 
-    const result = await response.json();
+    const result: any = await response.json();
     
     // Handle Lambda Function URL response format (with statusCode/body) or direct response
-    const data = result.body ? JSON.parse(result.body) : result;
+    const responseData: SendInvitationResponse = result.body ? JSON.parse(result.body) : result;
     
-    if (!data.success) {
-      console.error('[Send Invitation Email] Function returned error:', data);
-      throw new Error(data.error || 'Failed to send invitation email');
+    if (!responseData.success) {
+      console.error('[Send Invitation Email] Function returned error:', responseData);
+      throw new Error(responseData.error || 'Failed to send invitation email');
     }
 
-    return data;
+    return responseData;
   } catch (error) {
     // Provide helpful error messages
     if (error instanceof TypeError && error.message.includes('fetch')) {
