@@ -9,13 +9,15 @@ Welcome! This guide will help you manage trips, drivers, and locations in the On
 3. [Creating Trips](#creating-trips)
 4. [Managing Drivers](#managing-drivers)
 5. [Managing Locations](#managing-locations)
-6. [Assigning Trips to Drivers](#assigning-trips-to-drivers)
-7. [Viewing and Filtering Trips](#viewing-and-filtering-trips)
-8. [Daily Assignment Emails](#daily-assignment-emails)
-9. [Recurring Trips](#recurring-trips)
-10. [Best Practices](#best-practices)
-11. [Subscription Management](#subscription-management)
-12. [Troubleshooting](#troubleshooting)
+6. [Fleet Management](#fleet-management)
+7. [Customer Management](#customer-management)
+8. [Assigning Trips to Drivers](#assigning-trips-to-drivers)
+9. [Viewing and Filtering Trips](#viewing-and-filtering-trips)
+10. [Daily Assignment Emails](#daily-assignment-emails)
+11. [Recurring Trips](#recurring-trips)
+12. [Best Practices](#best-practices)
+13. [Subscription Management](#subscription-management)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -327,6 +329,66 @@ Categories help with:
 ✅ **Include full addresses** - Street, city, state, zip code  
 ✅ **Add descriptions** - Helpful notes like "Main entrance" or "Parking lot"  
 ✅ **Keep locations active** - Only deactivate if no longer used  
+
+---
+
+## Fleet Management
+
+The Onyx Transportation App includes comprehensive fleet management capabilities to help you track and manage your vehicles.
+
+### Quick Overview
+
+- **Manage Vehicles**: Add, edit, and delete vehicles with details like make, model, year, license plates, and VIN numbers
+- **Assign Vehicles to Trips**: Assign one or multiple vehicles to each trip
+- **Multiple Vehicle Assignment**: Perfect for large groups, convoys, or backup vehicle assignments
+- **Vehicle Status**: Mark vehicles as active or inactive to control availability
+
+### Accessing Fleet Management
+
+1. Navigate to the **Management Dashboard**
+2. Click the **"Data Management"** dropdown
+3. Select **"Manage Vehicles"**
+
+### Key Features
+
+- **Vehicle Details**: Track make, model, year, license plate, VIN, and descriptions
+- **Trip Assignment**: Assign vehicles when creating or editing trips
+- **Multiple Vehicles**: Assign multiple vehicles to a single trip
+- **Driver Integration**: Drivers can view and confirm vehicle assignments on their dashboard
+
+### Detailed Guide
+
+For complete instructions on fleet management, see the **[Fleet Management Guide](./FLEET_MANAGEMENT_GUIDE.md)**.
+
+---
+
+## Customer Management
+
+The Onyx Transportation App includes customer management to help you track and organize your customers.
+
+### Quick Overview
+
+- **Customer Records**: Store customer information including name, email, phone, company, and notes
+- **Trip Assignment**: Assign customers to trips for better organization
+- **Filtering**: Filter trips by customer for quick access to customer history
+- **Customer Status**: Mark customers as active or inactive
+
+### Accessing Customer Management
+
+1. Navigate to the **Management Dashboard**
+2. Click the **"Data Management"** dropdown
+3. Select **"Manage Customers"**
+
+### Key Features
+
+- **Customer Information**: Store contact details, company information, and notes
+- **Trip Assignment**: Assign customers when creating or editing trips
+- **Trip Filtering**: Filter trips by customer in the trip list
+- **Search Integration**: Customer names are included in trip search functionality
+
+### Detailed Guide
+
+For complete instructions on customer management, see the **[Customer Management Guide](./CUSTOMER_MANAGEMENT_GUIDE.md)**.
 
 ---
 
