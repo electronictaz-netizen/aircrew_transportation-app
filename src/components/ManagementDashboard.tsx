@@ -1560,30 +1560,32 @@ function ManagementDashboard() {
                   </Link>
                 )}
                 {canManageLocations(userRole) && (
-                  <>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        if (!hasFeatureAccess(company?.subscriptionTier, 'location_management')) {
-                          const upgradeMessage = 
-                            `⚠️ Feature Not Available\n\n` +
-                            `Location Management is available on Basic and Premium plans.\n\n` +
-                            `Would you like to upgrade?`;
-                          if (confirm(upgradeMessage)) {
-                            setShowSubscriptionManagement(true);
-                          }
-                          setOpenDropdown(null);
-                          return;
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      if (!hasFeatureAccess(company?.subscriptionTier, 'location_management')) {
+                        const upgradeMessage = 
+                          `⚠️ Feature Not Available\n\n` +
+                          `Location Management is available on Basic and Premium plans.\n\n` +
+                          `Would you like to upgrade?`;
+                        if (confirm(upgradeMessage)) {
+                          setShowSubscriptionManagement(true);
                         }
-                        setShowLocationManagement(true);
                         setOpenDropdown(null);
-                      }}
-                      disabled={!hasFeatureAccess(company?.subscriptionTier, 'location_management')}
-                      title={!hasFeatureAccess(company?.subscriptionTier, 'location_management') ? 'Upgrade to Basic or Premium to access Location Management' : ''}
-                    >
-                      Manage Locations
-                      {!hasFeatureAccess(company?.subscriptionTier, 'location_management') && ' 🔒'}
-                    </button>
+                        return;
+                      }
+                      setShowLocationManagement(true);
+                      setOpenDropdown(null);
+                    }}
+                    disabled={!hasFeatureAccess(company?.subscriptionTier, 'location_management')}
+                    title={!hasFeatureAccess(company?.subscriptionTier, 'location_management') ? 'Upgrade to Basic or Premium to access Location Management' : ''}
+                  >
+                    Manage Locations
+                    {!hasFeatureAccess(company?.subscriptionTier, 'location_management') && ' 🔒'}
+                  </button>
+                )}
+                {(canManageDrivers(userRole) || canManageLocations(userRole)) && (
+                  <>
                     <button
                       className="dropdown-item"
                       onClick={() => {
@@ -1602,16 +1604,18 @@ function ManagementDashboard() {
                     >
                       Manage Customers
                     </button>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        setShowFilterCategoryManagement(true);
-                        setOpenDropdown(null);
-                      }}
-                    >
-                      Filter Categories
-                    </button>
                   </>
+                )}
+                {canManageLocations(userRole) && (
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      setShowFilterCategoryManagement(true);
+                      setOpenDropdown(null);
+                    }}
+                  >
+                    Filter Categories
+                  </button>
                 )}
               </motion.div>
               )}
