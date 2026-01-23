@@ -18,13 +18,17 @@ function DriverDashboard() {
   const { notification, showSuccess, showError, showWarning, hideNotification } = useNotification();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [currentDriver, setCurrentDriver] = useState<Schema['Driver']['type'] | null>(null);
+  const [vehicles, setVehicles] = useState<Array<Schema['Vehicle']['type']>>([]);
+  const [tripVehicles, setTripVehicles] = useState<Record<string, Array<Schema['TripVehicle']['type']>>>({});
   const [loading, setLoading] = useState(true);
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
   const [gpsLoading, setGpsLoading] = useState<Record<string, boolean>>({});
+  const [changingVehicle, setChangingVehicle] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (companyId) {
       loadDriverAndTrips();
+      loadVehicles();
     }
   }, [companyId]);
 
@@ -38,6 +42,22 @@ function DriverDashboard() {
 
     return () => clearInterval(interval);
   }, [companyId]);
+
+  const loadVehicles = async () => {
+    if (!companyId) return;
+    
+    try {
+      const { data: vehiclesData } = await client.models.Vehicle.list({
+        filter: { 
+          companyId: { eq: companyId },
+          isActive: { eq: true }
+        }
+      });
+      setVehicles(vehiclesData as Array<Schema['Vehicle']['type']>);
+    } catch (error) {
+      console.error('Error loading vehicles:', error);
+    }
+  };
 
 
   const loadDriverAndTrips = async () => {
@@ -85,6 +105,29 @@ function DriverDashboard() {
         });
         
         setTrips(filteredTrips as Array<Schema['Trip']['type']>);
+        
+        // Load trip vehicles for all trips
+        if (filteredTrips.length > 0) {
+          const tripIds = filteredTrips.map(t => t.id);
+          const { data: tripVehiclesData } = await client.models.TripVehicle.list({
+            filter: {
+              companyId: { eq: companyId },
+              tripId: { in: tripIds },
+            },
+          });
+          
+          // Group trip vehicles by tripId
+          const vehiclesByTrip: Record<string, Array<Schema['TripVehicle']['type']>> = {};
+          (tripVehiclesData || []).forEach((tv) => {
+            if (tv.tripId) {
+              if (!vehiclesByTrip[tv.tripId]) {
+                vehiclesByTrip[tv.tripId] = [];
+              }
+              vehiclesByTrip[tv.tripId].push(tv);
+            }
+          });
+          setTripVehicles(vehiclesByTrip);
+        }
       } else {
         // If no driver found, show empty state
         setTrips([]);
@@ -232,6 +275,38 @@ function DriverDashboard() {
         return 'flight-status-cancelled';
       default:
         return 'flight-status-unknown';
+    }
+  };
+
+  const handleVehicleToggle = async (tripId: string, vehicleId: string, isAdding: boolean) => {
+    setChangingVehicle(prev => ({ ...prev, [tripId]: true }));
+    
+    try {
+      if (isAdding) {
+        // Add vehicle to trip
+        await client.models.TripVehicle.create({
+          companyId: companyId!,
+          tripId: tripId,
+          vehicleId: vehicleId,
+        });
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+        showSuccess(`Added ${vehicle?.name || 'vehicle'} to trip`);
+      } else {
+        // Remove vehicle from trip
+        const tripVehicle = tripVehicles[tripId]?.find(tv => tv.vehicleId === vehicleId);
+        if (tripVehicle) {
+          await client.models.TripVehicle.delete({ id: tripVehicle.id });
+          const vehicle = vehicles.find(v => v.id === vehicleId);
+          showSuccess(`Removed ${vehicle?.name || 'vehicle'} from trip`);
+        }
+      }
+      
+      await loadDriverAndTrips();
+    } catch (error) {
+      logger.error('Error updating vehicle:', error);
+      showError('Failed to update vehicle. Please try again.');
+    } finally {
+      setChangingVehicle(prev => ({ ...prev, [tripId]: false }));
     }
   };
 
@@ -446,6 +521,106 @@ function DriverDashboard() {
               <div className="detail-row">
                 <span className="label">Number of Passengers:</span>
                 <span className="value">{trip.numberOfPassengers}</span>
+              </div>
+
+              <div className="detail-row">
+                <span className="label">Vehicles:</span>
+                <span className="value" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {(() => {
+                    const assignedVehicles = tripVehicles[trip.id] || [];
+                    if (assignedVehicles.length === 0) {
+                      return (
+                        <>
+                          <span style={{ color: '#6b7280', fontStyle: 'italic' }}>No vehicles assigned</span>
+                          {!trip.actualPickupTime && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
+                              {vehicles.map((vehicle) => (
+                                <button
+                                  key={vehicle.id}
+                                  onClick={() => handleVehicleToggle(trip.id, vehicle.id, true)}
+                                  disabled={changingVehicle[trip.id]}
+                                  style={{
+                                    padding: '0.25rem 0.5rem',
+                                    fontSize: '0.875rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid #3b82f6',
+                                    backgroundColor: '#eff6ff',
+                                    color: '#1e40af',
+                                    cursor: changingVehicle[trip.id] ? 'not-allowed' : 'pointer',
+                                  }}
+                                  title={`Add ${vehicle.name}`}
+                                >
+                                  + {vehicle.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    }
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {assignedVehicles.map((tv) => {
+                          const vehicle = vehicles.find(v => v.id === tv.vehicleId);
+                          if (!vehicle) return null;
+                          return (
+                            <div key={tv.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span>
+                                {vehicle.name}
+                                {vehicle.make || vehicle.model 
+                                  ? ` (${[vehicle.make, vehicle.model].filter(Boolean).join(' ')})` 
+                                  : ''}
+                              </span>
+                              {!trip.actualPickupTime && (
+                                <button
+                                  onClick={() => handleVehicleToggle(trip.id, vehicle.id, false)}
+                                  disabled={changingVehicle[trip.id]}
+                                  style={{
+                                    padding: '0.125rem 0.375rem',
+                                    fontSize: '0.75rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ef4444',
+                                    backgroundColor: '#fee2e2',
+                                    color: '#991b1b',
+                                    cursor: changingVehicle[trip.id] ? 'not-allowed' : 'pointer',
+                                  }}
+                                  title={`Remove ${vehicle.name}`}
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {!trip.actualPickupTime && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
+                            {vehicles
+                              .filter(v => !assignedVehicles.some(tv => tv.vehicleId === v.id))
+                              .map((vehicle) => (
+                                <button
+                                  key={vehicle.id}
+                                  onClick={() => handleVehicleToggle(trip.id, vehicle.id, true)}
+                                  disabled={changingVehicle[trip.id]}
+                                  style={{
+                                    padding: '0.25rem 0.5rem',
+                                    fontSize: '0.875rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid #3b82f6',
+                                    backgroundColor: '#eff6ff',
+                                    color: '#1e40af',
+                                    cursor: changingVehicle[trip.id] ? 'not-allowed' : 'pointer',
+                                  }}
+                                  title={`Add ${vehicle.name}`}
+                                >
+                                  + {vehicle.name}
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </span>
               </div>
 
               {trip.actualPickupTime && (

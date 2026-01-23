@@ -45,16 +45,21 @@ interface TripFormProps {
   trip?: Schema['Trip']['type'] | null;
   drivers: Array<Schema['Driver']['type']>;
   locations?: Array<Schema['Location']['type']>;
+  vehicles?: Array<Schema['Vehicle']['type']>;
   onSubmit: (data: any) => void;
   onCancel: () => void;
 }
 
-function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFormProps) {
+function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCancel }: TripFormProps) {
   const { companyId, company } = useCompany();
   const { notification, showError, hideNotification } = useNotification();
   
   // Filter locations to ensure only locations for the current company are shown
   const companyLocations = companyId ? locations.filter(l => l.companyId === companyId) : locations;
+  
+  // Filter vehicles to ensure only vehicles for the current company are shown
+  const companyVehicles = companyId ? vehicles.filter(v => v.companyId === companyId) : vehicles;
+  const activeVehicles = companyVehicles.filter(v => v.isActive !== false);
   
   // Get active locations grouped by category
   const activeLocations = companyLocations.filter(l => l.isActive !== false);
@@ -88,6 +93,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
       dropoffLocation: trip?.dropoffLocation || '',
       numberOfPassengers: trip?.numberOfPassengers || 1,
       driverId: trip?.driverId || '',
+      vehicleIds: [],
       status: (trip?.status as 'Unassigned' | 'Assigned' | 'In Progress' | 'Completed' | 'Cancelled') || 'Unassigned',
       isRecurring: trip?.isRecurring || !!trip?.parentTripId || false,
       recurringPattern: (trip?.recurringPattern as 'daily' | 'weekly' | 'monthly') || 'weekly',
@@ -104,6 +110,10 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
   const [customFields, setCustomFields] = useState<Array<Schema['CustomField']['type']>>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const [loadingCustomFields, setLoadingCustomFields] = useState(true);
+  
+  // Trip vehicles state
+  const [tripVehicles, setTripVehicles] = useState<Array<Schema['TripVehicle']['type']>>([]);
+  const [loadingTripVehicles, setLoadingTripVehicles] = useState(false);
   
   // GPS address states
   const [pickupAddress, setPickupAddress] = useState<string | null>(null);
@@ -191,6 +201,37 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
     loadExistingValues();
   }, [trip?.id, companyId, customFields.length]);
 
+  // Load existing trip vehicles when editing a trip
+  useEffect(() => {
+    const loadTripVehicles = async () => {
+      if (!trip?.id || !companyId) {
+        setTripVehicles([]);
+        form.setValue('vehicleIds', []);
+        return;
+      }
+      
+      try {
+        setLoadingTripVehicles(true);
+        const { data: tripVehiclesData } = await client.models.TripVehicle.list({
+          filter: {
+            companyId: { eq: companyId },
+            tripId: { eq: trip.id },
+          },
+        });
+        
+        const vehicles = (tripVehiclesData || []).map(tv => tv.vehicleId).filter(Boolean) as string[];
+        setTripVehicles(tripVehiclesData as Array<Schema['TripVehicle']['type']>);
+        form.setValue('vehicleIds', vehicles);
+      } catch (error) {
+        logger.error('Error loading trip vehicles:', error);
+      } finally {
+        setLoadingTripVehicles(false);
+      }
+    };
+    
+    loadTripVehicles();
+  }, [trip?.id, companyId]);
+
   // Load addresses for GPS coordinates when trip is loaded or changes
   useEffect(() => {
     const loadAddresses = async () => {
@@ -277,6 +318,7 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
         dropoffLocation: dropoffValidation.sanitized,
         numberOfPassengers: passengerValidation.value,
         driverId: values.driverId || undefined,
+        vehicleIds: values.vehicleIds || [],
         status: values.driverId ? 'Assigned' : 'Unassigned',
         isRecurring: values.isRecurring === true,
         tripRate: values.tripRate ? parseFloat(values.tripRate) : undefined,
@@ -618,6 +660,70 @@ function TripForm({ trip, drivers, locations = [], onSubmit, onCancel }: TripFor
                   </Select>
                   <FormDescription>
                     {!field.value && 'Leave unselected to keep trip unassigned'}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="vehicleIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vehicles Assigned</FormLabel>
+                  {loadingTripVehicles ? (
+                    <p className="text-sm text-muted-foreground">Loading vehicles...</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeVehicles.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">
+                          No active vehicles available. Add vehicles in Manage Vehicles.
+                        </p>
+                      ) : (
+                        <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                          {activeVehicles.map((vehicle) => {
+                            const isChecked = (field.value || []).includes(vehicle.id);
+                            return (
+                              <div key={vehicle.id} className="flex items-start space-x-2 py-2">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      const currentIds = field.value || [];
+                                      if (checked) {
+                                        field.onChange([...currentIds, vehicle.id]);
+                                      } else {
+                                        field.onChange(currentIds.filter(id => id !== vehicle.id));
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <div className="flex-1">
+                                  <label
+                                    htmlFor={`vehicle-${vehicle.id}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                  >
+                                    {vehicle.name}
+                                    {vehicle.make || vehicle.model 
+                                      ? ` (${[vehicle.make, vehicle.model].filter(Boolean).join(' ')})` 
+                                      : ''}
+                                  </label>
+                                  {vehicle.licensePlate && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      Plate: {vehicle.licensePlate}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <FormDescription>
+                    Optional: Select one or more vehicles for this trip
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

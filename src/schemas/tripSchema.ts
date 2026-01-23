@@ -25,6 +25,7 @@ export const tripFormSchema = z.object({
   dropoffLocation: z.string().min(3, 'Dropoff location must be at least 3 characters').max(MAX_LENGTHS.LOCATION, `Dropoff location must be no more than ${MAX_LENGTHS.LOCATION} characters`),
   numberOfPassengers: z.coerce.number().int().min(1, 'Number of passengers must be at least 1').max(100, 'Number of passengers cannot exceed 100'),
   driverId: z.string().optional(),
+  vehicleIds: z.array(z.string()).optional(),
   status: z.enum(['Unassigned', 'Assigned', 'In Progress', 'Completed', 'Cancelled']),
   isRecurring: z.boolean().default(false),
   recurringPattern: z.enum(['daily', 'weekly', 'monthly']).optional(),

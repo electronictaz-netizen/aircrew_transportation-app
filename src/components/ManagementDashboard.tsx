@@ -14,6 +14,7 @@ import DriverSelectionDialog from './DriverSelectionDialog';
 
 // Lazy load heavy components for code splitting
 const LocationManagement = lazy(() => import('./LocationManagement'));
+const VehicleManagement = lazy(() => import('./VehicleManagement'));
 const FilterCategoryManagement = lazy(() => import('./FilterCategoryManagement'));
 const CustomFieldManagement = lazy(() => import('./CustomFieldManagement'));
 const ReportConfigurationManagement = lazy(() => import('./ReportConfigurationManagement'));
@@ -45,9 +46,11 @@ function ManagementDashboard() {
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
+  const [vehicles, setVehicles] = useState<Array<Schema['Vehicle']['type']>>([]);
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
   const [showTripForm, setShowTripForm] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
+  const [showVehicleManagement, setShowVehicleManagement] = useState(false);
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
   const [showCustomFieldManagement, setShowCustomFieldManagement] = useState(false);
   const [showReportConfigurationManagement, setShowReportConfigurationManagement] = useState(false);
@@ -114,6 +117,7 @@ function ManagementDashboard() {
       loadTrips();
       loadDrivers();
       loadLocations();
+      loadVehicles();
       // Generate upcoming recurring trips on load (only for managers/admins)
       if (canManageTrips(userRole) || isAdminOverride) {
         generateUpcomingRecurringTrips(companyId || undefined).then(() => {
@@ -221,6 +225,19 @@ function ManagementDashboard() {
       setLocations(locationsData as Array<Schema['Location']['type']>);
     } catch (error) {
       console.error('Error loading locations:', error);
+    }
+  };
+
+  const loadVehicles = async () => {
+    if (!companyId) return;
+    
+    try {
+      const { data: vehiclesData } = await client.models.Vehicle.list({
+        filter: { companyId: { eq: companyId! } }
+      });
+      setVehicles(vehiclesData as Array<Schema['Vehicle']['type']>);
+    } catch (error) {
+      console.error('Error loading vehicles:', error);
     }
   };
 
@@ -520,6 +537,11 @@ function ManagementDashboard() {
           // Save custom field values if provided
           if (tripData.customFieldValues && result.data) {
             await saveCustomFieldValues(result.data.id, tripData.customFieldValues, 'Trip');
+          }
+          
+          // Save trip vehicles if provided
+          if (tripData.tripVehicles && Array.isArray(tripData.tripVehicles) && result.data) {
+            await saveTripVehicles(result.data.id, tripData.tripVehicles);
           }
           
           // Return the created trip for custom field saving in TripForm
@@ -971,6 +993,11 @@ function ManagementDashboard() {
         await saveCustomFieldValues(updateResult.data.id, tripData.customFieldValues, 'Trip');
       }
       
+      // Save trip vehicles if provided
+      if (tripData.tripVehicles && Array.isArray(tripData.tripVehicles) && updateResult.data) {
+        await saveTripVehicles(updateResult.data.id, tripData.tripVehicles);
+      }
+      
       await loadTrips(true); // Force refresh after update
       setShowTripForm(false);
       setEditingTrip(null);
@@ -1242,6 +1269,10 @@ function ManagementDashboard() {
     loadLocations();
   };
 
+  const handleVehicleUpdate = () => {
+    loadVehicles();
+  };
+
   const handleSendDailyAssignmentEmails = () => {
     // Ask if user wants to send to all drivers or a specific driver
     const sendToAll = confirm(
@@ -1494,6 +1525,15 @@ function ManagementDashboard() {
                     >
                       Manage Locations
                       {!hasFeatureAccess(company?.subscriptionTier, 'location_management') && ' 🔒'}
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setShowVehicleManagement(true);
+                        setOpenDropdown(null);
+                      }}
+                    >
+                      Manage Vehicles
                     </button>
                     <button
                       className="dropdown-item"
@@ -1787,6 +1827,7 @@ function ManagementDashboard() {
             trip={editingTrip}
             drivers={drivers}
             locations={locations}
+            vehicles={vehicles}
             onSubmit={editingTrip ? (data) => handleUpdateTrip(editingTrip.id, data) : handleCreateTrip}
             onCancel={() => {
               setShowTripForm(false);
@@ -1803,6 +1844,14 @@ function ManagementDashboard() {
             locations={locations}
             onClose={() => setShowLocationManagement(false)}
             onUpdate={handleLocationUpdate}
+          />
+        )}
+
+        {showVehicleManagement && (
+          <VehicleManagement
+            vehicles={vehicles}
+            onClose={() => setShowVehicleManagement(false)}
+            onUpdate={handleVehicleUpdate}
           />
         )}
 

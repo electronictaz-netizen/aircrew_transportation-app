@@ -24,10 +24,12 @@ const schema = a.schema({
       trips: a.hasMany('Trip', 'companyId'),
       drivers: a.hasMany('Driver', 'companyId'),
       locations: a.hasMany('Location', 'companyId'),
+      vehicles: a.hasMany('Vehicle', 'companyId'),
       filterCategories: a.hasMany('FilterCategory', 'companyId'),
       customFields: a.hasMany('CustomField', 'companyId'),
       customFieldValues: a.hasMany('CustomFieldValue', 'companyId'),
       reportConfigurations: a.hasMany('ReportConfiguration', 'companyId'),
+      tripVehicles: a.hasMany('TripVehicle', 'companyId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update']),
@@ -79,6 +81,7 @@ const schema = a.schema({
       status: a.enum(['Unassigned', 'Assigned', 'InProgress', 'Completed']),
       driverId: a.id(),
       driver: a.belongsTo('Driver', 'driverId'),
+      tripVehicles: a.hasMany('TripVehicle', 'tripId'),
       actualPickupTime: a.datetime(),
       actualDropoffTime: a.datetime(),
       startLocationLat: a.float(), // GPS latitude when trip started
@@ -113,6 +116,37 @@ const schema = a.schema({
       description: a.string(),
       category: a.string(), // Category for filtering (e.g., 'Airport', 'Hotel', 'Office')
       isActive: a.boolean().default(true),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  Vehicle: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      name: a.string().required(), // Vehicle name/identifier (e.g., "Van 1", "SUV-123", "Sedan A")
+      make: a.string(), // Vehicle make (e.g., "Ford", "Chevrolet")
+      model: a.string(), // Vehicle model (e.g., "Transit", "Suburban")
+      year: a.integer(), // Vehicle year
+      licensePlate: a.string(), // License plate number
+      vin: a.string(), // Vehicle Identification Number
+      description: a.string(), // Additional details or notes
+      isActive: a.boolean().default(true),
+      tripVehicles: a.hasMany('TripVehicle', 'vehicleId'),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  TripVehicle: a
+    .model({
+      tripId: a.id().required(),
+      trip: a.belongsTo('Trip', 'tripId'),
+      vehicleId: a.id().required(),
+      vehicle: a.belongsTo('Vehicle', 'vehicleId'),
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
