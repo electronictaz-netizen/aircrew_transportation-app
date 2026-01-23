@@ -165,6 +165,7 @@ export async function sendDailyAssignmentEmailsToAllDrivers(
     if (companyId) {
       driverFilter.companyId = { eq: companyId };
     }
+    // @ts-ignore - Complex union type inference
     const { data: drivers } = await client.models.Driver.list({
       filter: Object.keys(driverFilter).length > 0 ? driverFilter : undefined
     });

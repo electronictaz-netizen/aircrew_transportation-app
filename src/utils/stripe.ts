@@ -84,6 +84,7 @@ export async function getCompanySubscription(companyId: string): Promise<{
   cancelAtPeriodEnd: boolean;
 } | null> {
   try {
+    // @ts-ignore - Complex union type inference
     const { data: company } = await client.models.Company.get({ id: companyId });
     if (!company) return null;
 

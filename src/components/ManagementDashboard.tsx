@@ -245,6 +245,19 @@ function ManagementDashboard() {
     }
   };
 
+  const loadCustomers = async () => {
+    if (!companyId) return;
+    
+    try {
+      const { data: customersData } = await client.models.Customer.list({
+        filter: { companyId: { eq: companyId! } }
+      });
+      setCustomers(customersData as Array<Schema['Customer']['type']>);
+    } catch (error) {
+      console.error('Error loading customers:', error);
+    }
+  };
+
   // Helper function to save custom field values
   const saveCustomFieldValues = async (
     entityId: string,

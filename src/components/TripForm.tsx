@@ -183,12 +183,18 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
       if (!trip?.id || !companyId || customFields.length === 0) return;
       
       try {
+        const filter: {
+          companyId: { eq: string };
+          tripId: { eq: string };
+          entityType: { eq: 'Trip' };
+        } = {
+          companyId: { eq: companyId! },
+          tripId: { eq: trip.id },
+          entityType: { eq: 'Trip' },
+        };
+        // @ts-ignore - Complex union type inference
         const { data: valuesData } = await client.models.CustomFieldValue.list({
-          filter: {
-            companyId: { eq: companyId },
-            tripId: { eq: trip.id },
-            entityType: { eq: 'Trip' },
-          },
+          filter,
         });
         
         const existingValues: Record<string, string> = { ...customFieldValues };
@@ -216,11 +222,16 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
       
       try {
         setLoadingTripVehicles(true);
+        const filter: {
+          companyId: { eq: string };
+          tripId: { eq: string };
+        } = {
+          companyId: { eq: companyId! },
+          tripId: { eq: trip.id },
+        };
+        // @ts-ignore - Complex union type inference
         const { data: tripVehiclesData } = await client.models.TripVehicle.list({
-          filter: {
-            companyId: { eq: companyId },
-            tripId: { eq: trip.id },
-          },
+          filter,
         });
         
         const vehicles = (tripVehiclesData || []).map(tv => tv.vehicleId).filter(Boolean) as string[];

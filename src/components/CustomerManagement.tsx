@@ -101,16 +101,46 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
       };
       
       if (editingCustomer) {
-        await client.models.Customer.update({
+        const updateData: {
+          id: string;
+          name: string;
+          email?: string;
+          phone?: string;
+          companyName?: string;
+          notes?: string;
+          isActive: boolean;
+        } = {
           id: editingCustomer.id,
-          ...customerData,
-        });
+          name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone,
+          companyName: customerData.companyName,
+          notes: customerData.notes,
+          isActive: customerData.isActive,
+        };
+        // @ts-ignore - Complex union type inference
+        await client.models.Customer.update(updateData);
         showSuccess('Customer updated successfully!');
       } else {
-        await client.models.Customer.create({
-          ...customerData,
+        const createData: {
+          name: string;
+          email?: string;
+          phone?: string;
+          companyName?: string;
+          notes?: string;
+          isActive: boolean;
+          companyId: string;
+        } = {
+          name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone,
+          companyName: customerData.companyName,
+          notes: customerData.notes,
+          isActive: customerData.isActive,
           companyId: companyId!,
-        });
+        };
+        // @ts-ignore - Complex union type inference
+        await client.models.Customer.create(createData);
         showSuccess('Customer created successfully!');
       }
       onUpdate();

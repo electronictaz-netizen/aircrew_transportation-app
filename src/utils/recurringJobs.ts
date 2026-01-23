@@ -101,6 +101,7 @@ export async function generateRecurringTrips(config: RecurringJobConfig): Promis
   if (config.companyId) {
     filter.companyId = { eq: config.companyId };
   }
+  // @ts-ignore - Complex union type inference
   const { data: existingTrips } = await client.models.Trip.list({
     filter: Object.keys(filter).length > 0 ? filter : undefined
   });
