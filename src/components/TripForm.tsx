@@ -111,8 +111,7 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCa
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const [loadingCustomFields, setLoadingCustomFields] = useState(true);
   
-  // Trip vehicles state
-  const [tripVehicles, setTripVehicles] = useState<Array<Schema['TripVehicle']['type']>>([]);
+  // Trip vehicles loading state
   const [loadingTripVehicles, setLoadingTripVehicles] = useState(false);
   
   // GPS address states
@@ -205,7 +204,6 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCa
   useEffect(() => {
     const loadTripVehicles = async () => {
       if (!trip?.id || !companyId) {
-        setTripVehicles([]);
         form.setValue('vehicleIds', []);
         return;
       }
@@ -220,7 +218,6 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCa
         });
         
         const vehicles = (tripVehiclesData || []).map(tv => tv.vehicleId).filter(Boolean) as string[];
-        setTripVehicles(tripVehiclesData as Array<Schema['TripVehicle']['type']>);
         form.setValue('vehicleIds', vehicles);
       } catch (error) {
         logger.error('Error loading trip vehicles:', error);

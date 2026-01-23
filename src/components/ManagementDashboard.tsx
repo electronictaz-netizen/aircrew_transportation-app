@@ -323,6 +323,43 @@ function ManagementDashboard() {
     }
   };
 
+  // Helper function to save trip vehicles
+  const saveTripVehicles = async (
+    tripId: string,
+    vehicleIds: string[]
+  ) => {
+    if (!companyId) return;
+    
+    try {
+      // Get existing trip vehicles for this trip
+      const { data: existingTripVehicles } = await client.models.TripVehicle.list({
+        filter: {
+          companyId: { eq: companyId },
+          tripId: { eq: tripId },
+        },
+      });
+      
+      // Delete existing trip vehicles
+      for (const existingTripVehicle of existingTripVehicles || []) {
+        await client.models.TripVehicle.delete({ id: existingTripVehicle.id });
+      }
+      
+      // Create new trip vehicles
+      for (const vehicleId of vehicleIds) {
+        if (vehicleId && vehicleId.trim() !== '') {
+          await client.models.TripVehicle.create({
+            companyId: companyId,
+            tripId: tripId,
+            vehicleId: vehicleId.trim(),
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving trip vehicles:', error);
+      throw error;
+    }
+  };
+
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
 
   const handleCreateTrip = async (tripData: any) => {

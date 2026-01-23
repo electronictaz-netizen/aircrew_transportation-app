@@ -109,17 +109,17 @@ function DriverDashboard() {
         // Load trip vehicles for all trips
         if (filteredTrips.length > 0) {
           const tripIds = filteredTrips.map(t => t.id);
+          // Load all trip vehicles for the company and filter client-side
           const { data: tripVehiclesData } = await client.models.TripVehicle.list({
             filter: {
               companyId: { eq: companyId },
-              tripId: { in: tripIds },
             },
           });
           
-          // Group trip vehicles by tripId
+          // Group trip vehicles by tripId, filtering to only include our trips
           const vehiclesByTrip: Record<string, Array<Schema['TripVehicle']['type']>> = {};
           (tripVehiclesData || []).forEach((tv) => {
-            if (tv.tripId) {
+            if (tv.tripId && tripIds.includes(tv.tripId)) {
               if (!vehiclesByTrip[tv.tripId]) {
                 vehiclesByTrip[tv.tripId] = [];
               }
