@@ -25,6 +25,7 @@ const schema = a.schema({
       drivers: a.hasMany('Driver', 'companyId'),
       locations: a.hasMany('Location', 'companyId'),
       vehicles: a.hasMany('Vehicle', 'companyId'),
+      customers: a.hasMany('Customer', 'companyId'),
       filterCategories: a.hasMany('FilterCategory', 'companyId'),
       customFields: a.hasMany('CustomField', 'companyId'),
       customFieldValues: a.hasMany('CustomFieldValue', 'companyId'),
@@ -81,6 +82,8 @@ const schema = a.schema({
       status: a.enum(['Unassigned', 'Assigned', 'InProgress', 'Completed']),
       driverId: a.id(),
       driver: a.belongsTo('Driver', 'driverId'),
+      customerId: a.id(),
+      customer: a.belongsTo('Customer', 'customerId'),
       tripVehicles: a.hasMany('TripVehicle', 'tripId'),
       actualPickupTime: a.datetime(),
       actualDropoffTime: a.datetime(),
@@ -134,6 +137,22 @@ const schema = a.schema({
       description: a.string(), // Additional details or notes
       isActive: a.boolean().default(true),
       tripVehicles: a.hasMany('TripVehicle', 'vehicleId'),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  Customer: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      name: a.string().required(), // Customer name
+      email: a.string(), // Customer email
+      phone: a.string(), // Customer phone number
+      companyName: a.string(), // If customer is a company/organization
+      notes: a.string(), // Additional notes about the customer
+      isActive: a.boolean().default(true),
+      trips: a.hasMany('Trip', 'customerId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

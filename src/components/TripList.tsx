@@ -14,6 +14,7 @@ interface TripListProps {
   trips: Array<Schema['Trip']['type']>;
   drivers: Array<Schema['Driver']['type']>;
   locations?: Array<Schema['Location']['type']>;
+  customers?: Array<Schema['Customer']['type']>;
   onEdit?: (trip: Schema['Trip']['type']) => void;
   onDelete?: (tripId: string) => void;
   onDeleteMultiple?: (tripIds: string[]) => void;
@@ -21,7 +22,7 @@ interface TripListProps {
   onUpdate: () => void;
 }
 
-function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onUpdate }: TripListProps) {
+function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onUpdate }: TripListProps) {
   const { company } = useCompany();
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
@@ -52,6 +53,12 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
     if (!driverId) return 'Unassigned';
     const driver = drivers.find((d) => d.id === driverId);
     return driver?.name || 'Unknown';
+  };
+
+  const getCustomerName = (customerId: string | null | undefined) => {
+    if (!customerId) return null;
+    const customer = customers.find((c) => c.id === customerId);
+    return customer ? (customer.companyName ? `${customer.name} (${customer.companyName})` : customer.name) : null;
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -230,6 +237,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
         trips={trips}
         drivers={drivers}
         locations={locations}
+        customers={customers}
         onFilterChange={handleFilterChange}
         onRefresh={onUpdate}
       />
@@ -289,6 +297,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
             <th>Pickup<br />Location</th>
             <th>Dropoff<br />Location</th>
             <th>Passengers</th>
+            <th>Customer</th>
             <th>Driver</th>
             <th>Status</th>
             <th>Actual<br />Pickup</th>
@@ -298,7 +307,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
         <tbody>
           {displayedTrips.length === 0 ? (
             <tr>
-              <td colSpan={onDeleteMultiple ? 13 : 12} className="no-results">
+              <td colSpan={onDeleteMultiple ? 14 : 13} className="no-results">
                 No trips match the current filters. Try adjusting your search criteria.
               </td>
             </tr>
@@ -404,6 +413,7 @@ function TripList({ trips, drivers, locations = [], onEdit, onDelete, onDeleteMu
                   👥 {trip.numberOfPassengers}
                 </span>
               </td>
+              <td>{getCustomerName(trip.customerId) || '-'}</td>
               <td>{getDriverName(trip.driverId)}</td>
               <td>
                 <span className={`status-badge ${getStatusBadgeClass(trip.status || 'Unassigned')}`}>

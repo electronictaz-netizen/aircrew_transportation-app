@@ -46,11 +46,12 @@ interface TripFormProps {
   drivers: Array<Schema['Driver']['type']>;
   locations?: Array<Schema['Location']['type']>;
   vehicles?: Array<Schema['Vehicle']['type']>;
+  customers?: Array<Schema['Customer']['type']>;
   onSubmit: (data: any) => void;
   onCancel: () => void;
 }
 
-function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCancel }: TripFormProps) {
+function TripForm({ trip, drivers, locations = [], vehicles = [], customers = [], onSubmit, onCancel }: TripFormProps) {
   const { companyId, company } = useCompany();
   const { notification, showError, hideNotification } = useNotification();
   
@@ -60,6 +61,10 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCa
   // Filter vehicles to ensure only vehicles for the current company are shown
   const companyVehicles = companyId ? vehicles.filter(v => v.companyId === companyId) : vehicles;
   const activeVehicles = companyVehicles.filter(v => v.isActive !== false);
+  
+  // Filter customers to ensure only customers for the current company are shown
+  const companyCustomers = companyId ? customers.filter(c => c.companyId === companyId) : customers;
+  const activeCustomers = companyCustomers.filter(c => c.isActive !== false);
   
   // Get active locations grouped by category
   const activeLocations = companyLocations.filter(l => l.isActive !== false);
@@ -93,6 +98,7 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCa
       dropoffLocation: trip?.dropoffLocation || '',
       numberOfPassengers: trip?.numberOfPassengers || 1,
       driverId: trip?.driverId || '',
+      customerId: trip?.customerId || '',
       vehicleIds: [],
       status: (trip?.status as 'Unassigned' | 'Assigned' | 'In Progress' | 'Completed' | 'Cancelled') || 'Unassigned',
       isRecurring: trip?.isRecurring || !!trip?.parentTripId || false,
@@ -315,6 +321,7 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCa
         dropoffLocation: dropoffValidation.sanitized,
         numberOfPassengers: passengerValidation.value,
         driverId: values.driverId || undefined,
+        customerId: values.customerId || undefined,
         vehicleIds: values.vehicleIds || [],
         status: values.driverId ? 'Assigned' : 'Unassigned',
         isRecurring: values.isRecurring === true,
@@ -657,6 +664,38 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], onSubmit, onCa
                   </Select>
                   <FormDescription>
                     {!field.value && 'Leave unselected to keep trip unassigned'}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="customerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer</FormLabel>
+                  <Select
+                    value={field.value || undefined}
+                    onValueChange={(value) => field.onChange(value || undefined)}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="No customer assigned" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {activeCustomers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name}
+                          {customer.companyName ? ` (${customer.companyName})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {!field.value && 'Optional: Select a customer for this trip'}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

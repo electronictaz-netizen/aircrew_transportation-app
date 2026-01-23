@@ -15,6 +15,7 @@ import DriverSelectionDialog from './DriverSelectionDialog';
 // Lazy load heavy components for code splitting
 const LocationManagement = lazy(() => import('./LocationManagement'));
 const VehicleManagement = lazy(() => import('./VehicleManagement'));
+const CustomerManagement = lazy(() => import('./CustomerManagement'));
 const FilterCategoryManagement = lazy(() => import('./FilterCategoryManagement'));
 const CustomFieldManagement = lazy(() => import('./CustomFieldManagement'));
 const ReportConfigurationManagement = lazy(() => import('./ReportConfigurationManagement'));
@@ -47,10 +48,12 @@ function ManagementDashboard() {
   const [drivers, setDrivers] = useState<Array<Schema['Driver']['type']>>([]);
   const [locations, setLocations] = useState<Array<Schema['Location']['type']>>([]);
   const [vehicles, setVehicles] = useState<Array<Schema['Vehicle']['type']>>([]);
+  const [customers, setCustomers] = useState<Array<Schema['Customer']['type']>>([]);
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
   const [showTripForm, setShowTripForm] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showVehicleManagement, setShowVehicleManagement] = useState(false);
+  const [showCustomerManagement, setShowCustomerManagement] = useState(false);
   const [showFilterCategoryManagement, setShowFilterCategoryManagement] = useState(false);
   const [showCustomFieldManagement, setShowCustomFieldManagement] = useState(false);
   const [showReportConfigurationManagement, setShowReportConfigurationManagement] = useState(false);
@@ -118,6 +121,7 @@ function ManagementDashboard() {
       loadDrivers();
       loadLocations();
       loadVehicles();
+      loadCustomers();
       // Generate upcoming recurring trips on load (only for managers/admins)
       if (canManageTrips(userRole) || isAdminOverride) {
         generateUpcomingRecurringTrips(companyId || undefined).then(() => {
@@ -1310,6 +1314,10 @@ function ManagementDashboard() {
     loadVehicles();
   };
 
+  const handleCustomerUpdate = () => {
+    loadCustomers();
+  };
+
   const handleSendDailyAssignmentEmails = () => {
     // Ask if user wants to send to all drivers or a specific driver
     const sendToAll = confirm(
@@ -1571,6 +1579,15 @@ function ManagementDashboard() {
                       }}
                     >
                       Manage Vehicles
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setShowCustomerManagement(true);
+                        setOpenDropdown(null);
+                      }}
+                    >
+                      Manage Customers
                     </button>
                     <button
                       className="dropdown-item"
@@ -1865,6 +1882,7 @@ function ManagementDashboard() {
             drivers={drivers}
             locations={locations}
             vehicles={vehicles}
+            customers={customers}
             onSubmit={editingTrip ? (data) => handleUpdateTrip(editingTrip.id, data) : handleCreateTrip}
             onCancel={() => {
               setShowTripForm(false);
@@ -1889,6 +1907,14 @@ function ManagementDashboard() {
             vehicles={vehicles}
             onClose={() => setShowVehicleManagement(false)}
             onUpdate={handleVehicleUpdate}
+          />
+        )}
+
+        {showCustomerManagement && (
+          <CustomerManagement
+            customers={customers}
+            onClose={() => setShowCustomerManagement(false)}
+            onUpdate={handleCustomerUpdate}
           />
         )}
 
@@ -1966,6 +1992,7 @@ function ManagementDashboard() {
             trips={trips}
             drivers={drivers}
             locations={locations}
+            customers={customers}
             onEdit={canManageTrips(userRole) || isAdminOverride ? handleEditTrip : undefined}
             onDelete={canManageTrips(userRole) || isAdminOverride ? handleDeleteTrip : undefined}
             onDeleteMultiple={canManageTrips(userRole) || isAdminOverride ? handleDeleteMultipleTrips : undefined}

@@ -11,6 +11,7 @@ interface TripFiltersProps {
   trips: Array<Schema['Trip']['type']>;
   drivers: Array<Schema['Driver']['type']>;
   locations?: Array<Schema['Location']['type']>;
+  customers?: Array<Schema['Customer']['type']>;
   onFilterChange: (filteredTrips: Array<Schema['Trip']['type']>) => void;
   onRefresh?: () => void;
 }
@@ -19,7 +20,7 @@ type SortField = 'pickupDate' | 'flightNumber' | 'status' | 'driver' | 'none';
 type SortDirection = 'asc' | 'desc';
 type QuickDateFilter = 'all' | 'today' | 'thisWeek' | 'nextWeek' | 'custom';
 
-function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh }: TripFiltersProps) {
+function TripFilters({ trips, drivers, locations = [], customers = [], onFilterChange, onRefresh }: TripFiltersProps) {
   const { companyId } = useCompany();
   
   // Create a map of location names to categories for quick lookup
@@ -31,6 +32,7 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
   });
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [driverFilter, setDriverFilter] = useState<string>('all');
+  const [customerFilter, setCustomerFilter] = useState<string>('all');
   const [recurringFilter, setRecurringFilter] = useState<string>('all');
   const [customFilters, setCustomFilters] = useState<Record<string, string>>({}); // Dynamic filters by category name
   const [quickDateFilter, setQuickDateFilter] = useState<QuickDateFilter>('all');
@@ -120,6 +122,15 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
         filtered = filtered.filter((item) => !item.trip.driverId);
       } else {
         filtered = filtered.filter((item) => item.trip.driverId === driverFilter);
+      }
+    }
+
+    // Customer filter
+    if (customerFilter !== 'all') {
+      if (customerFilter === 'unassigned') {
+        filtered = filtered.filter((item) => !item.trip.customerId);
+      } else {
+        filtered = filtered.filter((item) => item.trip.customerId === customerFilter);
       }
     }
 
@@ -248,15 +259,18 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
     // If quickDateFilter is 'all', show all trips (no date filtering)
     console.log('TripFilters: After date filtering:', filtered.length);
 
-    // Search filter (flight number, locations)
+    // Search filter (flight number, locations, customer)
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (item) => {
           const trip = item.trip;
+          const customer = customers.find(c => c.id === trip.customerId);
           return trip.flightNumber?.toLowerCase().includes(search) ||
             trip.pickupLocation?.toLowerCase().includes(search) ||
-            trip.dropoffLocation?.toLowerCase().includes(search);
+            trip.dropoffLocation?.toLowerCase().includes(search) ||
+            customer?.name?.toLowerCase().includes(search) ||
+            customer?.companyName?.toLowerCase().includes(search);
         }
       );
     }
@@ -409,7 +423,7 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
       applyFiltersAndSort();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trips, statusFilter, driverFilter, recurringFilter, customFilters, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection, filterCategories]);
+  }, [trips, statusFilter, driverFilter, customerFilter, recurringFilter, customFilters, quickDateFilter, dateFrom, dateTo, searchTerm, sortField, sortDirection, filterCategories, customers]);
 
   const handleFilterChange = () => {
     applyFiltersAndSort();
@@ -418,6 +432,7 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
   const clearFilters = () => {
     setStatusFilter('all');
     setDriverFilter('all');
+    setCustomerFilter('all');
     setRecurringFilter('all');
     setCustomFilters({});
     setQuickDateFilter('all');
@@ -443,6 +458,7 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
   const hasActiveFilters =
     statusFilter !== 'all' ||
     driverFilter !== 'all' ||
+    customerFilter !== 'all' ||
     recurringFilter !== 'all' ||
     Object.values(customFilters).some(v => v !== 'all') ||
     quickDateFilter !== 'all' ||
@@ -714,6 +730,31 @@ function TripFilters({ trips, drivers, locations = [], onFilterChange, onRefresh
                   .map((driver) => (
                     <option key={driver.id} value={driver.id}>
                       {driver.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label htmlFor="customerFilter">Customer</label>
+              <select
+                id="customerFilter"
+                value={customerFilter}
+                onChange={(e) => {
+                  setCustomerFilter(e.target.value);
+                  setSortField('pickupDate');
+                  setSortDirection('asc');
+                  handleFilterChange();
+                }}
+              >
+                <option value="all">All Customers</option>
+                <option value="unassigned">No Customer</option>
+                {customers
+                  .filter((c) => c.isActive)
+                  .map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                      {customer.companyName ? ` (${customer.companyName})` : ''}
                     </option>
                   ))}
               </select>
