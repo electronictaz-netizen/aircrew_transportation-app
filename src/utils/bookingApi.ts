@@ -40,11 +40,15 @@ export async function getCompanyByBookingCode(code: string): Promise<CompanyData
   }
 
   try {
-    const response = await fetch(`${BOOKING_API_URL}?action=getCompany&code=${encodeURIComponent(code)}`, {
-      method: 'GET',
+    const response = await fetch(BOOKING_API_URL, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        action: 'getCompany',
+        code: code,
+      }),
     });
 
     if (!response.ok) {

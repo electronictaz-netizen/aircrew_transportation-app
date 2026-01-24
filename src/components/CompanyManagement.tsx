@@ -257,6 +257,8 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         displayName: sanitizedDisplayName || undefined,
         logoUrl: logoUrlValidation.isValid ? logoUrlValidation.sanitized : undefined,
         subdomain: formData.subdomain,
+        bookingCode: formData.bookingCode || undefined,
+        bookingEnabled: formData.bookingEnabled,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
       });
@@ -396,7 +398,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
                 setFormData({ ...formData, logoUrl: e.target.value });
                 if (errors.logoUrl) setErrors({ ...errors, logoUrl: '' });
               }}
-              placeholder="https://example.com/logo.png"
+              placeholder="https://onyxdispatch.us/logo.png"
               maxLength={2048}
               aria-invalid={!!errors.logoUrl}
               aria-describedby={errors.logoUrl ? 'logoUrl-error' : undefined}
@@ -429,7 +431,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
                 placeholder="company"
                 pattern="[a-z0-9-]+"
               />
-              <span className="subdomain-suffix">.yourapp.com</span>
+              <span className="subdomain-suffix">.onyxdispatch.us</span>
             </div>
             <small>Only lowercase letters, numbers, and hyphens allowed</small>
           </div>
@@ -637,7 +639,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
                       value={inviteData.email}
                       onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
                       required
-                      placeholder="user@example.com"
+                      placeholder="user@onyxdispatch.us"
                       style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
                     />
                   </div>
