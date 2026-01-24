@@ -57,30 +57,36 @@ const responseHeaders = {
 function getAmplifyClient() {
   try {
     // Get GraphQL endpoint from environment variables (set by Amplify)
-    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
+    // In Amplify Gen 2, the endpoint should be available via environment variables
+    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT || 
+                           process.env.AMPLIFY_DATA_GRAPHQL_URL ||
+                           process.env.GRAPHQL_ENDPOINT;
     const region = process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION || 'us-east-1';
     
     console.log('Initializing Amplify client:', {
       hasGraphqlEndpoint: !!graphqlEndpoint,
       region: region,
       graphqlEndpoint: graphqlEndpoint ? graphqlEndpoint.substring(0, 50) + '...' : 'missing',
+      envVars: Object.keys(process.env).filter(k => k.includes('AMPLIFY') || k.includes('GRAPHQL') || k.includes('DATA')),
     });
     
-    if (graphqlEndpoint) {
-      // Configure Amplify with the GraphQL endpoint
-      Amplify.configure({
-        API: {
-          GraphQL: {
-            endpoint: graphqlEndpoint,
-            region: region,
-            defaultAuthMode: 'iam',
-          },
-        },
-      });
-    } else {
-      console.warn('AMPLIFY_DATA_GRAPHQL_ENDPOINT not set. Client may not work correctly.');
-      // Try to use client without explicit configuration (Amplify Gen 2 should auto-detect)
+    if (!graphqlEndpoint) {
+      throw new Error('GraphQL endpoint not found in environment variables. Required: AMPLIFY_DATA_GRAPHQL_ENDPOINT or AMPLIFY_DATA_GRAPHQL_URL');
     }
+    
+    // Configure Amplify with the GraphQL endpoint
+    // This MUST be called before generateClient()
+    Amplify.configure({
+      API: {
+        GraphQL: {
+          endpoint: graphqlEndpoint,
+          region: region,
+          defaultAuthMode: 'iam',
+        },
+      },
+    });
+    
+    console.log('Amplify configured successfully');
     
     // The client will use IAM credentials from the Lambda execution role
     const client = generateClient<Schema>({
@@ -94,8 +100,10 @@ function getAmplifyClient() {
     console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     console.error('Environment variables:', {
       hasGraphqlEndpoint: !!process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT,
+      hasGraphqlUrl: !!process.env.AMPLIFY_DATA_GRAPHQL_URL,
+      hasGraphqlEndpointAlt: !!process.env.GRAPHQL_ENDPOINT,
       region: process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION,
-      allEnvVars: Object.keys(process.env).filter(k => k.includes('AMPLIFY') || k.includes('GRAPHQL')),
+      allEnvVars: Object.keys(process.env).filter(k => k.includes('AMPLIFY') || k.includes('GRAPHQL') || k.includes('DATA')),
     });
     throw error;
   }
