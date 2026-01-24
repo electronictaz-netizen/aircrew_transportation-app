@@ -43,11 +43,10 @@ interface LambdaResponse {
   body: string;
 }
 
+// Note: CORS headers are handled by Lambda Function URL configuration
+// Do not set CORS headers here to avoid duplicate headers
 const responseHeaders = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 /**
@@ -175,14 +174,8 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
  * Lambda handler
  */
 export const handler: Handler = async (event): Promise<LambdaResponse> => {
-  // Handle CORS preflight
-  if (event.requestContext?.http?.method === 'OPTIONS' || event.requestMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: responseHeaders,
-      body: '',
-    };
-  }
+  // Note: CORS preflight (OPTIONS) is handled automatically by Lambda Function URL
+  // No need to handle it in the handler
 
   try {
     // Parse request body

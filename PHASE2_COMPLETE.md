@@ -176,7 +176,7 @@ import {
   <TableBody>
     <TableRow>
       <TableCell>John Doe</TableCell>
-      <TableCell>john@example.com</TableCell>
+      <TableCell>john@onyxdispatch.us</TableCell>
       <TableCell>Active</TableCell>
     </TableRow>
   </TableBody>

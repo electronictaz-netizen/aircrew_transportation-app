@@ -73,7 +73,7 @@ aws lambda get-function-url-config \
 
 2. **Check Function URL is correct**:
    - The URL should end with `/` (or the code will add it)
-   - Test the URL directly: `curl -X POST [your-function-url] -H "Content-Type: application/json" -d '{"to":"test@example.com","companyName":"Test","signupUrl":"https://example.com"}'`
+   - Test the URL directly: `curl -X POST [your-function-url] -H "Content-Type: application/json" -d '{"to":"test@onyxdispatch.us","companyName":"Test","signupUrl":"https://onyxdispatch.us"}'`
 
 3. **Check browser console**:
    - Open browser DevTools (F12)
@@ -105,10 +105,10 @@ You can test if the Lambda is working by calling it directly:
 curl -X POST https://[your-function-url] \
   -H "Content-Type: application/json" \
   -d '{
-    "to": "test@example.com",
+    "to": "test@onyxdispatch.us",
     "companyName": "Test Company",
     "role": "manager",
-    "signupUrl": "https://example.com/signup"
+    "signupUrl": "https://onyxdispatch.us/signup"
   }'
 ```
 

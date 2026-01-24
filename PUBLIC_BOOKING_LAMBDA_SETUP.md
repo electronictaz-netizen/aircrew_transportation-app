@@ -93,7 +93,7 @@ curl -X POST "https://YOUR-FUNCTION-URL" \
     "action": "createBooking",
     "companyId": "YOUR-COMPANY-ID",
     "customerName": "Test Customer",
-    "customerEmail": "test@example.com",
+    "customerEmail": "test@onyxdispatch.us",
     "customerPhone": "555-1234",
     "tripType": "Airport Trip",
     "pickupDate": "2024-01-01T10:00:00Z",

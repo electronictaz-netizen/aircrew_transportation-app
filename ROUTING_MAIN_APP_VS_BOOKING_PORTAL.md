@@ -44,12 +44,12 @@ While **not required**, you could add code/subdomain routing to the main app for
 ### Benefits:
 
 1. **Branded Login Pages:**
-   - `acme-transport.onyxtransport.com/login` → Shows ACME branding
-   - `premium-limo.onyxtransport.com/login` → Shows Premium Limo branding
+   - `acme-transport.onyxdispatch.us/login` → Shows ACME branding
+   - `premium-limo.onyxdispatch.us/login` → Shows Premium Limo branding
    - Better user experience, feels more professional
 
 2. **Direct Company Links:**
-   - Companies can share: "Login at acme-transport.onyxtransport.com"
+   - Companies can share: "Login at acme-transport.onyxdispatch.us"
    - Easier for users to remember their company's URL
    - Reduces confusion about which app to use
 
@@ -66,7 +66,7 @@ While **not required**, you could add code/subdomain routing to the main app for
 
 **Option 1: Subdomain-Based Login**
 ```
-acme-transport.onyxtransport.com/login
+acme-transport.onyxdispatch.us/login
 → Extract subdomain "acme-transport"
 → Load company by subdomain
 → Show branded login page
@@ -75,7 +75,7 @@ acme-transport.onyxtransport.com/login
 
 **Option 2: Code-Based Login**
 ```
-onyxtransport.com/login?code=ACME
+onyxdispatch.us/login?code=ACME
 → Extract code "ACME"
 → Load company by code
 → Show branded login page
@@ -125,7 +125,7 @@ if (subdomain) {
 
 **Option 1: Subdomain**
 ```
-acme-transport.onyxtransport.com/booking
+acme-transport.onyxdispatch.us/booking
 → Extract subdomain "acme-transport"
 → Load company by subdomain
 → Show booking form for that company
@@ -133,7 +133,7 @@ acme-transport.onyxtransport.com/booking
 
 **Option 2: Code**
 ```
-onyxtransport.com/booking/ACME
+onyxdispatch.us/booking/ACME
 → Extract code "ACME"
 → Load company by code
 → Show booking form for that company
@@ -170,7 +170,7 @@ onyxtransport.com/booking/ACME
 ### For Booking Portal:
 **Implement routing (required):**
 - ✅ Code-based: `/booking/ACME` (quick to implement)
-- ✅ Subdomain-based: `acme-transport.onyxtransport.com/booking` (better UX)
+- ✅ Subdomain-based: `acme-transport.onyxdispatch.us/booking` (better UX)
 - ✅ Hybrid: Support both methods
 
 ---
@@ -179,7 +179,7 @@ onyxtransport.com/booking/ACME
 
 ### Scenario 1: Main App Only (Current)
 ```
-User visits: onyxtransport.com/login
+User visits: onyxdispatch.us/login
 → Logs in
 → App looks up CompanyUser
 → Shows their company's dashboard
@@ -188,7 +188,7 @@ User visits: onyxtransport.com/login
 
 ### Scenario 2: Main App with Subdomain (Optional)
 ```
-User visits: acme-transport.onyxtransport.com/login
+User visits: acme-transport.onyxdispatch.us/login
 → Sees ACME-branded login page
 → Logs in
 → App verifies user belongs to ACME
@@ -198,7 +198,7 @@ User visits: acme-transport.onyxtransport.com/login
 
 ### Scenario 3: Booking Portal (Required)
 ```
-User visits: acme-transport.onyxtransport.com/booking
+User visits: acme-transport.onyxdispatch.us/booking
 → App extracts subdomain "acme-transport"
 → Loads ACME company data
 → Shows ACME booking form
@@ -208,7 +208,7 @@ User visits: acme-transport.onyxtransport.com/booking
 
 ### Scenario 4: Booking Portal with Code (Required)
 ```
-User visits: onyxtransport.com/booking/ACME
+User visits: onyxdispatch.us/booking/ACME
 → App extracts code "ACME"
 → Loads ACME company data
 → Shows ACME booking form

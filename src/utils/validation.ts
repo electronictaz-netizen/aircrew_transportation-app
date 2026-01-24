@@ -419,7 +419,7 @@ export function validateUrl(url: string | null | undefined): {
     return {
       isValid: false,
       sanitized,
-      error: 'Please enter a valid URL (e.g., https://example.com/logo.png)',
+      error: 'Please enter a valid URL (e.g., https://onyxdispatch.us/logo.png)',
     };
   }
 }

@@ -117,7 +117,7 @@ Set up API Gateway with Lambda backend for public booking portal access.
 5. Share with customers
 
 ### For Customers:
-1. Visit booking URL: `https://yourapp.com/booking/ACME123`
+1. Visit booking URL: `https://onyxdispatch.us/booking/ACME123`
 2. Fill out booking form
 3. Submit booking
 4. Receive confirmation

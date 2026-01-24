@@ -46,7 +46,7 @@ After creating the company, link users:
   const client = generateClient();
   
   const COMPANY_ID = 'paste-company-id-here';
-  const USER_EMAIL = 'user@example.com';
+  const USER_EMAIL = 'user@onyxdispatch.us';
   const USER_ID = 'paste-user-id-from-cognito';
   
   const { data, errors } = await client.models.CompanyUser.create({

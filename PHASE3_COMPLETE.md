@@ -90,7 +90,7 @@ function MyForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="email@example.com" {...field} />
+                <Input type="email" placeholder="email@onyxdispatch.us" {...field} />
               </FormControl>
               <FormDescription>
                 Enter your email address

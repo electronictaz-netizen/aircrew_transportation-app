@@ -66,7 +66,7 @@ curl -X OPTIONS https://k3fu2mif2d4bnqsig4jrnifkey0zyleo.lambda-url.us-east-1.on
 curl -X POST https://k3fu2mif2d4bnqsig4jrnifkey0zyleo.lambda-url.us-east-1.on.aws/ \
   -H "Content-Type: application/json" \
   -H "Origin: https://main.d1wxo3x0z5r1oq.amplifyapp.com" \
-  -d '{"to":"test@example.com","companyName":"Test","role":"manager","signupUrl":"https://example.com"}' \
+  -d '{"to":"test@onyxdispatch.us","companyName":"Test","role":"manager","signupUrl":"https://onyxdispatch.us"}' \
   -v
 ```
 

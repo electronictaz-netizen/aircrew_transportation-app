@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the AWS infrastructure requirements for implementing subdomain-based routing for a multi-tenant passenger booking portal (e.g., `acme-transport.onyxtransport.com`).
+This document outlines the AWS infrastructure requirements for implementing subdomain-based routing for a multi-tenant passenger booking portal (e.g., `acme-transport.onyxdispatch.us`).
 
 ## Current Setup
 
@@ -16,13 +16,13 @@ Your application is currently hosted on AWS Amplify:
 ### 1. Domain Name & DNS Configuration
 
 **What you need:**
-- A registered domain (e.g., `onyxtransport.com`)
+- A registered domain (e.g., `onyxdispatch.us`)
 - DNS hosting (Route 53 recommended, but any DNS provider works)
 
 **DNS Configuration:**
 ```
 Type: A (or CNAME)
-Name: *.onyxtransport.com (wildcard subdomain)
+Name: *.onyxdispatch.us (wildcard subdomain)
 Value: [Amplify CloudFront distribution URL or ALB endpoint]
 TTL: 300 (5 minutes)
 ```
@@ -30,19 +30,19 @@ TTL: 300 (5 minutes)
 **Also add:**
 ```
 Type: A (or CNAME)
-Name: onyxtransport.com (root domain)
+Name: onyxdispatch.us (root domain)
 Value: [Same as above]
 ```
 
 **Route 53 Setup (Recommended):**
-1. Create hosted zone for `onyxtransport.com`
-2. Add wildcard A record: `*.onyxtransport.com` → Amplify endpoint
-3. Add root A record: `onyxtransport.com` → Amplify endpoint
+1. Create hosted zone for `onyxdispatch.us`
+2. Add wildcard A record: `*.onyxdispatch.us` → Amplify endpoint
+3. Add root A record: `onyxdispatch.us` → Amplify endpoint
 4. Update domain registrar nameservers to Route 53
 
 **Alternative (External DNS Provider):**
-- Add CNAME record: `*.onyxtransport.com` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
-- Add CNAME record: `onyxtransport.com` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
+- Add CNAME record: `*.onyxdispatch.us` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
+- Add CNAME record: `onyxdispatch.us` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
 
 **Cost:** 
 - Route 53: $0.50/month per hosted zone + $0.40 per million queries
@@ -57,17 +57,17 @@ Value: [Same as above]
 1. **Add Custom Domain:**
    - Go to Amplify Console → Your App → Domain Management
    - Click "Add domain"
-   - Enter: `onyxtransport.com`
+   - Enter: `onyxdispatch.us`
    - Amplify will verify domain ownership
 
 2. **Configure Subdomain Routing:**
-   - Add domain: `onyxtransport.com`
-   - Add subdomain: `*.onyxtransport.com` (wildcard)
+   - Add domain: `onyxdispatch.us`
+   - Add subdomain: `*.onyxdispatch.us` (wildcard)
    - Or add individual subdomains as needed
 
 3. **SSL Certificate:**
    - AWS Amplify automatically provisions SSL certificates via AWS Certificate Manager (ACM)
-   - Supports wildcard certificates: `*.onyxtransport.com`
+   - Supports wildcard certificates: `*.onyxdispatch.us`
    - Automatic renewal (no manual intervention needed)
    - **Free** (included with Amplify)
 
@@ -133,7 +133,7 @@ export function getSubdomain(): string | null {
   const hostname = window.location.hostname;
   const parts = hostname.split('.');
   
-  // Handle: subdomain.onyxtransport.com
+  // Handle: subdomain.onyxdispatch.us
   if (parts.length >= 3) {
     return parts[0];
   }
@@ -197,7 +197,7 @@ if (subdomain) {
 ## Complete Setup Process
 
 ### Step 1: Domain Registration
-1. Register `onyxtransport.com` (or your chosen domain)
+1. Register `onyxdispatch.us` (or your chosen domain)
 2. Use Route 53 or external registrar
 
 ### Step 2: Configure DNS
@@ -205,17 +205,17 @@ if (subdomain) {
 1. Create hosted zone in Route 53
 2. Get nameservers from Route 53
 3. Update domain registrar with Route 53 nameservers
-4. Add wildcard A record: `*.onyxtransport.com`
+4. Add wildcard A record: `*.onyxdispatch.us`
 
 **Option B - External DNS:**
-1. Add CNAME: `*.onyxtransport.com` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
-2. Add CNAME: `onyxtransport.com` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
+1. Add CNAME: `*.onyxdispatch.us` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
+2. Add CNAME: `onyxdispatch.us` → `main.d1wxo3x0z5r1oq.amplifyapp.com`
 
 ### Step 3: Configure Amplify Custom Domain
 1. Go to Amplify Console → Domain Management
 2. Click "Add domain"
-3. Enter: `onyxtransport.com`
-4. Add subdomain: `*.onyxtransport.com` (or individual subdomains)
+3. Enter: `onyxdispatch.us`
+4. Add subdomain: `*.onyxdispatch.us` (or individual subdomains)
 5. Follow DNS verification steps
 6. Wait for SSL certificate provisioning (5-30 minutes)
 
@@ -254,7 +254,7 @@ if (subdomain) {
 
 **If you want to avoid DNS/domain setup initially:**
 
-Use path-based routing: `onyxtransport.com/booking/ACME`
+Use path-based routing: `onyxdispatch.us/booking/ACME`
 
 **Requirements:**
 - ✅ No DNS changes needed
@@ -332,7 +332,7 @@ export default defineConfig({
 
 1. **DNS Propagation:**
    - Can take 24-48 hours globally
-   - Use `dig *.onyxtransport.com` to check
+   - Use `dig *.onyxdispatch.us` to check
    - Route 53 is usually faster (minutes)
 
 2. **SSL Certificate Provisioning:**

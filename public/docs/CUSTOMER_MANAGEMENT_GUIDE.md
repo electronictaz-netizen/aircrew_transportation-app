@@ -52,7 +52,7 @@ The Customer Management modal will open, showing all your customers in a table f
 - **Customer Name*** - The customer's full name (e.g., "John Smith" or "ABC Corporation")
 
 **Optional Fields:**
-- **Email** - Customer's email address (e.g., "customer@example.com")
+- **Email** - Customer's email address (e.g., "customer@onyxdispatch.us")
 - **Phone** - Customer's phone number (e.g., "(555) 123-4567")
 - **Company/Organization** - If the customer represents a company (e.g., "ABC Corporation")
 - **Notes** - Additional information about the customer (e.g., preferences, special instructions)

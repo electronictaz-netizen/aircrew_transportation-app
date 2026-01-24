@@ -17,24 +17,24 @@ The application already has:
 ### Option 1: Subdomain-Based Routing (Recommended) ⭐
 
 **How it works:**
-- Each company gets a unique subdomain: `company1.onyxtransport.com`, `company2.onyxtransport.com`
+- Each company gets a unique subdomain: `company1.onyxdispatch.us`, `company2.onyxdispatch.us`
 - Passengers visit their company's subdomain directly
 - No code required - URL identifies the company
 
 **Example URLs:**
-- `https://acme-transport.onyxtransport.com/booking`
-- `https://premium-limo.onyxtransport.com/booking`
-- `https://airport-shuttle.onyxtransport.com/booking`
+- `https://acme-transport.onyxdispatch.us/booking`
+- `https://premium-limo.onyxdispatch.us/booking`
+- `https://airport-shuttle.onyxdispatch.us/booking`
 
 **Implementation:**
 1. Add `bookingSubdomain` field to Company model (or use existing `subdomain`)
-2. Configure DNS wildcard: `*.onyxtransport.com` → Amplify app
+2. Configure DNS wildcard: `*.onyxdispatch.us` → Amplify app
 3. Route handler extracts subdomain and loads company data
 4. Booking portal component reads company from context/subdomain
 
 **Pros:**
 - ✅ Professional, branded experience
-- ✅ Easy to share: "Book at acme-transport.onyxtransport.com"
+- ✅ Easy to share: "Book at acme-transport.onyxdispatch.us"
 - ✅ SEO-friendly (each company has unique URL)
 - ✅ Can support custom domains later
 - ✅ No codes to remember or share
@@ -66,14 +66,14 @@ const company = companies?.[0];
 ### Option 2: Path-Based Routing with Company Code
 
 **How it works:**
-- Single domain with company code in path: `onyxtransport.com/booking/ABC123`
+- Single domain with company code in path: `onyxdispatch.us/booking/ABC123`
 - Company code is short, memorable identifier
 - Passengers enter code or click link with code
 
 **Example URLs:**
-- `https://onyxtransport.com/booking/ABC123`
-- `https://onyxtransport.com/booking/PREMIUM`
-- `https://onyxtransport.com/booking/ACME`
+- `https://onyxdispatch.us/booking/ABC123`
+- `https://onyxdispatch.us/booking/PREMIUM`
+- `https://onyxdispatch.us/booking/ACME`
 
 **Implementation:**
 1. Add `bookingCode` field to Company model (unique, short code)
@@ -112,13 +112,13 @@ const { data: companies } = await client.models.Company.list({
 ### Option 3: Query Parameter with Company Code
 
 **How it works:**
-- Single booking page: `onyxtransport.com/booking?code=ABC123`
+- Single booking page: `onyxdispatch.us/booking?code=ABC123`
 - Code entered in form or passed via URL
 - Landing page prompts for code if not provided
 
 **Example URLs:**
-- `https://onyxtransport.com/booking?code=ABC123`
-- `https://onyxtransport.com/booking` (shows code input form)
+- `https://onyxdispatch.us/booking?code=ABC123`
+- `https://onyxdispatch.us/booking` (shows code input form)
 
 **Implementation:**
 1. Add `bookingCode` field to Company model
@@ -156,8 +156,8 @@ if (code) {
 ### Option 4: Hybrid Approach (Subdomain + Code Fallback) ⭐⭐
 
 **How it works:**
-- Primary: Subdomain routing (`company1.onyxtransport.com/booking`)
-- Fallback: Code-based access (`onyxtransport.com/booking?code=ABC123`)
+- Primary: Subdomain routing (`company1.onyxdispatch.us/booking`)
+- Fallback: Code-based access (`onyxdispatch.us/booking?code=ABC123`)
 - Best of both worlds
 
 **Implementation:**
@@ -314,21 +314,21 @@ bookingSettings: a.string(), // JSON configuration
 ## Example User Flows
 
 ### Flow 1: Subdomain Access
-1. Passenger visits `acme-transport.onyxtransport.com/booking`
+1. Passenger visits `acme-transport.onyxdispatch.us/booking`
 2. System detects subdomain "acme-transport"
 3. Loads ACME Transport company data
 4. Shows booking form with company branding
 5. Passenger books trip
 
 ### Flow 2: Code Access
-1. Passenger visits `onyxtransport.com/booking?code=ACME`
+1. Passenger visits `onyxdispatch.us/booking?code=ACME`
 2. System detects code "ACME"
 3. Loads ACME Transport company data
 4. Shows booking form
 5. Passenger books trip
 
 ### Flow 3: Code Input
-1. Passenger visits `onyxtransport.com/booking`
+1. Passenger visits `onyxdispatch.us/booking`
 2. Sees code input form
 3. Enters "ACME"
 4. System loads company and shows booking form
@@ -345,7 +345,7 @@ bookingSettings: a.string(), // JSON configuration
 - Can generate codes automatically for all companies
 - Easy to test and deploy
 - Can add subdomain support later without breaking existing links
-- Companies can share: "Book at onyxtransport.com/booking/ACME"
+- Companies can share: "Book at onyxdispatch.us/booking/ACME"
 
 **Migration Path:**
 1. Launch with codes

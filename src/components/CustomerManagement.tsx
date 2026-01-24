@@ -330,7 +330,7 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
                     setFormData({ ...formData, email: e.target.value });
                     if (errors.email) setErrors({ ...errors, email: '' });
                   }}
-                  placeholder="customer@example.com"
+                  placeholder="customer@onyxdispatch.us"
                   maxLength={100}
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? 'email-error' : undefined}

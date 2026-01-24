@@ -151,7 +151,7 @@ $smtp.EnableSsl = $true
 $smtp.Credentials = $credential
 
 try {
-    $smtp.Send("noreply@onyxdispatch.us", "test@example.com", "Test", "Test email")
+    $smtp.Send("noreply@onyxdispatch.us", "test@onyxdispatch.us", "Test", "Test email")
     Write-Host "SMTP connection successful!" -ForegroundColor Green
 } catch {
     Write-Host "SMTP connection failed: $_" -ForegroundColor Red

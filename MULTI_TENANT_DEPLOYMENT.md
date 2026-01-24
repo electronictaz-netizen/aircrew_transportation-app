@@ -313,8 +313,8 @@ await client.models.Trip.create({
 #### Option A: Subdomain-Based (Recommended)
 
 ```
-acme.yourapp.com → Company: Acme Corp
-contoso.yourapp.com → Company: Contoso Inc
+acme.onyxdispatch.us → Company: Acme Corp
+contoso.onyxdispatch.us → Company: Contoso Inc
 ```
 
 **Implementation:**

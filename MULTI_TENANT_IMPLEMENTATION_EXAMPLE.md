@@ -447,7 +447,7 @@ function CompanyOnboarding() {
                 placeholder="acme"
                 pattern="[a-z0-9-]+"
               />
-              <span className="subdomain-suffix">.yourapp.com</span>
+              <span className="subdomain-suffix">.onyxdispatch.us</span>
             </div>
             <small>Only lowercase letters, numbers, and hyphens allowed</small>
           </div>
@@ -511,7 +511,7 @@ export function redirectToCompanySubdomain(subdomain: string) {
   const port = window.location.port;
   const pathname = window.location.pathname;
   
-  // Extract base domain (e.g., 'yourapp.com' from 'app.yourapp.com')
+  // Extract base domain (e.g., 'onyxdispatch.us' from 'app.onyxdispatch.us')
   const baseDomain = hostname.split('.').slice(-2).join('.');
   
   const newUrl = `${protocol}//${subdomain}.${baseDomain}${port ? `:${port}` : ''}${pathname}`;

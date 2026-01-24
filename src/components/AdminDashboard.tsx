@@ -610,7 +610,7 @@ function AdminDashboard() {
                         value={inviteData.email}
                         onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
                         required
-                        placeholder="user@example.com"
+                        placeholder="user@onyxdispatch.us"
                       />
                     </div>
                     <div className="form-group">

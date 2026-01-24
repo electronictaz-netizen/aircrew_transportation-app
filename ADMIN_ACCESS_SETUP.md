@@ -44,7 +44,7 @@ Open `src/utils/adminAccess.ts` and add your email or user ID:
 
 ```typescript
 const AUTHORIZED_ADMIN_EMAILS = [
-  'your-email@example.com',  // Add your email here
+  'your-email@onyxdispatch.us',  // Add your email here
 ];
 ```
 
@@ -70,9 +70,9 @@ You can add multiple admins:
 
 ```typescript
 const AUTHORIZED_ADMIN_EMAILS = [
-  'admin1@example.com',
-  'admin2@example.com',
-  'admin3@example.com',
+  'admin1@onyxdispatch.us',
+  'admin2@onyxdispatch.us',
+  'admin3@onyxdispatch.us',
 ];
 ```
 

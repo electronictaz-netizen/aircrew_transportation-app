@@ -155,14 +155,14 @@ Once configured, test the URLs:
 ```bash
 curl -X POST https://[your-checkout-url] \
   -H "Content-Type: application/json" \
-  -d '{"companyId":"test","priceId":"price_test","successUrl":"https://example.com/success","cancelUrl":"https://example.com/cancel"}'
+  -d '{"companyId":"test","priceId":"price_test","successUrl":"https://onyxdispatch.us/success","cancelUrl":"https://onyxdispatch.us/cancel"}'
 ```
 
 ### Test Portal URL:
 ```bash
 curl -X POST https://[your-portal-url] \
   -H "Content-Type: application/json" \
-  -d '{"companyId":"test","returnUrl":"https://example.com"}'
+  -d '{"companyId":"test","returnUrl":"https://onyxdispatch.us"}'
 ```
 
 You should get a JSON response (even if it's an error, it means the function is reachable).
