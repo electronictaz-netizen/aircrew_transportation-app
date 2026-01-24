@@ -18,10 +18,21 @@ export const backend = defineBackend({
 });
 
 // Pass GraphQL endpoint to publicBooking function
-// Construct the endpoint URL from the API ID
-const graphqlApiId = backend.data.resources.graphqlApi.apiId;
+// The GraphQL endpoint should be: https://{api-id}.appsync-api.{region}.amazonaws.com/graphql
+// Try to get it from graphqlUrl property, or construct from apiId
 const region = backend.data.resources.graphqlApi.region || 'us-east-1';
-const graphqlEndpoint = `https://${graphqlApiId}.appsync-api.${region}.amazonaws.com/graphql`;
+let graphqlEndpoint: string;
+
+// Try graphqlUrl first (if available)
+if ('graphqlUrl' in backend.data.resources.graphqlApi && backend.data.resources.graphqlApi.graphqlUrl) {
+  graphqlEndpoint = backend.data.resources.graphqlApi.graphqlUrl as string;
+} else if ('apiId' in backend.data.resources.graphqlApi && backend.data.resources.graphqlApi.apiId) {
+  // Fallback: construct from API ID
+  const apiId = backend.data.resources.graphqlApi.apiId as string;
+  graphqlEndpoint = `https://${apiId}.appsync-api.${region}.amazonaws.com/graphql`;
+} else {
+  throw new Error('Could not determine GraphQL endpoint. Check backend.data.resources.graphqlApi properties.');
+}
 
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
