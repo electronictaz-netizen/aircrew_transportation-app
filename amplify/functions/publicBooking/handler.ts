@@ -4,6 +4,7 @@
  */
 
 import type { Handler } from 'aws-lambda';
+import { Amplify } from 'aws-amplify';
 import type { Schema } from '../../data/resource';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -50,18 +51,55 @@ const responseHeaders = {
 
 /**
  * Initialize Amplify client
- * Uses dynamic import like other Lambda functions in this project
- * In Amplify Gen 2, the backend automatically configures the client
+ * Configures Amplify with GraphQL endpoint and uses IAM authentication
  */
 async function getAmplifyClient() {
   try {
-    // Use dynamic import like stripeCheckout handler
+    // Get GraphQL endpoint from environment variables or construct from API ID
+    // In Amplify Gen 2, the endpoint should be available via environment variables
+    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT || 
+                           process.env.AMPLIFY_DATA_GRAPHQL_URL ||
+                           process.env.GRAPHQL_ENDPOINT;
+    const region = process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION || 'us-east-1';
+    
+    // If endpoint is not in env vars, try to construct it from API ID
+    let endpoint = graphqlEndpoint;
+    if (!endpoint) {
+      const apiId = process.env.AMPLIFY_DATA_GRAPHQL_API_ID;
+      if (apiId) {
+        // Construct GraphQL endpoint from API ID
+        endpoint = `https://${apiId}.appsync-api.${region}.amazonaws.com/graphql`;
+      }
+    }
+    
+    console.log('Initializing Amplify client:', {
+      hasEndpoint: !!endpoint,
+      region: region,
+      endpointPreview: endpoint ? endpoint.substring(0, 50) + '...' : 'missing',
+    });
+    
+    if (!endpoint) {
+      throw new Error('GraphQL endpoint not found. Check environment variables: AMPLIFY_DATA_GRAPHQL_ENDPOINT, AMPLIFY_DATA_GRAPHQL_URL, or AMPLIFY_DATA_GRAPHQL_API_ID');
+    }
+    
+    // Configure Amplify with the GraphQL endpoint
+    // This MUST be called before generateClient()
+    Amplify.configure({
+      API: {
+        GraphQL: {
+          endpoint: endpoint,
+          region: region,
+          defaultAuthMode: 'iam',
+        },
+      },
+    });
+    
+    console.log('Amplify configured successfully');
+    
+    // Use dynamic import for generateClient
     const { generateClient } = await import('aws-amplify/data');
     
-    console.log('Initializing Amplify client with IAM auth');
-    
     // The client will use IAM credentials from the Lambda execution role
-    // Amplify Gen 2 automatically configures the endpoint from the backend
     const client = generateClient<Schema>({
       authMode: 'iam', // Use IAM authentication for Lambda
     });
@@ -71,6 +109,13 @@ async function getAmplifyClient() {
   } catch (error) {
     console.error('Error initializing Amplify client:', error);
     console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    console.error('Environment variables:', {
+      hasGraphqlEndpoint: !!process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT,
+      hasGraphqlUrl: !!process.env.AMPLIFY_DATA_GRAPHQL_URL,
+      hasApiId: !!process.env.AMPLIFY_DATA_GRAPHQL_API_ID,
+      region: process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION,
+      allEnvVars: Object.keys(process.env).filter(k => k.includes('AMPLIFY') || k.includes('GRAPHQL') || k.includes('DATA') || k.includes('API')),
+    });
     throw error;
   }
 }
