@@ -87,15 +87,29 @@ async function getAmplifyClient() {
     const { generateClient } = await import('aws-amplify/data');
     
     // The client will use IAM credentials from the Lambda execution role
-    const client = generateClient<Schema>({
+    // Don't pass Schema type - let it introspect from the GraphQL endpoint
+    const client = generateClient({
       authMode: 'iam',
     });
     
     console.log('Amplify client initialized successfully');
+    
+    // Check models - they should be available immediately with Schema type
+    const modelKeys = client.models ? Object.keys(client.models) : [];
     console.log('Client models available:', {
       hasModels: !!client.models,
-      modelKeys: client.models ? Object.keys(client.models) : 'none',
+      modelKeys: modelKeys,
+      modelCount: modelKeys.length,
     });
+    
+    if (modelKeys.length === 0) {
+      console.error('WARNING: No models found in client. This indicates a configuration issue.');
+      console.error('Client structure:', {
+        hasClient: !!client,
+        clientKeys: client ? Object.keys(client) : 'none',
+        hasModels: !!client.models,
+      });
+    }
     
     return client;
   } catch (error) {
