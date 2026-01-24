@@ -190,7 +190,12 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     
     const signedRequest = await signer.sign(request);
     
-    const response = await fetch(graphqlEndpoint, {
+    // Construct the URL from the signed request to ensure consistency
+    const url = `${signedRequest.protocol}//${signedRequest.hostname}${signedRequest.path}`;
+    
+    console.log('Making GraphQL request to:', url);
+    
+    const response = await fetch(url, {
       method: signedRequest.method,
       headers: signedRequest.headers as HeadersInit,
       body: signedRequest.body,
