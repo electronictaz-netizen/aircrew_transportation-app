@@ -5,6 +5,7 @@
 
 import type { Handler } from 'aws-lambda';
 import { Amplify } from 'aws-amplify';
+import { defaultProvider } from '@aws-sdk/credential-providers';
 import type { Schema } from '../../data/resource';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -69,8 +70,8 @@ async function getAmplifyClient() {
       throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT environment variable not set. Check backend.ts configuration.');
     }
     
-    // Configure Amplify with the GraphQL endpoint
-    // This MUST be called before generateClient()
+    // Configure Amplify with the GraphQL endpoint and AWS credentials
+    // In Lambda, use defaultProvider which automatically picks up execution role credentials
     Amplify.configure({
       API: {
         GraphQL: {
@@ -79,7 +80,10 @@ async function getAmplifyClient() {
           defaultAuthMode: 'iam',
         },
       },
-    });
+      Auth: {
+        credentials: defaultProvider(),
+      },
+    } as any);
     
     console.log('Amplify configured successfully');
     
@@ -161,11 +165,12 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
       },
     };
     
+    // Use IAM auth mode - credentials should be available from Lambda execution role
     const response = await client.graphql({
       query,
       variables,
       authMode: 'iam',
-    });
+    } as any);
     
     const companies = response.data?.listCompanies?.items;
     
