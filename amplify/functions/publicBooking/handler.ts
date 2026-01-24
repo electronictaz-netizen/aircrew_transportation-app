@@ -4,8 +4,6 @@
  */
 
 import type { Handler } from 'aws-lambda';
-import { Amplify } from 'aws-amplify';
-import type { Schema } from '../../data/resource';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
 // These permissions are automatically granted when the function is defined in backend.ts
@@ -109,7 +107,7 @@ async function getAmplifyClient() {
  * Uses AWS SDK AppSync client directly with IAM authentication
  * This bypasses Amplify's client which has credential issues
  */
-async function getCompanyByCode(code: string): Promise<Schema['Company']['type'] | null> {
+async function getCompanyByCode(code: string): Promise<any | null> {
   try {
     console.log('Fetching company with booking code:', code);
     
@@ -216,7 +214,7 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
       return null;
     }
 
-    return companies[0] as Schema['Company']['type'];
+    return companies[0];
   } catch (error) {
     console.error('Error fetching company:', error);
     console.error('GraphQL error details:', JSON.stringify(error, null, 2));
