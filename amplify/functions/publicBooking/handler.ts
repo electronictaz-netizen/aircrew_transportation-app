@@ -128,15 +128,16 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     const apiId = apiIdMatch[1];
     
     // Use AWS SDK to sign the request with IAM credentials
-    // Then use fetch to make the GraphQL request
+    // In Lambda, credentials are automatically available from execution role
     const { SignatureV4 } = await import('@aws-sdk/signature-v4');
     const { HttpRequest } = await import('@aws-sdk/protocol-http');
-    const { defaultProvider } = await import('@aws-sdk/credential-providers');
     
+    // SignatureV4 will automatically use Lambda execution role credentials
+    // No need to explicitly configure credentials
     const signer = new SignatureV4({
-      credentials: defaultProvider(),
       region: region,
       service: 'appsync',
+      // Credentials are automatically available via default provider chain in Lambda
     });
     
     const query = `
