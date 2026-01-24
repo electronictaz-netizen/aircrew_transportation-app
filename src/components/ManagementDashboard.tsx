@@ -42,7 +42,7 @@ import './ManagementDashboard.css';
 const client = generateClient<Schema>();
 
 function ManagementDashboard() {
-  const { companyId, loading: companyLoading, company, isAdminOverride, userRole } = useCompany();
+  const { companyId, loading: companyLoading, company, isAdminOverride, userRole, refreshCompany } = useCompany();
   const hasAdminAccess = useAdminAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const [trips, setTrips] = useState<Array<Schema['Trip']['type']>>([]);
@@ -1456,19 +1456,57 @@ function ManagementDashboard() {
             <>
               <p>Your account is not associated with a company. Please check the following:</p>
               <ul style={{ textAlign: 'left', display: 'inline-block', marginTop: '1rem' }}>
-                <li>Check the browser console for detailed error messages</li>
+                <li>Check the browser console (F12) for detailed error messages</li>
                 <li>Ensure the schema has been deployed (Company model must exist)</li>
                 <li>Try refreshing the page</li>
                 <li>If the issue persists, run the migration script: <code>npx ts-node scripts/migrateToMultiTenant.ts</code></li>
                 <li>Contact your administrator to be added to a company</li>
               </ul>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => window.location.reload()}
-                style={{ marginTop: '1rem' }}
-              >
-                Refresh Page
-              </button>
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={async () => {
+                    try {
+                      await refreshCompany();
+                      // Wait a moment for state to update
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
+                    } catch (error) {
+                      console.error('Error refreshing company:', error);
+                      alert('Failed to refresh. Check the browser console (F12) for details.');
+                    }
+                  }}
+                >
+                  Retry Company Assignment
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh Page
+                </button>
+              </div>
+              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f3f4f6', borderRadius: '4px', textAlign: 'left', maxWidth: '600px', margin: '1.5rem auto 0' }}>
+                <strong>Debugging Information:</strong>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  Open the browser console (F12) and look for messages starting with:
+                </p>
+                <ul style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                  <li><code>⚠️ No CompanyUser found</code> - Automatic creation is being attempted</li>
+                  <li><code>🔍 Ensuring default company</code> - Company creation process started</li>
+                  <li><code>❌ Failed to ensure default company</code> - Error occurred (check details below)</li>
+                  <li><code>✅ Created CompanyUser record</code> - Success! Refresh the page</li>
+                </ul>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: '#dc2626' }}>
+                  <strong>Common Issues:</strong>
+                </p>
+                <ul style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                  <li><strong>Unauthorized:</strong> You don't have permission to create companies. Contact an admin.</li>
+                  <li><strong>Not Found:</strong> The Company model doesn't exist. Deploy the schema first.</li>
+                  <li><strong>Network Error:</strong> Check your internet connection and try again.</li>
+                </ul>
+              </div>
             </>
           )}
         </div>
