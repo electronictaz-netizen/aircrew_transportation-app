@@ -53,25 +53,54 @@ function AdminDashboard() {
 
     try {
       setLoading(true);
-      const { data } = await client.models.Company.list();
+      console.log('[AdminDashboard] Loading companies...');
+      const { data, errors } = await client.models.Company.list();
+      
+      if (errors && errors.length > 0) {
+        console.error('[AdminDashboard] Errors loading companies:', errors);
+        alert(`Failed to load companies: ${errors.map(e => e.message).join(', ')}`);
+        return;
+      }
+      
+      console.log('[AdminDashboard] Companies loaded:', data?.length || 0, 'companies');
+      
+      if (!data || data.length === 0) {
+        console.warn('[AdminDashboard] No companies found in database');
+        setCompanies([]);
+        return;
+      }
       
       // Get user count for each company
       const companiesWithCounts = await Promise.all(
         (data || []).map(async (company) => {
-          const { data: users } = await client.models.CompanyUser.list({
-            filter: { companyId: { eq: company.id } },
-          });
-          return {
-            ...company,
-            userCount: users?.length || 0,
-          };
+          try {
+            const { data: users } = await client.models.CompanyUser.list({
+              filter: { companyId: { eq: company.id } },
+            });
+            return {
+              ...company,
+              userCount: users?.length || 0,
+            };
+          } catch (userError) {
+            console.error(`[AdminDashboard] Error loading users for company ${company.id}:`, userError);
+            return {
+              ...company,
+              userCount: 0,
+            };
+          }
         })
       );
       
+      console.log('[AdminDashboard] Companies with counts:', companiesWithCounts.length);
       setCompanies(companiesWithCounts);
-    } catch (error) {
-      console.error('Error loading companies:', error);
-      alert('Failed to load companies');
+    } catch (error: any) {
+      console.error('[AdminDashboard] Error loading companies:', error);
+      console.error('[AdminDashboard] Error details:', {
+        message: error?.message,
+        errors: error?.errors,
+        stack: error?.stack,
+      });
+      alert(`Failed to load companies: ${error?.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
