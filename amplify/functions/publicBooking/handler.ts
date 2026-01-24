@@ -225,12 +225,83 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
 }
 
 /**
+ * Helper function to execute a GraphQL query/mutation using AWS Signature V4
+ */
+async function executeGraphQL(query: string, variables: any): Promise<any> {
+  const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
+  const region = process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION || 'us-east-1';
+  
+  if (!graphqlEndpoint) {
+    throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT not set');
+  }
+  
+  // Extract API ID from endpoint URL
+  const apiIdMatch = graphqlEndpoint.match(/https:\/\/([^.]+)\.appsync-api/);
+  if (!apiIdMatch || !apiIdMatch[1]) {
+    throw new Error('Could not extract API ID from endpoint URL');
+  }
+  const apiId = apiIdMatch[1];
+  
+  // Use AWS SDK to sign the request with IAM credentials
+  const { SignatureV4 } = await import('@aws-sdk/signature-v4');
+  const { HttpRequest } = await import('@aws-sdk/protocol-http');
+  const { fromNodeProviderChain } = await import('@aws-sdk/credential-providers');
+  const { Sha256 } = await import('@aws-crypto/sha256-js');
+  
+  // Get credentials from the default provider chain (Lambda execution role)
+  const credentialsProvider = fromNodeProviderChain();
+  const credentials = await credentialsProvider();
+  
+  const signer = new SignatureV4({
+    credentials: credentials,
+    region: region,
+    service: 'appsync',
+    sha256: Sha256,
+  });
+  
+  const body = JSON.stringify({
+    query: query,
+    variables: variables,
+  });
+  
+  const request = new HttpRequest({
+    method: 'POST',
+    protocol: 'https:',
+    hostname: `${apiId}.appsync-api.${region}.amazonaws.com`,
+    path: '/graphql',
+    headers: {
+      'Content-Type': 'application/json',
+      host: `${apiId}.appsync-api.${region}.amazonaws.com`,
+    },
+    body: body,
+  });
+  
+  const signedRequest = await signer.sign(request);
+  
+  const response = await fetch(graphqlEndpoint, {
+    method: signedRequest.method,
+    headers: signedRequest.headers as HeadersInit,
+    body: signedRequest.body,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
+  }
+  
+  const result = await response.json();
+  
+  if (result.errors) {
+    throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+  }
+  
+  return result.data;
+}
+
+/**
  * Create booking (trip and customer)
- * Uses GraphQL mutations directly since models API requires schema introspection
+ * Uses AWS Signature V4 for GraphQL mutations
  */
 async function createBooking(request: CreateBookingRequest): Promise<{ tripId: string; customerId?: string }> {
-  const client = await getAmplifyClient();
-  
   try {
     // Create or find customer
     let customerId: string | undefined;
@@ -250,18 +321,14 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
         }
       `;
       
-      const listResponse = await client.graphql({
-        query: listCustomersQuery,
-        variables: {
-          filter: {
-            companyId: { eq: request.companyId },
-            email: { eq: request.customerEmail.toLowerCase().trim() },
-          },
+      const listData = await executeGraphQL(listCustomersQuery, {
+        filter: {
+          companyId: { eq: request.companyId },
+          email: { eq: request.customerEmail.toLowerCase().trim() },
         },
-        authMode: 'iam',
       });
       
-      const existingCustomers = listResponse.data?.listCustomers?.items;
+      const existingCustomers = listData?.listCustomers?.items;
       
       if (existingCustomers && existingCustomers.length > 0) {
         customerId = existingCustomers[0].id;
@@ -275,17 +342,13 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
             }
           `;
           
-          await client.graphql({
-            query: updateCustomerMutation,
-            variables: {
-              input: {
-                id: customerId,
-                name: request.customerName || existingCustomers[0].name,
-                phone: request.customerPhone || existingCustomers[0].phone,
-                companyName: request.customerCompany || existingCustomers[0].companyName,
-              },
+          await executeGraphQL(updateCustomerMutation, {
+            input: {
+              id: customerId,
+              name: request.customerName || existingCustomers[0].name,
+              phone: request.customerPhone || existingCustomers[0].phone,
+              companyName: request.customerCompany || existingCustomers[0].companyName,
             },
-            authMode: 'iam',
           });
         }
       } else {
@@ -298,22 +361,18 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
           }
         `;
         
-        const createResponse = await client.graphql({
-          query: createCustomerMutation,
-          variables: {
-            input: {
-              companyId: request.companyId,
-              name: request.customerName,
-              email: request.customerEmail.toLowerCase().trim(),
-              phone: request.customerPhone,
-              companyName: request.customerCompany,
-              isActive: true,
-            },
+        const createData = await executeGraphQL(createCustomerMutation, {
+          input: {
+            companyId: request.companyId,
+            name: request.customerName,
+            email: request.customerEmail.toLowerCase().trim(),
+            phone: request.customerPhone,
+            companyName: request.customerCompany,
+            isActive: true,
           },
-          authMode: 'iam',
         });
         
-        customerId = createResponse.data?.createCustomer?.id;
+        customerId = createData?.createCustomer?.id;
       }
     }
 
@@ -330,25 +389,21 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
       }
     `;
     
-    const tripResponse = await client.graphql({
-      query: createTripMutation,
-      variables: {
-        input: {
-          companyId: request.companyId,
-          pickupDate: request.pickupDate,
-          flightNumber: flightNumberOrJob,
-          pickupLocation: request.pickupLocation,
-          dropoffLocation: request.dropoffLocation,
-          numberOfPassengers: request.numberOfPassengers,
-          status: 'Unassigned',
-          customerId: customerId,
-          notes: request.specialInstructions || undefined,
-        },
+    const tripData = await executeGraphQL(createTripMutation, {
+      input: {
+        companyId: request.companyId,
+        pickupDate: request.pickupDate,
+        flightNumber: flightNumberOrJob,
+        pickupLocation: request.pickupLocation,
+        dropoffLocation: request.dropoffLocation,
+        numberOfPassengers: request.numberOfPassengers,
+        status: 'Unassigned',
+        customerId: customerId,
+        notes: request.specialInstructions || undefined,
       },
-      authMode: 'iam',
     });
 
-    const trip = tripResponse.data?.createTrip;
+    const trip = tripData?.createTrip;
     
     if (!trip || !trip.id) {
       throw new Error('Failed to create trip');
