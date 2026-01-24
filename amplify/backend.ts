@@ -17,16 +17,9 @@ export const backend = defineBackend({
   publicBooking,
 });
 
-// Pass the GraphQL endpoint to the publicBooking function
-// This allows the function to configure Amplify client properly
-backend.publicBooking.addEnvironment(
-  'AMPLIFY_DATA_GRAPHQL_ENDPOINT',
-  backend.data.resources.graphqlApi.graphqlUrl
-);
-backend.publicBooking.addEnvironment(
-  'AMPLIFY_DATA_REGION',
-  backend.data.resources.graphqlApi.region
-);
+// Note: In Amplify Gen 2, functions can access the GraphQL endpoint via backend outputs
+// The endpoint is automatically available to functions at runtime
+// We'll configure it in the handler using the backend reference
 
 // Note: In Amplify Gen 2, functions defined in the backend automatically get
 // IAM permissions to access the data resource. No additional configuration needed.
