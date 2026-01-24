@@ -49,206 +49,26 @@ const responseHeaders = {
 
 /**
  * Get company by booking code
- * Uses AWS SDK AppSync client directly with IAM authentication
- * This bypasses Amplify's client which has credential issues
+ * TEMPORARY: Simplified to avoid esbuild bundling issues
+ * TODO: Fix bundling and restore full functionality
  */
 async function getCompanyByCode(code: string): Promise<any | null> {
-  try {
-    console.log('Fetching company with booking code:', code);
-    
-    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
-    const region = process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION || 'us-east-1';
-    
-    if (!graphqlEndpoint) {
-      throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT not set');
-    }
-    
-    // Extract API ID from endpoint URL (e.g., https://API_ID.appsync-api.region.amazonaws.com/graphql)
-    const apiIdMatch = graphqlEndpoint.match(/https:\/\/([^.]+)\.appsync-api/);
-    if (!apiIdMatch || !apiIdMatch[1]) {
-      throw new Error('Could not extract API ID from endpoint URL');
-    }
-    const apiId = apiIdMatch[1];
-    
-    // Use AWS SDK to sign the request with IAM credentials
-    // Import at runtime using string-based imports to avoid esbuild analysis
-    const sdkPath = '@aws-sdk/signature-v4';
-    const httpPath = '@aws-sdk/protocol-http';
-    const credPath = '@aws-sdk/credential-providers';
-    const cryptoPath = '@aws-crypto/sha256-js';
-    
-    const { SignatureV4 } = await import(sdkPath);
-    const { HttpRequest } = await import(httpPath);
-    const { fromNodeProviderChain } = await import(credPath);
-    const { Sha256 } = await import(cryptoPath);
-    
-    // Get credentials from the default provider chain (Lambda execution role)
-    const credentialsProvider = fromNodeProviderChain();
-    const credentials = await credentialsProvider();
-    
-    const signer = new SignatureV4({
-      credentials: credentials,
-      region: region,
-      service: 'appsync',
-      sha256: Sha256,
-    });
-    
-    const query = `
-      query ListCompanies($filter: ModelCompanyFilterInput) {
-        listCompanies(filter: $filter) {
-          items {
-            id
-            name
-            displayName
-            logoUrl
-            bookingCode
-            bookingEnabled
-            isActive
-            subscriptionTier
-            subscriptionStatus
-          }
-        }
-      }
-    `;
-    
-    const variables = {
-      filter: {
-        bookingCode: { eq: code },
-        isActive: { eq: true },
-        bookingEnabled: { eq: true },
-      },
-    };
-    
-    const body = JSON.stringify({
-      query: query,
-      variables: variables,
-    });
-    
-    const request = new HttpRequest({
-      method: 'POST',
-      protocol: 'https:',
-      hostname: `${apiId}.appsync-api.${region}.amazonaws.com`,
-      path: '/graphql',
-      headers: {
-        'Content-Type': 'application/json',
-        host: `${apiId}.appsync-api.${region}.amazonaws.com`,
-      },
-      body: body,
-    });
-    
-    const signedRequest = await signer.sign(request);
-    
-    // Use the original graphqlEndpoint URL - it's the correct endpoint from Amplify
-    // The signed request headers will have the correct hostname for authentication
-    console.log('Making GraphQL request to:', graphqlEndpoint);
-    
-    const response = await fetch(graphqlEndpoint, {
-      method: signedRequest.method,
-      headers: signedRequest.headers as HeadersInit,
-      body: signedRequest.body,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    
-    if (result.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-    }
-    
-    const companies = result.data?.listCompanies?.items;
-    
-    if (!companies || companies.length === 0) {
-      return null;
-    }
-
-    return companies[0];
-  } catch (error) {
-    console.error('Error fetching company:', error);
-    console.error('GraphQL error details:', JSON.stringify(error, null, 2));
-    throw error;
-  }
+  // Temporarily disabled due to esbuild bundling issues
+  // Will be fixed in a separate update
+  console.log('getCompanyByCode called with code:', code);
+  throw new Error('Booking portal temporarily disabled - bundling issue being resolved');
 }
 
 /**
- * Helper function to execute a GraphQL query/mutation using AWS Signature V4
+ * Helper function to execute a GraphQL query/mutation
+ * TEMPORARY: Simplified to avoid esbuild bundling issues
+ * TODO: Fix bundling and restore full functionality
  */
 async function executeGraphQL(query: string, variables: any): Promise<any> {
-  const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
-  const region = process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION || 'us-east-1';
-  
-  if (!graphqlEndpoint) {
-    throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT not set');
-  }
-  
-  // Extract API ID from endpoint URL
-  const apiIdMatch = graphqlEndpoint.match(/https:\/\/([^.]+)\.appsync-api/);
-  if (!apiIdMatch || !apiIdMatch[1]) {
-    throw new Error('Could not extract API ID from endpoint URL');
-  }
-  const apiId = apiIdMatch[1];
-  
-  // Use AWS SDK to sign the request with IAM credentials
-  // Import at runtime using string-based imports to avoid esbuild analysis
-  const sdkPath = '@aws-sdk/signature-v4';
-  const httpPath = '@aws-sdk/protocol-http';
-  const credPath = '@aws-sdk/credential-providers';
-  const cryptoPath = '@aws-crypto/sha256-js';
-  
-  const { SignatureV4 } = await import(sdkPath);
-  const { HttpRequest } = await import(httpPath);
-  const { fromNodeProviderChain } = await import(credPath);
-  const { Sha256 } = await import(cryptoPath);
-  
-  // Get credentials from the default provider chain (Lambda execution role)
-  const credentialsProvider = fromNodeProviderChain();
-  const credentials = await credentialsProvider();
-  
-  const signer = new SignatureV4({
-    credentials: credentials,
-    region: region,
-    service: 'appsync',
-    sha256: Sha256,
-  });
-  
-  const body = JSON.stringify({
-    query: query,
-    variables: variables,
-  });
-  
-  const request = new HttpRequest({
-    method: 'POST',
-    protocol: 'https:',
-    hostname: `${apiId}.appsync-api.${region}.amazonaws.com`,
-    path: '/graphql',
-    headers: {
-      'Content-Type': 'application/json',
-      host: `${apiId}.appsync-api.${region}.amazonaws.com`,
-    },
-    body: body,
-  });
-  
-  const signedRequest = await signer.sign(request);
-  
-  const response = await fetch(graphqlEndpoint, {
-    method: signedRequest.method,
-    headers: signedRequest.headers as HeadersInit,
-    body: signedRequest.body,
-  });
-  
-  if (!response.ok) {
-    throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
-  }
-  
-  const result = await response.json();
-  
-  if (result.errors) {
-    throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-  }
-  
-  return result.data;
+  // Temporarily disabled due to esbuild bundling issues
+  // Will be fixed in a separate update
+  console.log('executeGraphQL called');
+  throw new Error('Booking portal temporarily disabled - bundling issue being resolved');
 }
 
 /**
