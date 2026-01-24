@@ -1,0 +1,166 @@
+.vehicle-tracking-map-container {
+  width: 100%;
+  position: relative;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.map-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.map-stats {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.map-loading,
+.map-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 16px;
+  color: #666;
+}
+
+.map-error {
+  color: #d32f2f;
+}
+
+.map-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 1000;
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.map-empty-state p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.map-empty-hint {
+  font-size: 14px;
+  color: #999;
+}
+
+.vehicle-popup {
+  min-width: 200px;
+}
+
+.vehicle-popup h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+}
+
+.vehicle-popup p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.vehicle-popup strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.location-timestamp {
+  font-size: 12px;
+  color: #999;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Leaflet marker styling */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.leaflet-popup-content {
+  margin: 16px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .vehicle-tracking-map-container {
+    border-color: #333;
+    background: #1a1a1a;
+  }
+
+  .map-header {
+    background: #2a2a2a;
+    border-bottom-color: #333;
+  }
+
+  .map-header h3 {
+    color: #fff;
+  }
+
+  .map-stats {
+    color: #aaa;
+  }
+
+  .map-loading,
+  .map-error {
+    color: #aaa;
+  }
+
+  .map-empty-state {
+    background: #2a2a2a;
+    color: #fff;
+  }
+
+  .map-empty-state p {
+    color: #aaa;
+  }
+
+  .vehicle-popup {
+    color: #fff;
+  }
+
+  .vehicle-popup h4 {
+    color: #fff;
+    border-bottom-color: #444;
+  }
+
+  .vehicle-popup p {
+    color: #ccc;
+  }
+
+  .vehicle-popup strong {
+    color: #fff;
+  }
+
+  .location-timestamp {
+    color: #999;
+    border-top-color: #444;
+  }
+}

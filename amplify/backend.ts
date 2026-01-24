@@ -5,6 +5,7 @@ import { stripeWebhook } from './functions/stripeWebhook/resource';
 import { stripeCheckout } from './functions/stripeCheckout/resource';
 import { stripePortal } from './functions/stripePortal/resource';
 import { sendInvitationEmail } from './functions/sendInvitationEmail/resource';
+import { publicBooking } from './functions/publicBooking/resource';
 
 export const backend = defineBackend({
   auth,
@@ -13,6 +14,7 @@ export const backend = defineBackend({
   stripeCheckout,
   stripePortal,
   sendInvitationEmail,
+  publicBooking,
 });
 
 // Add Function URL for sendInvitationEmail

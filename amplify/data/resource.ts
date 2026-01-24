@@ -7,6 +7,9 @@ const schema = a.schema({
       displayName: a.string(), // Custom name displayed in the app
       logoUrl: a.string(), // URL to company logo image
       subdomain: a.string(),
+      bookingCode: a.string(), // Unique code for booking portal (e.g., "ACME", "ABC123")
+      bookingEnabled: a.boolean().default(false), // Whether booking portal is enabled
+      bookingSettings: a.string(), // JSON string with booking configuration (pricing rules, etc.)
       isActive: a.boolean().default(true),
       subscriptionTier: a.string().default('free'), // 'free', 'basic', 'premium'
       subscriptionStatus: a.string().default('active'), // 'active', 'canceled', 'past_due', 'trialing'
@@ -31,9 +34,12 @@ const schema = a.schema({
       customFieldValues: a.hasMany('CustomFieldValue', 'companyId'),
       reportConfigurations: a.hasMany('ReportConfiguration', 'companyId'),
       tripVehicles: a.hasMany('TripVehicle', 'companyId'),
+      vehicleLocations: a.hasMany('VehicleLocation', 'companyId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update']),
+      // Note: Public booking portal access will be handled via Lambda function
+      // to maintain security while allowing unauthenticated access
     ]),
 
   CompanyUser: a
@@ -63,6 +69,7 @@ const schema = a.schema({
       payRatePerHour: a.float(), // Driver pay per hour (optional)
       trips: a.hasMany('Trip', 'driverId'),
       customFieldValues: a.hasMany('CustomFieldValue', 'driverId'),
+      vehicleLocations: a.hasMany('VehicleLocation', 'driverId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -85,6 +92,7 @@ const schema = a.schema({
       customerId: a.id(),
       customer: a.belongsTo('Customer', 'customerId'),
       tripVehicles: a.hasMany('TripVehicle', 'tripId'),
+      vehicleLocations: a.hasMany('VehicleLocation', 'tripId'),
       actualPickupTime: a.datetime(),
       actualDropoffTime: a.datetime(),
       startLocationLat: a.float(), // GPS latitude when trip started
@@ -137,6 +145,7 @@ const schema = a.schema({
       description: a.string(), // Additional details or notes
       isActive: a.boolean().default(true),
       tripVehicles: a.hasMany('TripVehicle', 'vehicleId'),
+      vehicleLocations: a.hasMany('VehicleLocation', 'vehicleId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -234,6 +243,27 @@ const schema = a.schema({
       sortOrder: a.string().default('asc'), // 'asc' or 'desc'
       displayOrder: a.integer().default(0),
       isActive: a.boolean().default(true),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  VehicleLocation: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      tripId: a.id().required(), // Which trip this location is for
+      trip: a.belongsTo('Trip', 'tripId'),
+      driverId: a.id().required(), // Which driver
+      driver: a.belongsTo('Driver', 'driverId'),
+      vehicleId: a.id(), // Which vehicle (optional, may not always be assigned)
+      vehicle: a.belongsTo('Vehicle', 'vehicleId'),
+      latitude: a.float().required(), // GPS latitude
+      longitude: a.float().required(), // GPS longitude
+      accuracy: a.float(), // GPS accuracy in meters
+      speed: a.float(), // Speed in meters per second (if available)
+      heading: a.float(), // Heading/bearing in degrees (0-360, if available)
+      timestamp: a.datetime().required(), // When this location was recorded
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

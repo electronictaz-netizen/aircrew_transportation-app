@@ -6,6 +6,7 @@ import { useCompany } from '../contexts/CompanyContext';
 import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
 import { getCurrentLocation, getLocationErrorMessage, formatCoordinates, isGeolocationAvailable } from '../utils/gpsLocation';
+import { startGPSTracking, stopGPSTracking, isTrackingActive, getCurrentTrackingConfig } from '../utils/gpsTracking';
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
 import { logger } from '../utils/logger';
@@ -42,6 +43,48 @@ function DriverDashboard() {
 
     return () => clearInterval(interval);
   }, [companyId]);
+
+  // Cleanup GPS tracking on unmount
+  useEffect(() => {
+    return () => {
+      stopGPSTracking();
+    };
+  }, []);
+
+  // Check if we need to start/stop tracking when trips change
+  useEffect(() => {
+    if (!currentDriver || !companyId) return;
+
+    // Find active trip (InProgress status)
+    const activeTrip = trips.find(t => t.status === 'InProgress');
+    
+    if (activeTrip) {
+      // Check if we're already tracking this trip
+      const currentConfig = getCurrentTrackingConfig();
+      if (!currentConfig || currentConfig.tripId !== activeTrip.id) {
+        // Start tracking the active trip
+        const tripVehiclesForTrip = tripVehicles[activeTrip.id] || [];
+        const primaryVehicleId = tripVehiclesForTrip.length > 0 ? tripVehiclesForTrip[0].vehicleId : undefined;
+        
+        startGPSTracking({
+          tripId: activeTrip.id,
+          driverId: currentDriver.id,
+          vehicleId: primaryVehicleId,
+          companyId: companyId,
+          updateInterval: 30000, // 30 seconds
+          onError: (error) => {
+            logger.warn('GPS tracking error:', error);
+            // Don't show error to user for every failed update, just log it
+          },
+        });
+      }
+    } else {
+      // No active trip, stop tracking if active
+      if (isTrackingActive()) {
+        stopGPSTracking();
+      }
+    }
+  }, [trips, currentDriver, companyId, tripVehicles]);
 
   const loadVehicles = async () => {
     if (!companyId) return;
@@ -187,12 +230,30 @@ function DriverDashboard() {
         ...gpsData,
       });
       
+      // Start real-time GPS tracking for this trip
+      if (currentDriver && companyId) {
+        const tripVehiclesForTrip = tripVehicles[tripId] || [];
+        const primaryVehicleId = tripVehiclesForTrip.length > 0 ? tripVehiclesForTrip[0].vehicleId : undefined;
+        
+        startGPSTracking({
+          tripId: tripId,
+          driverId: currentDriver.id,
+          vehicleId: primaryVehicleId,
+          companyId: companyId,
+          updateInterval: 30000, // 30 seconds
+          onError: (error) => {
+            logger.warn('GPS tracking error:', error);
+            // Don't show error to user for every failed update
+          },
+        });
+      }
+      
       await loadDriverAndTrips();
       
       if (gpsData.startLocationLat && gpsData.startLocationLng) {
-        showSuccess(`Pickup recorded with GPS location: ${formatCoordinates(gpsData.startLocationLat, gpsData.startLocationLng)}`);
+        showSuccess(`Pickup recorded with GPS location: ${formatCoordinates(gpsData.startLocationLat, gpsData.startLocationLng)}. Real-time tracking started.`);
       } else {
-        showSuccess('Pickup recorded successfully.');
+        showSuccess('Pickup recorded successfully. Real-time tracking started.');
       }
     } catch (error) {
       logger.error('Error recording pickup:', error);
@@ -241,6 +302,12 @@ function DriverDashboard() {
         showWarning('GPS location not available in this browser. Dropoff recorded without location.');
       }
 
+      // Stop GPS tracking for this trip
+      const currentConfig = getCurrentTrackingConfig();
+      if (currentConfig && currentConfig.tripId === tripId) {
+        stopGPSTracking();
+      }
+
       // Update trip with dropoff time and GPS (if available)
       await client.models.Trip.update({
         id: tripId,
@@ -252,9 +319,9 @@ function DriverDashboard() {
       await loadDriverAndTrips();
       
       if (gpsData.completeLocationLat && gpsData.completeLocationLng) {
-        showSuccess(`Dropoff recorded with GPS location: ${formatCoordinates(gpsData.completeLocationLat, gpsData.completeLocationLng)}`);
+        showSuccess(`Dropoff recorded with GPS location: ${formatCoordinates(gpsData.completeLocationLat, gpsData.completeLocationLng)}. Tracking stopped.`);
       } else {
-        showSuccess('Dropoff recorded successfully.');
+        showSuccess('Dropoff recorded successfully. Tracking stopped.');
       }
     } catch (error) {
       logger.error('Error recording dropoff:', error);

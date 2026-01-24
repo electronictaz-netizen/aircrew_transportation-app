@@ -25,6 +25,7 @@ const TripList = lazy(() => import('./TripList'));
 const TripCalendar = lazy(() => import('./TripCalendar'));
 const DriverReports = lazy(() => import('./DriverReports'));
 const TripReports = lazy(() => import('./TripReports'));
+const VehicleTrackingMap = lazy(() => import('./VehicleTrackingMap'));
 
 import { PageSkeleton, TripListSkeleton, TripCalendarSkeleton } from './ui/skeleton-loaders';
 
@@ -68,7 +69,7 @@ function ManagementDashboard() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [showEmailDriverDialog, setShowEmailDriverDialog] = useState(false);
   const [selectedEmailDriverId, setSelectedEmailDriverId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -1826,6 +1827,13 @@ function ManagementDashboard() {
             >
               📅 Calendar
             </button>
+            <button
+              className={`view-toggle-btn ${viewMode === 'map' ? 'active' : ''}`}
+              onClick={() => setViewMode('map')}
+              title="Real-Time Vehicle Tracking"
+            >
+              🗺️ Map
+            </button>
           </div>
         </div>
       </div>
@@ -2016,12 +2024,23 @@ function ManagementDashboard() {
             onAssignMultiple={canManageTrips(userRole) || isAdminOverride ? handleAssignMultipleTrips : undefined}
             onUpdate={loadTrips}
           />
-        ) : (
+        ) : viewMode === 'calendar' ? (
           <TripCalendar
             trips={trips}
             onDateClick={(date, dateTrips) => {
               setSelectedDateTrips({ date, trips: dateTrips });
             }}
+          />
+        ) : (
+          <VehicleTrackingMap
+            activeTripIds={trips.filter(t => t.status === 'InProgress').map(t => t.id)}
+            onTripSelect={(tripId) => {
+              const trip = trips.find(t => t.id === tripId);
+              if (trip) {
+                handleEditTrip(trip);
+              }
+            }}
+            height="calc(100vh - 300px)"
           />
         )}
       </Suspense>
