@@ -51,21 +51,36 @@ const responseHeaders = {
 
 /**
  * Initialize Amplify client
- * Uses getAmplifyDataClientConfig from Amplify Gen 2 to properly configure
- * the client with IAM credentials from the Lambda execution role
+ * Configures Amplify with GraphQL endpoint and IAM authentication
+ * In Lambda, AWS credentials are automatically available from the execution role
  */
 async function getAmplifyClient() {
   try {
-    // Use Amplify Gen 2's official method to get client configuration
-    // This automatically handles AWS credentials from Lambda runtime
-    const { getAmplifyDataClientConfig } = await import('@aws-amplify/backend/function/runtime');
-    const { env } = await import('$amplify/env/publicBooking');
+    // Get GraphQL endpoint from environment variable (set by backend.ts)
+    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
+    const region = process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION || 'us-east-1';
     
-    console.log('Getting Amplify data client config...');
-    const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
+    console.log('Initializing Amplify client:', {
+      hasEndpoint: !!graphqlEndpoint,
+      region: region,
+    });
     
-    // Configure Amplify with the pre-configured settings
-    Amplify.configure(resourceConfig, libraryOptions);
+    if (!graphqlEndpoint) {
+      throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT environment variable not set. Check backend.ts configuration.');
+    }
+    
+    // Configure Amplify with the GraphQL endpoint
+    // In Lambda, the execution role's credentials are automatically available
+    // via the default credential provider chain - Amplify will use them automatically
+    Amplify.configure({
+      API: {
+        GraphQL: {
+          endpoint: graphqlEndpoint,
+          region: region,
+          defaultAuthMode: 'iam',
+        },
+      },
+    });
     
     console.log('Amplify configured successfully');
     
@@ -73,6 +88,7 @@ async function getAmplifyClient() {
     const { generateClient } = await import('aws-amplify/data');
     
     // The client will use IAM credentials from the Lambda execution role
+    // The credentials are automatically available via AWS SDK's default provider chain
     const client = generateClient({
       authMode: 'iam',
     });
