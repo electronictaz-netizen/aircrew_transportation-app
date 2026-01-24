@@ -1,0 +1,17 @@
+{
+  "version": "1",
+  "auth": {
+    "user_pool_id": "us-east-1_9qfKiQtHV",  // Verify this first!
+    "user_pool_client_id": "14jfd7uoubk1ipsooe1349c5lk",  // Get from App integration tab
+    "identity_pool_id": "us-east-1:db76f378-9fb1-4bb8-9b38-d4b34ab7f145",  // Can leave as placeholder if not using
+    "aws_region": "us-east-1"
+  },
+  "data": {
+    "aws_region": "us-east-1",
+    "url": "https://klp7rzjva5c2bef2zjaygpod44.appsync-api.us-east-1.amazonaws.com/graphql",
+    "api_key": null
+  },
+  "custom": {
+    "amplify_outputs_file": "amplify_outputs.json"
+  }
+}
