@@ -46,6 +46,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
     if (!companyId) return;
     
     try {
+      // @ts-ignore - Complex union type from Amplify Data
       const { data } = await client.models.FilterCategory.list({
         filter: { companyId: { eq: companyId } },
       });

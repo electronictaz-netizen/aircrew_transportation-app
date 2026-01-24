@@ -103,6 +103,7 @@ function VehicleManagement({ vehicles, onClose, onUpdate }: VehicleManagementPro
       };
       
       if (editingVehicle) {
+        // @ts-ignore - Complex union type from Amplify Data
         await client.models.Vehicle.update({
           id: editingVehicle.id,
           ...vehicleData,

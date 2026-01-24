@@ -79,6 +79,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
       };
       
       if (editingLocation) {
+        // @ts-ignore - Complex union type from Amplify Data
         await client.models.Location.update({
           id: editingLocation.id,
           ...locationData,

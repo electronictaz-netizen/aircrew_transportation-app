@@ -64,6 +64,7 @@ function ReportConfigurationManagement({ onClose }: ReportConfigurationManagemen
     
     try {
       setLoading(true);
+      // @ts-ignore - Complex union type from Amplify Data
       const { data: configsData } = await client.models.ReportConfiguration.list({
         filter: { 
           companyId: { eq: companyId },

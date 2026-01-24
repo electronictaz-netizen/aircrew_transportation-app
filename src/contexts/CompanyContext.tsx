@@ -62,6 +62,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       
       // Find CompanyUser record for this user
       // First check for active users
+      // @ts-ignore - Complex union type from Amplify Data
       let { data: companyUsers } = await client.models.CompanyUser.list({
         filter: { 
           userId: { eq: user.userId },

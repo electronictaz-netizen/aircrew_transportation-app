@@ -151,6 +151,7 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
       
       try {
         setLoadingCustomFields(true);
+        // @ts-ignore - Complex union type from Amplify Data
         const { data: fieldsData } = await client.models.CustomField.list({
           filter: {
             companyId: { eq: companyId },

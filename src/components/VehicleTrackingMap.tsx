@@ -180,7 +180,6 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
   }, [companyId, activeTripIds, trips, drivers, vehicles]);
 
   const handleMarkerClick = (tripId: string) => {
-    setSelectedTripId(tripId);
     if (onTripSelect) {
       onTripSelect(tripId);
     }
