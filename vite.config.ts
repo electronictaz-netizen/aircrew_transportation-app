@@ -11,6 +11,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       // Don't fail build if icons are missing (they'll be 404 but app will work)
       strategies: 'generateSW',
+      // Use the manifest from public folder if it exists, otherwise generate from config
+      useCredentials: false,
       // Enable update notification
       injectRegister: 'auto',
       // Service worker configuration
@@ -93,7 +95,7 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',
-        start_url: '/',
+        start_url: '/?utm_source=pwa',
         id: '/',
         categories: ['business', 'productivity', 'transportation'],
         icons: [
@@ -126,20 +128,16 @@ export default defineConfig({
             short_name: 'Management',
             description: 'Open management dashboard',
             url: '/management',
-            icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
+            icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }]
           },
           {
             name: 'Driver Dashboard',
             short_name: 'Driver',
             description: 'Open driver dashboard',
             url: '/driver',
-            icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
+            icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }]
           }
-        ],
-        // Add share target for future use
-        share_target: undefined,
-        // Add file handlers for future use
-        file_handlers: []
+        ]
       },
       devOptions: {
         enabled: true,
