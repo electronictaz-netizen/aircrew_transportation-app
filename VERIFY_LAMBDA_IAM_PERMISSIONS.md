@@ -132,8 +132,9 @@ If permissions are missing, you can add them manually:
 1. Go to IAM Console → Roles
 2. Find your Lambda function's role
 3. Click **Add permissions** → **Create inline policy**
-4. Use this JSON (replace `API_ID` with your actual API ID):
+4. Choose one of these options:
 
+**Option A: Wildcard (Easier, less secure - allows access to all AppSync APIs)**
 ```json
 {
   "Version": "2012-10-17",
@@ -149,6 +150,56 @@ If permissions are missing, you can add them manually:
     }
   ]
 }
+```
+
+**Option B: Specific API (More secure - only allows access to your specific API)**
+
+First, find your API ID using one of these methods:
+
+**Method 1: From Lambda Environment Variable (Easiest)**
+1. Go to your Lambda function in AWS Console
+2. Go to **Configuration** → **Environment variables**
+3. Find `AMPLIFY_DATA_GRAPHQL_ENDPOINT`
+4. The URL will look like: `https://YOUR_API_ID.appsync-api.us-east-1.amazonaws.com/graphql`
+5. The part before `.appsync-api` is your API ID (e.g., `ukoh7tgmwjbjdhnuirxugqx4ci`)
+
+**Method 2: From AWS AppSync Console**
+1. Go to [AWS AppSync Console](https://console.aws.amazon.com/appsync/)
+2. Find your Amplify app's API (it should match your app name)
+3. The API ID is shown in the API list or in the API URL
+
+**Method 3: From CloudWatch Logs**
+- Check your Lambda function's CloudWatch logs
+- Look for the log line that shows `endpointPreview` - it will show part of the URL with the API ID
+
+Then use this JSON (replace `YOUR_API_ID` and `YOUR_ACCOUNT_ID`):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "appsync:GraphQL"
+      ],
+      "Resource": [
+        "arn:aws:appsync:us-east-1:YOUR_ACCOUNT_ID:apis/YOUR_API_ID/*"
+      ]
+    }
+  ]
+}
+```
+
+**To find your Account ID:**
+- Look at the top right of AWS Console (your account name/ID)
+- Or run: `aws sts get-caller-identity --query Account --output text`
+- Or check any existing IAM policy ARN - it will have your account ID in it
+
+**Example:**
+If your API ID is `ukoh7tgmwjbjdhnuirxugqx4ci` and your account ID is `123456789012`, the Resource would be:
+```
+arn:aws:appsync:us-east-1:123456789012:apis/ukoh7tgmwjbjdhnuirxugqx4ci/*
 ```
 
 ### Option 2: Via Amplify Backend
