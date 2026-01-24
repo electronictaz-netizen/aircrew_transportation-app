@@ -190,12 +190,11 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     
     const signedRequest = await signer.sign(request);
     
-    // Construct the URL from the signed request to ensure consistency
-    const url = `${signedRequest.protocol}//${signedRequest.hostname}${signedRequest.path}`;
+    // Use the original graphqlEndpoint URL - it's the correct endpoint from Amplify
+    // The signed request headers will have the correct hostname for authentication
+    console.log('Making GraphQL request to:', graphqlEndpoint);
     
-    console.log('Making GraphQL request to:', url);
-    
-    const response = await fetch(url, {
+    const response = await fetch(graphqlEndpoint, {
       method: signedRequest.method,
       headers: signedRequest.headers as HeadersInit,
       body: signedRequest.body,
