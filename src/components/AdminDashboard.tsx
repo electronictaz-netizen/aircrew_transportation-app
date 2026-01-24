@@ -266,6 +266,109 @@ function AdminDashboard() {
         alert('GLS company access restored! Your account has been linked. Refreshing...');
       }
 
+      // Migrate orphaned data (locations, trips, drivers without companyId)
+      console.log('Migrating orphaned data to GLS company...');
+      let migratedCount = 0;
+      
+      try {
+        // Migrate locations
+        const { data: orphanedLocations } = await client.models.Location.list({
+          filter: { companyId: { eq: null } }
+        });
+        if (orphanedLocations && orphanedLocations.length > 0) {
+          for (const location of orphanedLocations) {
+            try {
+              await client.models.Location.update({
+                id: location.id,
+                companyId: glsCompany.id,
+              });
+              migratedCount++;
+            } catch (error) {
+              console.error('Error migrating location:', error);
+            }
+          }
+        }
+
+        // Migrate trips
+        const { data: orphanedTrips } = await client.models.Trip.list({
+          filter: { companyId: { eq: null } }
+        });
+        if (orphanedTrips && orphanedTrips.length > 0) {
+          for (const trip of orphanedTrips) {
+            try {
+              await client.models.Trip.update({
+                id: trip.id,
+                companyId: glsCompany.id,
+              });
+              migratedCount++;
+            } catch (error) {
+              console.error('Error migrating trip:', error);
+            }
+          }
+        }
+
+        // Migrate drivers
+        const { data: orphanedDrivers } = await client.models.Driver.list({
+          filter: { companyId: { eq: null } }
+        });
+        if (orphanedDrivers && orphanedDrivers.length > 0) {
+          for (const driver of orphanedDrivers) {
+            try {
+              await client.models.Driver.update({
+                id: driver.id,
+                companyId: glsCompany.id,
+              });
+              migratedCount++;
+            } catch (error) {
+              console.error('Error migrating driver:', error);
+            }
+          }
+        }
+
+        // Migrate vehicles
+        const { data: orphanedVehicles } = await client.models.Vehicle.list({
+          filter: { companyId: { eq: null } }
+        });
+        if (orphanedVehicles && orphanedVehicles.length > 0) {
+          for (const vehicle of orphanedVehicles) {
+            try {
+              await client.models.Vehicle.update({
+                id: vehicle.id,
+                companyId: glsCompany.id,
+              });
+              migratedCount++;
+            } catch (error) {
+              console.error('Error migrating vehicle:', error);
+            }
+          }
+        }
+
+        // Migrate customers
+        const { data: orphanedCustomers } = await client.models.Customer.list({
+          filter: { companyId: { eq: null } }
+        });
+        if (orphanedCustomers && orphanedCustomers.length > 0) {
+          for (const customer of orphanedCustomers) {
+            try {
+              await client.models.Customer.update({
+                id: customer.id,
+                companyId: glsCompany.id,
+              });
+              migratedCount++;
+            } catch (error) {
+              console.error('Error migrating customer:', error);
+            }
+          }
+        }
+
+        if (migratedCount > 0) {
+          console.log(`✅ Migrated ${migratedCount} items to GLS company`);
+        }
+      } catch (migrationError) {
+        console.error('Error during data migration:', migrationError);
+        // Don't fail the whole operation if migration has issues
+      }
+
       // Refresh and reload
       loadCompanies();
       setTimeout(() => {
