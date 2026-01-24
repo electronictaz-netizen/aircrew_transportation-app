@@ -511,6 +511,21 @@ function AdminDashboard() {
   if (loading) {
     return (
       <div className="admin-dashboard">
+        <div className="admin-header">
+          <h1>Company Management</h1>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={handleRestoreGLS}
+              title="Find or create GLS Transportation company and link your account"
+            >
+              Restore GLS Access
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
+              + Create New Company
+            </button>
+          </div>
+        </div>
         <div className="loading">Loading companies...</div>
       </div>
     );
