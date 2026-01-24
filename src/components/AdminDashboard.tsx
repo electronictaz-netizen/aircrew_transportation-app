@@ -271,11 +271,10 @@ function AdminDashboard() {
       let migratedCount = 0;
       
       try {
-        // Migrate locations
-        const { data: orphanedLocations } = await client.models.Location.list({
-          filter: { companyId: { eq: null } }
-        });
-        if (orphanedLocations && orphanedLocations.length > 0) {
+        // Migrate locations - fetch all and filter for those without companyId
+        const { data: allLocations } = await client.models.Location.list();
+        const orphanedLocations = (allLocations || []).filter(loc => !loc.companyId);
+        if (orphanedLocations.length > 0) {
           for (const location of orphanedLocations) {
             try {
               await client.models.Location.update({
@@ -289,11 +288,10 @@ function AdminDashboard() {
           }
         }
 
-        // Migrate trips
-        const { data: orphanedTrips } = await client.models.Trip.list({
-          filter: { companyId: { eq: null } }
-        });
-        if (orphanedTrips && orphanedTrips.length > 0) {
+        // Migrate trips - fetch all and filter for those without companyId
+        const { data: allTrips } = await client.models.Trip.list();
+        const orphanedTrips = (allTrips || []).filter(trip => !trip.companyId);
+        if (orphanedTrips.length > 0) {
           for (const trip of orphanedTrips) {
             try {
               await client.models.Trip.update({
@@ -307,11 +305,10 @@ function AdminDashboard() {
           }
         }
 
-        // Migrate drivers
-        const { data: orphanedDrivers } = await client.models.Driver.list({
-          filter: { companyId: { eq: null } }
-        });
-        if (orphanedDrivers && orphanedDrivers.length > 0) {
+        // Migrate drivers - fetch all and filter for those without companyId
+        const { data: allDrivers } = await client.models.Driver.list();
+        const orphanedDrivers = (allDrivers || []).filter(driver => !driver.companyId);
+        if (orphanedDrivers.length > 0) {
           for (const driver of orphanedDrivers) {
             try {
               await client.models.Driver.update({
@@ -325,11 +322,10 @@ function AdminDashboard() {
           }
         }
 
-        // Migrate vehicles
-        const { data: orphanedVehicles } = await client.models.Vehicle.list({
-          filter: { companyId: { eq: null } }
-        });
-        if (orphanedVehicles && orphanedVehicles.length > 0) {
+        // Migrate vehicles - fetch all and filter for those without companyId
+        const { data: allVehicles } = await client.models.Vehicle.list();
+        const orphanedVehicles = (allVehicles || []).filter(vehicle => !vehicle.companyId);
+        if (orphanedVehicles.length > 0) {
           for (const vehicle of orphanedVehicles) {
             try {
               await client.models.Vehicle.update({
@@ -343,11 +339,10 @@ function AdminDashboard() {
           }
         }
 
-        // Migrate customers
-        const { data: orphanedCustomers } = await client.models.Customer.list({
-          filter: { companyId: { eq: null } }
-        });
-        if (orphanedCustomers && orphanedCustomers.length > 0) {
+        // Migrate customers - fetch all and filter for those without companyId
+        const { data: allCustomers } = await client.models.Customer.list();
+        const orphanedCustomers = (allCustomers || []).filter(customer => !customer.companyId);
+        if (orphanedCustomers.length > 0) {
           for (const customer of orphanedCustomers) {
             try {
               await client.models.Customer.update({
