@@ -132,6 +132,7 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     const { SignatureV4 } = await import('@aws-sdk/signature-v4');
     const { HttpRequest } = await import('@aws-sdk/protocol-http');
     const { fromNodeProviderChain } = await import('@aws-sdk/credential-providers');
+    const { Sha256 } = await import('@aws-crypto/sha256-js');
     
     // Get credentials from the default provider chain (Lambda execution role)
     const credentialsProvider = fromNodeProviderChain();
@@ -141,6 +142,7 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
       credentials: credentials,
       region: region,
       service: 'appsync',
+      sha256: Sha256,
     });
     
     const query = `
