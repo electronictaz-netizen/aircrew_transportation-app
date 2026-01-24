@@ -5,6 +5,7 @@
 
 import type { Handler } from 'aws-lambda';
 import { Amplify } from 'aws-amplify';
+import { defaultProvider } from '@aws-sdk/credential-providers';
 import type { Schema } from '../../data/resource';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -69,15 +70,19 @@ async function getAmplifyClient() {
       throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT environment variable not set. Check backend.ts configuration.');
     }
     
-    // Configure Amplify with the GraphQL endpoint
-    // In Lambda, the execution role's credentials are automatically available
-    // via the default credential provider chain - Amplify will use them automatically
+    // Configure Amplify with the GraphQL endpoint and AWS credentials
+    // In Lambda, use defaultProvider which automatically picks up execution role credentials
+    const credentialsProvider = defaultProvider();
+    
     Amplify.configure({
       API: {
         GraphQL: {
           endpoint: graphqlEndpoint,
           region: region,
           defaultAuthMode: 'iam',
+          // Configure credentials for IAM authentication
+          // This tells Amplify to use the Lambda execution role credentials
+          credentials: credentialsProvider,
         },
       },
     });
