@@ -48,61 +48,6 @@ const responseHeaders = {
 };
 
 /**
- * Initialize Amplify client
- * Configures Amplify with GraphQL endpoint and IAM authentication
- * In Lambda, AWS credentials are automatically available from the execution role
- */
-async function getAmplifyClient() {
-  try {
-    // Get GraphQL endpoint from environment variable (set by backend.ts)
-    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
-    const region = process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION || 'us-east-1';
-    
-    console.log('Initializing Amplify client:', {
-      hasEndpoint: !!graphqlEndpoint,
-      region: region,
-    });
-    
-    if (!graphqlEndpoint) {
-      throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT environment variable not set. Check backend.ts configuration.');
-    }
-    
-    // Configure Amplify with the GraphQL endpoint
-    // In Lambda, the execution role's credentials are automatically available
-    // via the AWS SDK's default credential provider chain
-    // Amplify should automatically use these credentials when authMode is 'iam'
-    Amplify.configure({
-      API: {
-        GraphQL: {
-          endpoint: graphqlEndpoint,
-          region: region,
-          defaultAuthMode: 'iam',
-        },
-      },
-    });
-    
-    console.log('Amplify configured successfully');
-    
-    // Use dynamic import for generateClient
-    const { generateClient } = await import('aws-amplify/data');
-    
-    // The client will use IAM credentials from the Lambda execution role
-    // The credentials are automatically available via AWS SDK's default provider chain
-    const client = generateClient({
-      authMode: 'iam',
-    });
-    
-    console.log('Amplify client initialized successfully');
-    
-    return client;
-  } catch (error) {
-    console.error('Error initializing Amplify client:', error);
-    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    throw error;
-  }
-}
-
-/**
  * Get company by booking code
  * Uses AWS SDK AppSync client directly with IAM authentication
  * This bypasses Amplify's client which has credential issues
