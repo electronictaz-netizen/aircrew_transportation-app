@@ -127,13 +127,16 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     }
     const apiId = apiIdMatch[1];
     
-    // Use AWS SDK AppSync client directly
-    // This automatically uses Lambda execution role credentials
-    const { AppSyncClient, ExecuteGraphQLCommand } = await import('@aws-sdk/client-appsync');
+    // Use AWS SDK to sign the request with IAM credentials
+    // Then use fetch to make the GraphQL request
+    const { SignatureV4 } = await import('@aws-sdk/signature-v4');
+    const { HttpRequest } = await import('@aws-sdk/protocol-http');
+    const { defaultProvider } = await import('@aws-sdk/credential-providers');
     
-    const client = new AppSyncClient({
+    const signer = new SignatureV4({
+      credentials: defaultProvider(),
       region: region,
-      // Credentials are automatically available from Lambda execution role
+      service: 'appsync',
     });
     
     const query = `
@@ -162,19 +165,41 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
       },
     };
     
-    const command = new ExecuteGraphQLCommand({
-      apiId: apiId,
+    const body = JSON.stringify({
       query: query,
-      variables: JSON.stringify(variables),
+      variables: variables,
     });
     
-    const response = await client.send(command);
+    const request = new HttpRequest({
+      method: 'POST',
+      protocol: 'https:',
+      hostname: `${apiId}.appsync-api.${region}.amazonaws.com`,
+      path: '/graphql',
+      headers: {
+        'Content-Type': 'application/json',
+        host: `${apiId}.appsync-api.${region}.amazonaws.com`,
+      },
+      body: body,
+    });
     
-    if (!response.data) {
-      throw new Error('No data in GraphQL response');
+    const signedRequest = await signer.sign(request);
+    
+    const response = await fetch(graphqlEndpoint, {
+      method: signedRequest.method,
+      headers: signedRequest.headers as HeadersInit,
+      body: signedRequest.body,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
     }
     
-    const result = JSON.parse(response.data);
+    const result = await response.json();
+    
+    if (result.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+    }
+    
     const companies = result.data?.listCompanies?.items;
     
     if (!companies || companies.length === 0) {
