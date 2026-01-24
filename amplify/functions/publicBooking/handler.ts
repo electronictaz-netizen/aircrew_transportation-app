@@ -126,37 +126,49 @@ async function getAmplifyClient() {
 
 /**
  * Get company by booking code
+ * Uses GraphQL queries directly since models API requires schema introspection
  */
 async function getCompanyByCode(code: string): Promise<Schema['Company']['type'] | null> {
   const client = await getAmplifyClient();
   
-  // Debug: Check if client and models are available
-  if (!client) {
-    throw new Error('Client is null or undefined');
-  }
-  if (!client.models) {
-    console.error('Client models is undefined. Client structure:', {
-      hasClient: !!client,
-      clientKeys: client ? Object.keys(client) : 'none',
-      clientType: typeof client,
-    });
-    throw new Error('Client models not available. Check Amplify configuration.');
-  }
-  if (!client.models.Company) {
-    console.error('Company model not found. Available models:', Object.keys(client.models));
-    throw new Error('Company model not available in client');
-  }
-  
   try {
     console.log('Fetching company with booking code:', code);
-    const { data: companies } = await client.models.Company.list({
+    
+    // Use GraphQL query directly instead of models API
+    const query = `
+      query ListCompanies($filter: ModelCompanyFilterInput) {
+        listCompanies(filter: $filter) {
+          items {
+            id
+            name
+            displayName
+            logoUrl
+            bookingCode
+            bookingEnabled
+            isActive
+            subscriptionTier
+            subscriptionStatus
+          }
+        }
+      }
+    `;
+    
+    const variables = {
       filter: {
         bookingCode: { eq: code },
         isActive: { eq: true },
         bookingEnabled: { eq: true },
       },
+    };
+    
+    const response = await client.graphql({
+      query,
+      variables,
+      authMode: 'iam',
     });
-
+    
+    const companies = response.data?.listCompanies?.items;
+    
     if (!companies || companies.length === 0) {
       return null;
     }
@@ -164,12 +176,14 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     return companies[0] as Schema['Company']['type'];
   } catch (error) {
     console.error('Error fetching company:', error);
+    console.error('GraphQL response:', JSON.stringify(error, null, 2));
     throw error;
   }
 }
 
 /**
  * Create booking (trip and customer)
+ * Uses GraphQL mutations directly since models API requires schema introspection
  */
 async function createBooking(request: CreateBookingRequest): Promise<{ tripId: string; customerId?: string }> {
   const client = await getAmplifyClient();
@@ -179,35 +193,84 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
     let customerId: string | undefined;
     
     if (request.customerEmail) {
-      const { data: existingCustomers } = await client.models.Customer.list({
-        filter: {
-          companyId: { eq: request.companyId },
-          email: { eq: request.customerEmail.toLowerCase().trim() },
+      // Check if customer exists
+      const listCustomersQuery = `
+        query ListCustomers($filter: ModelCustomerFilterInput) {
+          listCustomers(filter: $filter) {
+            items {
+              id
+              name
+              phone
+              companyName
+            }
+          }
+        }
+      `;
+      
+      const listResponse = await client.graphql({
+        query: listCustomersQuery,
+        variables: {
+          filter: {
+            companyId: { eq: request.companyId },
+            email: { eq: request.customerEmail.toLowerCase().trim() },
+          },
         },
+        authMode: 'iam',
       });
-
+      
+      const existingCustomers = listResponse.data?.listCustomers?.items;
+      
       if (existingCustomers && existingCustomers.length > 0) {
         customerId = existingCustomers[0].id;
         // Update customer info if provided
         if (request.customerName || request.customerPhone) {
-          await client.models.Customer.update({
-            id: customerId,
-            name: request.customerName || existingCustomers[0].name,
-            phone: request.customerPhone || existingCustomers[0].phone,
-            companyName: request.customerCompany || existingCustomers[0].companyName,
+          const updateCustomerMutation = `
+            mutation UpdateCustomer($input: UpdateCustomerInput!) {
+              updateCustomer(input: $input) {
+                id
+              }
+            }
+          `;
+          
+          await client.graphql({
+            query: updateCustomerMutation,
+            variables: {
+              input: {
+                id: customerId,
+                name: request.customerName || existingCustomers[0].name,
+                phone: request.customerPhone || existingCustomers[0].phone,
+                companyName: request.customerCompany || existingCustomers[0].companyName,
+              },
+            },
+            authMode: 'iam',
           });
         }
       } else {
         // Create new customer
-        const { data: newCustomer } = await client.models.Customer.create({
-          companyId: request.companyId,
-          name: request.customerName,
-          email: request.customerEmail.toLowerCase().trim(),
-          phone: request.customerPhone,
-          companyName: request.customerCompany,
-          isActive: true,
+        const createCustomerMutation = `
+          mutation CreateCustomer($input: CreateCustomerInput!) {
+            createCustomer(input: $input) {
+              id
+            }
+          }
+        `;
+        
+        const createResponse = await client.graphql({
+          query: createCustomerMutation,
+          variables: {
+            input: {
+              companyId: request.companyId,
+              name: request.customerName,
+              email: request.customerEmail.toLowerCase().trim(),
+              phone: request.customerPhone,
+              companyName: request.customerCompany,
+              isActive: true,
+            },
+          },
+          authMode: 'iam',
         });
-        customerId = newCustomer?.id;
+        
+        customerId = createResponse.data?.createCustomer?.id;
       }
     }
 
@@ -216,18 +279,34 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
       ? request.flightNumber || ''
       : request.jobNumber || '';
 
-    const { data: trip } = await client.models.Trip.create({
-      companyId: request.companyId,
-      pickupDate: request.pickupDate,
-      flightNumber: flightNumberOrJob,
-      pickupLocation: request.pickupLocation,
-      dropoffLocation: request.dropoffLocation,
-      numberOfPassengers: request.numberOfPassengers,
-      status: 'Unassigned',
-      customerId: customerId,
-      notes: request.specialInstructions || undefined,
+    const createTripMutation = `
+      mutation CreateTrip($input: CreateTripInput!) {
+        createTrip(input: $input) {
+          id
+        }
+      }
+    `;
+    
+    const tripResponse = await client.graphql({
+      query: createTripMutation,
+      variables: {
+        input: {
+          companyId: request.companyId,
+          pickupDate: request.pickupDate,
+          flightNumber: flightNumberOrJob,
+          pickupLocation: request.pickupLocation,
+          dropoffLocation: request.dropoffLocation,
+          numberOfPassengers: request.numberOfPassengers,
+          status: 'Unassigned',
+          customerId: customerId,
+          notes: request.specialInstructions || undefined,
+        },
+      },
+      authMode: 'iam',
     });
 
+    const trip = tripResponse.data?.createTrip;
+    
     if (!trip || !trip.id) {
       throw new Error('Failed to create trip');
     }
@@ -238,6 +317,7 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
     };
   } catch (error) {
     console.error('Error creating booking:', error);
+    console.error('GraphQL error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 }
