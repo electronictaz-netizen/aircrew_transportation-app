@@ -437,6 +437,79 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
           <div className="form-section-divider" style={{ margin: '2rem 0', borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
             <h4 style={{ marginBottom: '1rem', color: '#333' }}>Booking Portal Settings</h4>
             
+            {/* Display current booking code if it exists */}
+            {formData.bookingCode && (
+              <div style={{ 
+                marginBottom: '1.5rem', 
+                padding: '1rem', 
+                background: formData.bookingEnabled ? '#f0f9ff' : '#f9fafb', 
+                borderRadius: '8px', 
+                border: `1px solid ${formData.bookingEnabled ? '#bae6fd' : '#e5e7eb'}` 
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                  <div>
+                    <strong style={{ fontSize: '0.875rem', color: formData.bookingEnabled ? '#0369a1' : '#6b7280', display: 'block', marginBottom: '0.25rem' }}>
+                      Your Unique Booking Code:
+                    </strong>
+                    <div style={{ 
+                      fontFamily: 'monospace', 
+                      fontSize: '1.25rem', 
+                      fontWeight: '600',
+                      color: formData.bookingEnabled ? '#0c4a6e' : '#374151',
+                      letterSpacing: '0.05em'
+                    }}>
+                      {formData.bookingCode}
+                    </div>
+                  </div>
+                  {formData.bookingEnabled && (
+                    <span style={{ 
+                      padding: '0.25rem 0.75rem', 
+                      background: '#10b981', 
+                      color: 'white', 
+                      borderRadius: '4px', 
+                      fontSize: '0.75rem',
+                      fontWeight: '600'
+                    }}>
+                      Active
+                    </span>
+                  )}
+                </div>
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: `1px solid ${formData.bookingEnabled ? '#bae6fd' : '#e5e7eb'}` }}>
+                  <strong style={{ fontSize: '0.875rem', color: formData.bookingEnabled ? '#0369a1' : '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
+                    Your Booking URL:
+                  </strong>
+                  <div style={{ 
+                    fontFamily: 'monospace', 
+                    fontSize: '0.875rem', 
+                    color: formData.bookingEnabled ? '#0c4a6e' : '#6b7280', 
+                    wordBreak: 'break-all',
+                    marginBottom: '0.5rem'
+                  }}>
+                    {window.location.origin}/booking/{formData.bookingCode}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/booking/${formData.bookingCode}`);
+                      showSuccess('Booking URL copied to clipboard!');
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.875rem',
+                      background: formData.bookingEnabled ? '#0369a1' : '#6b7280',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                    }}
+                  >
+                    📋 Copy Booking URL
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="form-group">
               <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input
@@ -452,56 +525,46 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
             </div>
 
             {formData.bookingEnabled && (
-              <>
-                <div className="form-group">
-                  <label htmlFor="bookingCode">Booking Code *</label>
-                  <input
-                    type="text"
-                    id="bookingCode"
-                    value={formData.bookingCode}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                      setFormData({ ...formData, bookingCode: value });
-                      if (errors.bookingCode) setErrors({ ...errors, bookingCode: '' });
-                    }}
-                    required={formData.bookingEnabled}
-                    placeholder="ACME123"
-                    pattern="[A-Z0-9]{3,20}"
-                    maxLength={20}
-                    style={{ textTransform: 'uppercase' }}
-                  />
-                  <small style={{ display: 'block', marginTop: '0.5rem', color: '#666' }}>
-                    3-20 characters, letters and numbers only. This code will be used in your booking URL.
-                  </small>
-                  {formData.bookingCode && (
-                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
-                      <strong style={{ fontSize: '0.875rem', color: '#0369a1' }}>Your Booking URL:</strong>
-                      <div style={{ marginTop: '0.5rem', fontFamily: 'monospace', fontSize: '0.875rem', color: '#0c4a6e', wordBreak: 'break-all' }}>
-                        {window.location.origin}/booking/{formData.bookingCode}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/booking/${formData.bookingCode}`);
-                          showSuccess('Booking URL copied to clipboard!');
-                        }}
-                        style={{
-                          marginTop: '0.5rem',
-                          padding: '0.25rem 0.75rem',
-                          fontSize: '0.75rem',
-                          background: '#0369a1',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Copy URL
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
+              <div className="form-group">
+                <label htmlFor="bookingCode">Booking Code *</label>
+                <input
+                  type="text"
+                  id="bookingCode"
+                  value={formData.bookingCode}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    setFormData({ ...formData, bookingCode: value });
+                    if (errors.bookingCode) setErrors({ ...errors, bookingCode: '' });
+                  }}
+                  required={formData.bookingEnabled}
+                  placeholder="ACME123"
+                  pattern="[A-Z0-9]{3,20}"
+                  maxLength={20}
+                  style={{ textTransform: 'uppercase' }}
+                />
+                <small style={{ display: 'block', marginTop: '0.5rem', color: '#666' }}>
+                  3-20 characters, letters and numbers only. This code will be used in your booking URL.
+                </small>
+                {errors.bookingCode && (
+                  <div style={{ marginTop: '0.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                    {errors.bookingCode}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!formData.bookingCode && !formData.bookingEnabled && (
+              <div style={{ 
+                padding: '1rem', 
+                background: '#fef3c7', 
+                borderRadius: '6px', 
+                border: '1px solid #fbbf24',
+                marginTop: '1rem'
+              }}>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#92400e' }}>
+                  <strong>💡 Tip:</strong> Enable the booking portal and set a booking code to allow customers to book trips directly through a public booking page.
+                </p>
+              </div>
             )}
           </div>
 
