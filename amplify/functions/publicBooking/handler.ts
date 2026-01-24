@@ -4,6 +4,10 @@
  */
 
 import type { Handler } from 'aws-lambda';
+import { SignatureV4 } from '@aws-sdk/signature-v4';
+import { HttpRequest } from '@aws-sdk/protocol-http';
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
+import { Sha256 } from '@aws-crypto/sha256-js';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
 // These permissions are automatically granted when the function is defined in backend.ts
@@ -72,10 +76,6 @@ async function getCompanyByCode(code: string): Promise<any | null> {
     
     // Use AWS SDK to sign the request with IAM credentials
     // In Lambda, we need to explicitly get credentials from the default provider chain
-    const { SignatureV4 } = await import('@aws-sdk/signature-v4');
-    const { HttpRequest } = await import('@aws-sdk/protocol-http');
-    const { fromNodeProviderChain } = await import('@aws-sdk/credential-providers');
-    const { Sha256 } = await import('@aws-crypto/sha256-js');
     
     // Get credentials from the default provider chain (Lambda execution role)
     const credentialsProvider = fromNodeProviderChain();
@@ -186,10 +186,6 @@ async function executeGraphQL(query: string, variables: any): Promise<any> {
   const apiId = apiIdMatch[1];
   
   // Use AWS SDK to sign the request with IAM credentials
-  const { SignatureV4 } = await import('@aws-sdk/signature-v4');
-  const { HttpRequest } = await import('@aws-sdk/protocol-http');
-  const { fromNodeProviderChain } = await import('@aws-sdk/credential-providers');
-  const { Sha256 } = await import('@aws-crypto/sha256-js');
   
   // Get credentials from the default provider chain (Lambda execution role)
   const credentialsProvider = fromNodeProviderChain();
