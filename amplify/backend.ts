@@ -17,13 +17,9 @@ export const backend = defineBackend({
   publicBooking,
 });
 
-// Grant publicBooking function access to the data resource
-// This allows the function to query the Data API using IAM authentication
-backend.publicBooking.addToRolePolicy({
-  effect: 'Allow',
-  actions: ['appsync:GraphQL'],
-  resources: [backend.data.resources.graphqlApi.arn],
-});
+// Note: In Amplify Gen 2, functions defined in the backend automatically get
+// IAM permissions to access the data resource. No additional configuration needed.
+// The GraphQL endpoint will be available via environment variables after deployment.
 
 // Add Function URL for sendInvitationEmail
 // Note: Function URLs need to be created manually in AWS Lambda Console
