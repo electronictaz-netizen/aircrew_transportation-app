@@ -247,6 +247,16 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔍 Ensuring default company for user:', userId, email);
       
+      // Verify authentication before proceeding
+      try {
+        const { getCurrentUser } = await import('aws-amplify/auth');
+        const currentUser = await getCurrentUser();
+        console.log('✅ User authenticated:', currentUser.userId);
+      } catch (authError) {
+        console.error('❌ Authentication check failed:', authError);
+        throw new Error('User is not authenticated. Please sign in again.');
+      }
+      
       // Try to find existing GLS company (try both 'GLS' and 'GLS Transportation')
       const { data: companiesGLS } = await client.models.Company.list({
         filter: { name: { eq: 'GLS' } }

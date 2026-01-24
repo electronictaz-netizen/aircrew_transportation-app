@@ -17,11 +17,22 @@ import './utils/deleteAllTrips';
 // Force the frontend to use the correct API
 const config = {
   ...outputs,
+  auth: {
+    ...outputs.auth,
+    // Ensure Cognito User Pool is configured
+    Cognito: {
+      userPoolId: outputs.auth.user_pool_id,
+      userPoolClientId: outputs.auth.user_pool_client_id,
+      identityPoolId: outputs.auth.identity_pool_id,
+    },
+  },
   data: {
     ...outputs.data,
     // Explicitly set the correct GraphQL endpoint
     url: 'https://klp7rzjva5c2bef2zjaygpod44.appsync-api.us-east-1.amazonaws.com/graphql',
     api_key: null, // Use Cognito User Pools, not API_KEY
+    // Explicitly set authorization mode
+    defaultAuthMode: 'userPool',
   },
 };
 
