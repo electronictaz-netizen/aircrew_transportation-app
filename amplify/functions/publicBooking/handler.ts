@@ -5,7 +5,6 @@
 
 import type { Handler } from 'aws-lambda';
 import { Amplify } from 'aws-amplify';
-import { defaultProvider } from '@aws-sdk/credential-providers';
 import type { Schema } from '../../data/resource';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -70,19 +69,16 @@ async function getAmplifyClient() {
       throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT environment variable not set. Check backend.ts configuration.');
     }
     
-    // Configure Amplify with the GraphQL endpoint and AWS credentials
-    // In Lambda, use defaultProvider which automatically picks up execution role credentials
-    const credentialsProvider = defaultProvider();
-    
+    // Configure Amplify with the GraphQL endpoint
+    // In Lambda, the execution role's credentials are automatically available
+    // via the AWS SDK's default credential provider chain
+    // Amplify should automatically use these credentials when authMode is 'iam'
     Amplify.configure({
       API: {
         GraphQL: {
           endpoint: graphqlEndpoint,
           region: region,
           defaultAuthMode: 'iam',
-          // Configure credentials for IAM authentication
-          // This tells Amplify to use the Lambda execution role credentials
-          credentials: credentialsProvider,
         },
       },
     });
@@ -110,15 +106,36 @@ async function getAmplifyClient() {
 
 /**
  * Get company by booking code
- * Uses GraphQL queries directly since models API requires schema introspection
+ * Uses AWS SDK AppSync client directly with IAM authentication
+ * This bypasses Amplify's client which has credential issues
  */
 async function getCompanyByCode(code: string): Promise<Schema['Company']['type'] | null> {
-  const client = await getAmplifyClient();
-  
   try {
     console.log('Fetching company with booking code:', code);
     
-    // Use GraphQL query directly instead of models API
+    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
+    const region = process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION || 'us-east-1';
+    
+    if (!graphqlEndpoint) {
+      throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT not set');
+    }
+    
+    // Extract API ID from endpoint URL (e.g., https://API_ID.appsync-api.region.amazonaws.com/graphql)
+    const apiIdMatch = graphqlEndpoint.match(/https:\/\/([^.]+)\.appsync-api/);
+    if (!apiIdMatch || !apiIdMatch[1]) {
+      throw new Error('Could not extract API ID from endpoint URL');
+    }
+    const apiId = apiIdMatch[1];
+    
+    // Use AWS SDK AppSync client directly
+    // This automatically uses Lambda execution role credentials
+    const { AppSyncClient, ExecuteGraphQLCommand } = await import('@aws-sdk/client-appsync');
+    
+    const client = new AppSyncClient({
+      region: region,
+      // Credentials are automatically available from Lambda execution role
+    });
+    
     const query = `
       query ListCompanies($filter: ModelCompanyFilterInput) {
         listCompanies(filter: $filter) {
@@ -145,15 +162,20 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
       },
     };
     
-    // Use IAM auth mode - credentials should be available from Lambda execution role
-    // Note: Remove 'as any' to ensure proper type checking
-    const response = await client.graphql({
-      query,
-      variables,
-      authMode: 'iam',
+    const command = new ExecuteGraphQLCommand({
+      apiId: apiId,
+      query: query,
+      variables: JSON.stringify(variables),
     });
     
-    const companies = response.data?.listCompanies?.items;
+    const response = await client.send(command);
+    
+    if (!response.data) {
+      throw new Error('No data in GraphQL response');
+    }
+    
+    const result = JSON.parse(response.data);
+    const companies = result.data?.listCompanies?.items;
     
     if (!companies || companies.length === 0) {
       return null;
@@ -162,7 +184,7 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     return companies[0] as Schema['Company']['type'];
   } catch (error) {
     console.error('Error fetching company:', error);
-    console.error('GraphQL response:', JSON.stringify(error, null, 2));
+    console.error('GraphQL error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 }
