@@ -1440,16 +1440,59 @@ function ManagementDashboard() {
           <h2>No Company Assigned</h2>
           {hasAdminAccess ? (
             <>
-              <p>As a system admin, you can work with any company. Please select a company to manage:</p>
-              <Link 
-                to="/admin" 
-                className="btn btn-primary"
-                style={{ marginTop: '1rem', display: 'inline-block' }}
-              >
-                Go to Admin Dashboard to Select Company
-              </Link>
+              <p>As a system admin, you can work with any company.</p>
+              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link 
+                  to="/admin" 
+                  className="btn btn-primary"
+                >
+                  Go to Admin Dashboard
+                </Link>
+                <button
+                  className="btn btn-secondary"
+                  onClick={async () => {
+                    try {
+                      // Try to create a default company directly
+                      const { data: newCompany, errors } = await client.models.Company.create({
+                        name: 'GLS Transportation',
+                        subdomain: 'gls',
+                        isActive: true,
+                        subscriptionTier: 'premium',
+                        subscriptionStatus: 'active',
+                      });
+                      
+                      if (errors && errors.length > 0) {
+                        alert(`Failed to create company: ${errors.map(e => e.message).join(', ')}\n\nCheck the browser console (F12) for details.`);
+                        return;
+                      }
+                      
+                      if (newCompany) {
+                        // Create CompanyUser record for current user
+                        const user = await getCurrentUser();
+                        const userEmail = user.signInDetails?.loginId || user.username || '';
+                        
+                        await client.models.CompanyUser.create({
+                          companyId: newCompany.id,
+                          userId: user.userId,
+                          email: userEmail,
+                          role: 'admin',
+                          isActive: true,
+                        });
+                        
+                        alert('Company created successfully! Refreshing page...');
+                        window.location.reload();
+                      }
+                    } catch (error: any) {
+                      console.error('Error creating company:', error);
+                      alert(`Failed to create company: ${error?.message || 'Unknown error'}\n\nCheck the browser console (F12) for details.`);
+                    }
+                  }}
+                >
+                  Create Default Company
+                </button>
+              </div>
               <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#666' }}>
-                In the Admin Dashboard, click "Work As" next to any company to manage it.
+                In the Admin Dashboard, you can create a new company or select an existing one to manage.
               </p>
             </>
           ) : (
