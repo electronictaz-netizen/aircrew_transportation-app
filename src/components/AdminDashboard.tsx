@@ -520,12 +520,19 @@ function AdminDashboard() {
     <div className="admin-dashboard">
       <div className="admin-header">
         <h1>Company Management</h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {isAdminOverride && (
             <Link to="/management" className="btn btn-secondary">
               Manage Selected Company
             </Link>
           )}
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleRestoreGLS}
+            title="Find or create GLS Transportation company and link your account"
+          >
+            Restore GLS Access
+          </button>
           <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
             + Create New Company
           </button>
