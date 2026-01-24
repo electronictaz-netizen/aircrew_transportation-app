@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
@@ -6,6 +6,7 @@ import { useNotification, useConfirm, ConfirmDialog } from './Notification';
 import NotificationComponent from './Notification';
 import { validateName, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
+import { format } from 'date-fns';
 import './CustomerManagement.css';
 
 const client = generateClient<Schema>();
@@ -33,6 +34,9 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [viewingTripsFor, setViewingTripsFor] = useState<Schema['Customer']['type'] | null>(null);
+  const [customerTrips, setCustomerTrips] = useState<Array<Schema['Trip']['type']>>([]);
+  const [loadingTrips, setLoadingTrips] = useState(false);
 
   const validateEmail = (email: string): boolean => {
     if (!email || email.trim() === '') return true; // Email is optional
@@ -257,6 +261,47 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
     setShowForm(false);
   };
 
+  const handleViewTrips = async (customer: Schema['Customer']['type']) => {
+    setViewingTripsFor(customer);
+    setLoadingTrips(true);
+    setCustomerTrips([]);
+    
+    try {
+      if (!companyId) {
+        showError('Company not found. Please contact support.');
+        return;
+      }
+
+      // @ts-ignore - Complex union type inference
+      const { data: trips } = await client.models.Trip.list({
+        filter: {
+          companyId: { eq: companyId },
+          customerId: { eq: customer.id },
+        },
+      });
+
+      setCustomerTrips(trips || []);
+    } catch (error) {
+      logger.error('Error loading customer trips:', error);
+      showError('Failed to load trips for this customer.');
+    } finally {
+      setLoadingTrips(false);
+    }
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return 'status-completed';
+      case 'Assigned':
+        return 'status-assigned';
+      case 'InProgress':
+        return 'status-in-progress';
+      default:
+        return 'status-unassigned';
+    }
+  };
+
   // Filter customers to ensure only customers for the current company are shown
   const companyCustomers = customers.filter(c => c.companyId === companyId);
   const activeCustomers = companyCustomers.filter(c => c.isActive !== false);
@@ -455,6 +500,13 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
                     <td>
                       <div className="action-buttons">
                         <button
+                          className="btn-icon btn-view"
+                          onClick={() => handleViewTrips(customer)}
+                          title="View Trips"
+                        >
+                          📋
+                        </button>
+                        <button
                           className="btn-icon btn-edit"
                           onClick={() => handleEdit(customer)}
                           title="Edit"
@@ -477,6 +529,74 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
           )}
         </div>
       </div>
+
+      {/* Customer Trips Modal */}
+      {viewingTripsFor && (
+        <div className="modal-overlay" onClick={() => setViewingTripsFor(null)}>
+          <div className="modal-content customer-trips-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Trips for {viewingTripsFor.name}</h3>
+              <button className="close-btn" onClick={() => setViewingTripsFor(null)}>
+                ×
+              </button>
+            </div>
+            
+            {loadingTrips ? (
+              <div className="loading-message">Loading trips...</div>
+            ) : customerTrips.length === 0 ? (
+              <div className="empty-message">
+                <p>No trips found for this customer.</p>
+                <p className="empty-submessage">Trips created through the booking portal or assigned to this customer will appear here.</p>
+              </div>
+            ) : (
+              <div className="customer-trips-list">
+                <p className="trips-count">{customerTrips.length} trip{customerTrips.length !== 1 ? 's' : ''} found</p>
+                <div className="trips-table-wrapper">
+                  <table className="trips-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Pickup</th>
+                        <th>Dropoff</th>
+                        <th>Flight #</th>
+                        <th>Passengers</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customerTrips.map((trip) => (
+                        <tr key={trip.id}>
+                          <td>
+                            {trip.pickupDate
+                              ? format(new Date(trip.pickupDate), 'MMM d, yyyy')
+                              : '-'}
+                          </td>
+                          <td>
+                            {trip.pickupDate
+                              ? format(new Date(trip.pickupDate), 'h:mm a')
+                              : '-'}
+                          </td>
+                          <td>{trip.pickupLocation || '-'}</td>
+                          <td>{trip.dropoffLocation || '-'}</td>
+                          <td>{trip.flightNumber || '-'}</td>
+                          <td>{trip.numberOfPassengers || 1}</td>
+                          <td>
+                            <span className={`status-badge ${getStatusBadgeClass(trip.status || 'Unassigned')}`}>
+                              {trip.status || 'Unassigned'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
       <ConfirmDialog
         isOpen={confirmState.isOpen}

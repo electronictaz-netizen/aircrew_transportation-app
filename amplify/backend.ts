@@ -17,6 +17,14 @@ export const backend = defineBackend({
   publicBooking,
 });
 
+// Grant publicBooking function access to the data resource
+// This allows the function to query the Data API using IAM authentication
+backend.publicBooking.addToRolePolicy({
+  effect: 'Allow',
+  actions: ['appsync:GraphQL'],
+  resources: [backend.data.resources.graphqlApi.arn],
+});
+
 // Add Function URL for sendInvitationEmail
 // Note: Function URLs need to be created manually in AWS Lambda Console
 // or via AWS CLI/CDK. The URL will be available after first deployment.

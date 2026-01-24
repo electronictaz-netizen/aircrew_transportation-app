@@ -142,6 +142,100 @@
   color: #ef4444;
 }
 
+.btn-view:hover {
+  color: #10b981;
+}
+
+/* Customer Trips Modal */
+.customer-trips-modal {
+  max-width: 900px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.customer-trips-list {
+  margin-top: 1rem;
+}
+
+.trips-count {
+  margin-bottom: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.trips-table-wrapper {
+  overflow-x: auto;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.trips-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.trips-table th {
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.trips-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.trips-table tr:hover {
+  background-color: #f9fafb;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.status-completed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.status-assigned {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.status-in-progress {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.status-unassigned {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.empty-submessage {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-top: 0.5rem;
+}
+
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
   .customer-management {
@@ -189,6 +283,54 @@
   }
 
   .empty-message {
+    color: #9ca3af;
+  }
+
+  .customer-trips-modal {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+
+  .trips-table th {
+    background-color: #374151;
+    color: #f9fafb;
+    border-bottom-color: #4b5563;
+  }
+
+  .trips-table td {
+    border-bottom-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  .trips-table tr:hover {
+    background-color: #374151;
+  }
+
+  .status-badge.status-completed {
+    background-color: #065f46;
+    color: #d1fae5;
+  }
+
+  .status-badge.status-assigned {
+    background-color: #1e40af;
+    color: #dbeafe;
+  }
+
+  .status-badge.status-in-progress {
+    background-color: #92400e;
+    color: #fef3c7;
+  }
+
+  .status-badge.status-unassigned {
+    background-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .trips-count {
+    color: #9ca3af;
+  }
+
+  .loading-message {
     color: #9ca3af;
   }
 }

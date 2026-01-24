@@ -8,8 +8,9 @@ import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../data/resource';
 
-// Note: This requires Amplify configuration to be set up
-// The Lambda will need IAM permissions to access the Data API
+// Note: The Lambda function needs IAM permissions to access the Data API
+// These permissions are automatically granted when the function is defined in backend.ts
+// The GraphQL endpoint should be available via environment variables set by Amplify
 
 interface GetCompanyRequest {
   action: 'getCompany';
@@ -51,21 +52,51 @@ const responseHeaders = {
 
 /**
  * Initialize Amplify client
- * Note: This requires Amplify outputs to be available
- * In production, these should be passed as environment variables or from Amplify
+ * Configures Amplify with the GraphQL endpoint and uses IAM authentication
  */
 function getAmplifyClient() {
-  // For Lambda, we need to configure Amplify with the backend outputs
-  // This will be available after deployment via environment variables or SSM
-  // For now, we'll use a try-catch approach
-  
   try {
+    // Get GraphQL endpoint from environment variables (set by Amplify)
+    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
+    const region = process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION || 'us-east-1';
+    
+    console.log('Initializing Amplify client:', {
+      hasGraphqlEndpoint: !!graphqlEndpoint,
+      region: region,
+      graphqlEndpoint: graphqlEndpoint ? graphqlEndpoint.substring(0, 50) + '...' : 'missing',
+    });
+    
+    if (graphqlEndpoint) {
+      // Configure Amplify with the GraphQL endpoint
+      Amplify.configure({
+        API: {
+          GraphQL: {
+            endpoint: graphqlEndpoint,
+            region: region,
+            defaultAuthMode: 'iam',
+          },
+        },
+      });
+    } else {
+      console.warn('AMPLIFY_DATA_GRAPHQL_ENDPOINT not set. Client may not work correctly.');
+      // Try to use client without explicit configuration (Amplify Gen 2 should auto-detect)
+    }
+    
     // The client will use IAM credentials from the Lambda execution role
-    return generateClient<Schema>({
+    const client = generateClient<Schema>({
       authMode: 'iam', // Use IAM authentication for Lambda
     });
+    
+    console.log('Amplify client initialized successfully');
+    return client;
   } catch (error) {
     console.error('Error initializing Amplify client:', error);
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    console.error('Environment variables:', {
+      hasGraphqlEndpoint: !!process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT,
+      region: process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION,
+      allEnvVars: Object.keys(process.env).filter(k => k.includes('AMPLIFY') || k.includes('GRAPHQL')),
+    });
     throw error;
   }
 }
@@ -177,6 +208,12 @@ export const handler: Handler = async (event): Promise<LambdaResponse> => {
   // Note: CORS preflight (OPTIONS) is handled automatically by Lambda Function URL
   // No need to handle it in the handler
 
+  console.log('Handler invoked:', {
+    method: event.requestContext?.http?.method || event.requestMethod,
+    path: event.requestContext?.http?.path || event.path,
+    hasBody: !!event.body,
+  });
+
   try {
     // Parse request body
     let body: any = {};
@@ -205,7 +242,9 @@ export const handler: Handler = async (event): Promise<LambdaResponse> => {
         };
       }
 
+      console.log('Fetching company for booking code:', code);
       const company = await getCompanyByCode(code);
+      console.log('Company lookup result:', company ? 'Found' : 'Not found');
       
       if (!company) {
         return {
@@ -286,6 +325,8 @@ export const handler: Handler = async (event): Promise<LambdaResponse> => {
     };
   } catch (error: any) {
     console.error('Error in publicBooking handler:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     
     return {
       statusCode: 500,
@@ -293,6 +334,8 @@ export const handler: Handler = async (event): Promise<LambdaResponse> => {
       body: JSON.stringify({ 
         error: 'Internal server error',
         message: error.message || 'An unexpected error occurred',
+        // Include error type for debugging (remove in production if needed)
+        type: error.name || 'UnknownError',
       }),
     };
   }

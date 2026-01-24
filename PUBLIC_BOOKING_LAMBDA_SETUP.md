@@ -47,12 +47,18 @@ After deployment, create a Function URL in AWS Lambda Console:
 5. Configure:
    - **Auth type:** `NONE` (for public access)
    - **CORS:** Enable and configure:
-     - **Allow origins:** `*` (or your specific domain)
+     - **Allow origins:** `https://onyxdispatch.us` (IMPORTANT: Use ONLY one value - either `*` for all origins OR your specific domain, NOT both)
      - **Allow methods:** `GET, POST, OPTIONS`
      - **Allow headers:** `Content-Type`
      - **Expose headers:** (leave empty)
      - **Max age:** `3600`
 6. Click "Save"
+
+**⚠️ IMPORTANT CORS Configuration:**
+- Use **ONLY ONE** value in "Allow origins" - either `*` OR `https://onyxdispatch.us`, NOT both
+- If you need multiple origins, use `*` (allows all origins)
+- If you want to restrict to your domain only, use `https://onyxdispatch.us`
+- Having multiple values will cause duplicate header errors
 7. Copy the Function URL (e.g., `https://xxxxx.lambda-url.us-east-1.on.aws/`)
 
 ### Step 3: Configure Environment Variable
