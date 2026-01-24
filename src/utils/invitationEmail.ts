@@ -17,9 +17,10 @@ export function generateInvitationEmail(data: InvitationEmailData): { subject: s
   const { email, companyName, role, inviterName } = data;
   
   // Get the app URL (default to current origin)
+  // Use custom domain in production, fallback to current origin
   const appUrl = typeof window !== 'undefined' 
     ? window.location.origin 
-    : 'https://main.d1wxo3x0z5r1oq.amplifyapp.com';
+    : (import.meta.env.VITE_APP_URL || 'https://onyxdispatch.us');
   
   // Create signup URL with email pre-filled
   const signupUrl = `${appUrl}/?signup=true&email=${encodeURIComponent(email)}`;

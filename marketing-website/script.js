@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // App URL - Update this if your app URL changes
-    const appUrl = 'https://main.d1wxo3x0z5r1oq.amplifyapp.com';
+    // App URL - Use custom domain
+    const appUrl = 'https://onyxdispatch.us';
 });
 
 // Add scroll effect to navbar

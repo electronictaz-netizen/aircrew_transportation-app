@@ -55,9 +55,10 @@ export async function sendInvitationEmailViaLambda(
 
   try {
     // Get the app URL for the signup link
+    // Use custom domain in production, fallback to current origin
     const appUrl = typeof window !== 'undefined' 
       ? window.location.origin 
-      : 'https://main.d1wxo3x0z5r1oq.amplifyapp.com';
+      : (import.meta.env.VITE_APP_URL || 'https://onyxdispatch.us');
     
     // Generate signup URL with email pre-filled
     const signupUrl = `${appUrl}/?signup=true&email=${encodeURIComponent(data.email)}`;
