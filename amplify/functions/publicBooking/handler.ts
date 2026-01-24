@@ -4,7 +4,6 @@
  */
 
 import type { Handler } from 'aws-lambda';
-import { Amplify } from 'aws-amplify';
 import type { Schema } from '../../data/resource';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -51,71 +50,30 @@ const responseHeaders = {
 
 /**
  * Initialize Amplify client
- * Configures Amplify with GraphQL endpoint and uses IAM authentication
+ * Uses the same pattern as stripeCheckout handler
+ * In Amplify Gen 2, the backend automatically configures the client
  */
 async function getAmplifyClient() {
   try {
-    // Get GraphQL endpoint from environment variables or construct from API ID
-    // In Amplify Gen 2, the endpoint should be available via environment variables
-    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT || 
-                           process.env.AMPLIFY_DATA_GRAPHQL_URL ||
-                           process.env.GRAPHQL_ENDPOINT;
-    const region = process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION || 'us-east-1';
-    
-    // If endpoint is not in env vars, try to construct it from API ID
-    let endpoint = graphqlEndpoint;
-    if (!endpoint) {
-      const apiId = process.env.AMPLIFY_DATA_GRAPHQL_API_ID;
-      if (apiId) {
-        // Construct GraphQL endpoint from API ID
-        endpoint = `https://${apiId}.appsync-api.${region}.amazonaws.com/graphql`;
-      }
-    }
-    
-    console.log('Initializing Amplify client:', {
-      hasEndpoint: !!endpoint,
-      region: region,
-      endpointPreview: endpoint ? endpoint.substring(0, 50) + '...' : 'missing',
-    });
-    
-    if (!endpoint) {
-      throw new Error('GraphQL endpoint not found. Check environment variables: AMPLIFY_DATA_GRAPHQL_ENDPOINT, AMPLIFY_DATA_GRAPHQL_URL, or AMPLIFY_DATA_GRAPHQL_API_ID');
-    }
-    
-    // Configure Amplify with the GraphQL endpoint
-    // This MUST be called before generateClient()
-    Amplify.configure({
-      API: {
-        GraphQL: {
-          endpoint: endpoint,
-          region: region,
-          defaultAuthMode: 'iam',
-        },
-      },
-    });
-    
-    console.log('Amplify configured successfully');
-    
     // Use dynamic import for generateClient
     const { generateClient } = await import('aws-amplify/data');
     
-    // The client will use IAM credentials from the Lambda execution role
-    const client = generateClient<Schema>({
-      authMode: 'iam', // Use IAM authentication for Lambda
+    // In Lambda, we use IAM auth mode
+    // The backend automatically configures the client with the correct endpoints
+    const client = generateClient({
+      authMode: 'iam',
     });
     
     console.log('Amplify client initialized successfully');
+    console.log('Client models available:', {
+      hasModels: !!client.models,
+      modelKeys: client.models ? Object.keys(client.models) : 'none',
+    });
+    
     return client;
   } catch (error) {
     console.error('Error initializing Amplify client:', error);
     console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    console.error('Environment variables:', {
-      hasGraphqlEndpoint: !!process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT,
-      hasGraphqlUrl: !!process.env.AMPLIFY_DATA_GRAPHQL_URL,
-      hasApiId: !!process.env.AMPLIFY_DATA_GRAPHQL_API_ID,
-      region: process.env.AWS_REGION || process.env.AMPLIFY_DATA_REGION,
-      allEnvVars: Object.keys(process.env).filter(k => k.includes('AMPLIFY') || k.includes('GRAPHQL') || k.includes('DATA') || k.includes('API')),
-    });
     throw error;
   }
 }
@@ -126,7 +84,25 @@ async function getAmplifyClient() {
 async function getCompanyByCode(code: string): Promise<Schema['Company']['type'] | null> {
   const client = await getAmplifyClient();
   
+  // Debug: Check if client and models are available
+  if (!client) {
+    throw new Error('Client is null or undefined');
+  }
+  if (!client.models) {
+    console.error('Client models is undefined. Client structure:', {
+      hasClient: !!client,
+      clientKeys: client ? Object.keys(client) : 'none',
+      clientType: typeof client,
+    });
+    throw new Error('Client models not available. Check Amplify configuration.');
+  }
+  if (!client.models.Company) {
+    console.error('Company model not found. Available models:', Object.keys(client.models));
+    throw new Error('Company model not available in client');
+  }
+  
   try {
+    console.log('Fetching company with booking code:', code);
     const { data: companies } = await client.models.Company.list({
       filter: {
         bookingCode: { eq: code },
