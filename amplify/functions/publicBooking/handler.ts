@@ -71,11 +71,16 @@ async function getCompanyByCode(code: string): Promise<any | null> {
     const apiId = apiIdMatch[1];
     
     // Use AWS SDK to sign the request with IAM credentials
-    // Import at runtime to avoid esbuild bundling issues
-    const { SignatureV4 } = await import('@aws-sdk/signature-v4');
-    const { HttpRequest } = await import('@aws-sdk/protocol-http');
-    const { fromNodeProviderChain } = await import('@aws-sdk/credential-providers');
-    const { Sha256 } = await import('@aws-crypto/sha256-js');
+    // Import at runtime using string-based imports to avoid esbuild analysis
+    const sdkPath = '@aws-sdk/signature-v4';
+    const httpPath = '@aws-sdk/protocol-http';
+    const credPath = '@aws-sdk/credential-providers';
+    const cryptoPath = '@aws-crypto/sha256-js';
+    
+    const { SignatureV4 } = await import(sdkPath);
+    const { HttpRequest } = await import(httpPath);
+    const { fromNodeProviderChain } = await import(credPath);
+    const { Sha256 } = await import(cryptoPath);
     
     // Get credentials from the default provider chain (Lambda execution role)
     const credentialsProvider = fromNodeProviderChain();
@@ -186,11 +191,16 @@ async function executeGraphQL(query: string, variables: any): Promise<any> {
   const apiId = apiIdMatch[1];
   
   // Use AWS SDK to sign the request with IAM credentials
-  // Import at runtime to avoid esbuild bundling issues
-  const { SignatureV4 } = await import('@aws-sdk/signature-v4');
-  const { HttpRequest } = await import('@aws-sdk/protocol-http');
-  const { fromNodeProviderChain } = await import('@aws-sdk/credential-providers');
-  const { Sha256 } = await import('@aws-crypto/sha256-js');
+  // Import at runtime using string-based imports to avoid esbuild analysis
+  const sdkPath = '@aws-sdk/signature-v4';
+  const httpPath = '@aws-sdk/protocol-http';
+  const credPath = '@aws-sdk/credential-providers';
+  const cryptoPath = '@aws-crypto/sha256-js';
+  
+  const { SignatureV4 } = await import(sdkPath);
+  const { HttpRequest } = await import(httpPath);
+  const { fromNodeProviderChain } = await import(credPath);
+  const { Sha256 } = await import(cryptoPath);
   
   // Get credentials from the default provider chain (Lambda execution role)
   const credentialsProvider = fromNodeProviderChain();
