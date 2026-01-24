@@ -171,6 +171,112 @@ function AdminDashboard() {
     }
   };
 
+  const handleRestoreGLS = async () => {
+    if (!confirm('This will find or create the GLS Transportation company and link your account to it. Continue?')) {
+      return;
+    }
+
+    try {
+      // Find or create GLS company
+      const { data: companiesGLS } = await client.models.Company.list({
+        filter: { name: { eq: 'GLS' } }
+      });
+      const { data: companiesGLSTransport } = await client.models.Company.list({
+        filter: { name: { eq: 'GLS Transportation' } }
+      });
+
+      let glsCompany: Schema['Company']['type'] | null = null;
+
+      if (companiesGLSTransport && companiesGLSTransport.length > 0) {
+        glsCompany = companiesGLSTransport[0];
+      } else if (companiesGLS && companiesGLS.length > 0) {
+        glsCompany = companiesGLS[0];
+        // Update name
+        const { data: updated } = await client.models.Company.update({
+          id: glsCompany.id,
+          name: 'GLS Transportation',
+        });
+        if (updated) glsCompany = updated;
+      } else {
+        // Create GLS company
+        const { data: newCompany, errors } = await client.models.Company.create({
+          name: 'GLS Transportation',
+          subdomain: 'gls',
+          isActive: true,
+          subscriptionTier: 'premium',
+          subscriptionStatus: 'active',
+        });
+
+        if (errors && errors.length > 0) {
+          alert(`Failed to create company: ${errors.map(e => e.message).join(', ')}`);
+          return;
+        }
+
+        if (!newCompany) {
+          alert('Failed to create company');
+          return;
+        }
+
+        glsCompany = newCompany;
+      }
+
+      if (!glsCompany) {
+        alert('Failed to get or create GLS company');
+        return;
+      }
+
+      // Get current user
+      const { getCurrentUser } = await import('aws-amplify/auth');
+      const user = await getCurrentUser();
+      const userId = user.userId;
+      const userEmail = user.signInDetails?.loginId || user.username || '';
+
+      // Check if CompanyUser exists
+      const { data: existingUsers } = await client.models.CompanyUser.list({
+        filter: { 
+          companyId: { eq: glsCompany.id },
+          userId: { eq: userId }
+        }
+      });
+
+      if (existingUsers && existingUsers.length > 0) {
+        const companyUser = existingUsers[0];
+        if (!companyUser.isActive) {
+          await client.models.CompanyUser.update({
+            id: companyUser.id,
+            isActive: true,
+          });
+        }
+        alert('GLS company access restored! Your account is already linked. Refreshing...');
+      } else {
+        // Create CompanyUser
+        const { errors: userErrors } = await client.models.CompanyUser.create({
+          companyId: glsCompany.id,
+          userId: userId,
+          email: userEmail,
+          role: 'admin',
+          isActive: true,
+        });
+
+        if (userErrors && userErrors.length > 0) {
+          alert(`Failed to create CompanyUser: ${userErrors.map(e => e.message).join(', ')}`);
+          return;
+        }
+
+        alert('GLS company access restored! Your account has been linked. Refreshing...');
+      }
+
+      // Refresh and reload
+      loadCompanies();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error: any) {
+      console.error('Error restoring GLS access:', error);
+      alert(`Failed to restore GLS access: ${error?.message || 'Unknown error'}\n\nCheck the browser console for details.`);
+    }
+  };
+
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
