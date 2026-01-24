@@ -39,6 +39,10 @@ VITE_FLIGHT_API_KEY_FLIGHTAWARE=your_key
 # Google Places (optional)
 VITE_GOOGLE_PLACES_API_KEY=your_production_key (if using Google Places)
 
+# Booking Portal
+VITE_BOOKING_API_URL=https://[main-booking-lambda-url].lambda-url.us-east-1.on.aws/
+VITE_BOOKING_DOMAIN=onyxdispatch.us (or https://onyxdispatch.us)
+
 # Branding
 VITE_SERVICE_PROVIDER_NAME=Onyx Transportation (or your company name)
 VITE_SERVICE_PROVIDER_TAGLINE=Your tagline (optional)
@@ -96,6 +100,10 @@ VITE_FLIGHT_API_KEY=your_key (can be same as production or test key)
 
 # Google Places (optional, can use same key)
 VITE_GOOGLE_PLACES_API_KEY=your_key
+
+# Booking Portal
+VITE_BOOKING_API_URL=https://[dev-booking-lambda-url].lambda-url.us-east-1.on.aws/
+VITE_BOOKING_DOMAIN=onyxdispatch.us (or https://onyxdispatch.us)
 
 # Branding (same as production usually)
 VITE_SERVICE_PROVIDER_NAME=Onyx Transportation

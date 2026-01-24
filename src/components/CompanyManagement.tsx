@@ -8,6 +8,7 @@ import { validateUrl, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
 import { sendInvitationEmailViaLambda } from '../utils/sendInvitationEmail';
 import { sendInvitationEmail } from '../utils/invitationEmail';
+import { getBookingUrl } from '../utils/bookingUrl';
 import './CompanyManagement.css';
 
 const client = generateClient<Schema>();
@@ -485,12 +486,12 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
                     wordBreak: 'break-all',
                     marginBottom: '0.5rem'
                   }}>
-                    {window.location.origin}/booking/{formData.bookingCode}
+                    {getBookingUrl(formData.bookingCode)}
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/booking/${formData.bookingCode}`);
+                      navigator.clipboard.writeText(getBookingUrl(formData.bookingCode));
                       showSuccess('Booking URL copied to clipboard!');
                     }}
                     style={{
