@@ -5,7 +5,6 @@
 
 import type { Handler } from 'aws-lambda';
 import { Amplify } from 'aws-amplify';
-import { defaultProvider } from '@aws-sdk/credential-providers';
 import type { Schema } from '../../data/resource';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -52,38 +51,21 @@ const responseHeaders = {
 
 /**
  * Initialize Amplify client
- * Configures Amplify with GraphQL endpoint from environment variables
+ * Uses getAmplifyDataClientConfig from Amplify Gen 2 to properly configure
+ * the client with IAM credentials from the Lambda execution role
  */
 async function getAmplifyClient() {
   try {
-    // Get GraphQL endpoint from environment variable (set by backend.ts)
-    const graphqlEndpoint = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
-    const region = process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION || 'us-east-1';
+    // Use Amplify Gen 2's official method to get client configuration
+    // This automatically handles AWS credentials from Lambda runtime
+    const { getAmplifyDataClientConfig } = await import('@aws-amplify/backend/function/runtime');
+    const { env } = await import('$amplify/env/publicBooking');
     
-    console.log('Initializing Amplify client:', {
-      hasEndpoint: !!graphqlEndpoint,
-      region: region,
-      endpointPreview: graphqlEndpoint ? graphqlEndpoint.substring(0, 60) + '...' : 'missing',
-    });
+    console.log('Getting Amplify data client config...');
+    const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
     
-    if (!graphqlEndpoint) {
-      throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT environment variable not set. Check backend.ts configuration.');
-    }
-    
-    // Configure Amplify with the GraphQL endpoint and AWS credentials
-    // In Lambda, use defaultProvider which automatically picks up execution role credentials
-    Amplify.configure({
-      API: {
-        GraphQL: {
-          endpoint: graphqlEndpoint,
-          region: region,
-          defaultAuthMode: 'iam',
-        },
-      },
-      Auth: {
-        credentials: defaultProvider(),
-      },
-    } as any);
+    // Configure Amplify with the pre-configured settings
+    Amplify.configure(resourceConfig, libraryOptions);
     
     console.log('Amplify configured successfully');
     
@@ -91,39 +73,16 @@ async function getAmplifyClient() {
     const { generateClient } = await import('aws-amplify/data');
     
     // The client will use IAM credentials from the Lambda execution role
-    // Don't pass Schema type - let it introspect from the GraphQL endpoint
     const client = generateClient({
       authMode: 'iam',
     });
     
     console.log('Amplify client initialized successfully');
     
-    // Check models - they should be available immediately with Schema type
-    const modelKeys = client.models ? Object.keys(client.models) : [];
-    console.log('Client models available:', {
-      hasModels: !!client.models,
-      modelKeys: modelKeys,
-      modelCount: modelKeys.length,
-    });
-    
-    if (modelKeys.length === 0) {
-      console.error('WARNING: No models found in client. This indicates a configuration issue.');
-      console.error('Client structure:', {
-        hasClient: !!client,
-        clientKeys: client ? Object.keys(client) : 'none',
-        hasModels: !!client.models,
-      });
-    }
-    
     return client;
   } catch (error) {
     console.error('Error initializing Amplify client:', error);
     console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    console.error('Environment check:', {
-      hasGraphqlEndpoint: !!process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT,
-      region: process.env.AMPLIFY_DATA_REGION || process.env.AWS_REGION,
-      allAmplifyEnvVars: Object.keys(process.env).filter(k => k.includes('AMPLIFY') || k.includes('GRAPHQL')),
-    });
     throw error;
   }
 }
@@ -166,11 +125,12 @@ async function getCompanyByCode(code: string): Promise<Schema['Company']['type']
     };
     
     // Use IAM auth mode - credentials should be available from Lambda execution role
+    // Note: Remove 'as any' to ensure proper type checking
     const response = await client.graphql({
       query,
       variables,
       authMode: 'iam',
-    } as any);
+    });
     
     const companies = response.data?.listCompanies?.items;
     
