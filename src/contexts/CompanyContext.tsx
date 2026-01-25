@@ -363,8 +363,9 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     } else {
       localStorage.removeItem('adminSelectedCompanyId');
     }
-    // Reload company
-    loadUserCompany();
+    // loadUserCompany runs from useEffect([user?.userId, adminSelectedCompanyId]) after
+    // state updates; calling it here would see stale adminSelectedCompanyId and fall
+    // through to CompanyUser/ensureDefaultCompany (GLS).
   };
 
   useEffect(() => {
