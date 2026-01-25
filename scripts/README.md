@@ -1,5 +1,46 @@
 # Scripts
 
+## snapshotGLSCompany.ts
+
+Exports the **GLS Transportation** company and all related data to a JSON backup file. Use before making large changes (e.g. passenger-facing booking portal) so you can restore if something is overwritten.
+
+### What it exports
+
+- Company (GLS record)
+- CompanyUser, Location, Trip, Driver, Vehicle, Customer
+- FilterCategory, CustomField, CustomFieldValue
+- ReportConfiguration, TripVehicle, VehicleLocation
+
+All lists are paginated so nothing is skipped.
+
+### Auth
+
+- **Browser / existing session:** Run after using the app (e.g. with `ampx sandbox`), or ensure a valid Cognito session exists.
+- **Node / CI:** Set `COGNITO_USER` and `COGNITO_PASSWORD`; the script will sign in before exporting.
+
+### Usage
+
+```bash
+npm run snapshot-gls
+```
+
+Or:
+
+```bash
+npx ts-node --esm scripts/snapshotGLSCompany.ts
+```
+
+### Output
+
+- **Path:** `scripts/backups/gls-snapshot-YYYY-MM-DDTHHmmss.json`
+- **Format:** JSON with `exportedAt`, `companyId`, `company`, and arrays for each related model.
+
+### Restore
+
+A separate restore procedure is required to re-import from the JSON. This script only creates the snapshot.
+
+---
+
 ## checkLambdaRuntimes.ts
 
 Checks all Lambda functions in your AWS account for deprecated Node.js 18.x and 20.x runtimes and identifies functions that need to be updated to Node.js 22.x.

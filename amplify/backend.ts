@@ -1,4 +1,6 @@
 import { defineBackend } from '@aws-amplify/backend';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { stripeWebhook } from './functions/stripeWebhook/resource';
@@ -6,6 +8,7 @@ import { stripeCheckout } from './functions/stripeCheckout/resource';
 import { stripePortal } from './functions/stripePortal/resource';
 import { sendInvitationEmail } from './functions/sendInvitationEmail/resource';
 import { publicBooking } from './functions/publicBooking/resource';
+import { sendSms } from './functions/sendSms/resource';
 
 export const backend = defineBackend({
   auth,
@@ -15,6 +18,7 @@ export const backend = defineBackend({
   stripePortal,
   sendInvitationEmail,
   publicBooking,
+  sendSms,
 });
 
 // Pass GraphQL endpoint to publicBooking function
@@ -36,6 +40,31 @@ if ('graphqlUrl' in backend.data.resources.graphqlApi && backend.data.resources.
 
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
+
+// Function URL for public booking (no auth; CORS for browser)
+backend.publicBooking.resources.lambda.addFunctionUrl({
+  authType: lambda.FunctionUrlAuthType.NONE,
+  cors: {
+    allowedOrigins: ['*'],
+    allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST, lambda.HttpMethod.OPTIONS],
+    allowedHeaders: ['Content-Type'],
+  },
+});
+
+// IAM: allow sendSms to use AWS End User Messaging (SendTextMessage)
+backend.sendSms.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    sid: 'AllowSendSMS',
+    effect: iam.Effect.ALLOW,
+    actions: ['sms-voice:SendTextMessage'],
+    resources: ['*'],
+  })
+);
+
+// SMS: origination identity (pool ID, E.164 number, or ARN). Set SMS_ORIGINATION_IDENTITY in Amplify env or `export` before `ampx sandbox`.
+backend.sendSms.addEnvironment('ORIGINATION_IDENTITY', process.env.SMS_ORIGINATION_IDENTITY || '');
+backend.sendSms.addEnvironment('CONFIGURATION_SET_NAME', process.env.SMS_CONFIGURATION_SET_NAME || '');
+backend.sendSms.addEnvironment('PROTECT_CONFIGURATION_ID', process.env.SMS_PROTECT_CONFIGURATION_ID || '');
 
 // Note: In Amplify Gen 2, functions defined in the backend automatically get
 // IAM permissions to access the data resource. No additional configuration needed.

@@ -2,6 +2,6 @@
   "type": "module",
   "dependencies": {
     "@aws-amplify/backend": "*",
-    "@aws-sdk/client-appsync": "^3.700.0"
+    "aws4": "^1.12.0"
   }
 }

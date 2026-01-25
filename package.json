@@ -11,7 +11,8 @@
     "check-lambda:update": "npx ts-node --esm scripts/checkLambdaRuntimes.ts --update",
     "check-deps": "npx ts-node --esm scripts/updateToLatest.ts",
     "update-all": "npx ts-node --esm scripts/updateToLatest.ts",
-    "update-all:apply": "npx ts-node --esm scripts/updateToLatest.ts --apply"
+    "update-all:apply": "npx ts-node --esm scripts/updateToLatest.ts --apply",
+    "snapshot-gls": "npx ts-node --esm scripts/snapshotGLSCompany.ts"
   },
   "dependencies": {
     "@aws-amplify/backend": "^1.20.0",

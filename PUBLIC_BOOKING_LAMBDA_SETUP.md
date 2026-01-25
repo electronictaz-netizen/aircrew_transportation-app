@@ -36,30 +36,15 @@ git commit -m "Add public booking Lambda function"
 git push
 ```
 
-### Step 2: Create Function URL
+### Step 2: Function URL (automatic)
 
-After deployment, create a Function URL in AWS Lambda Console:
+The Function URL is created automatically by the backend (see `amplify/backend.ts`). It uses:
+- **Auth type:** `NONE` (public access)
+- **CORS:** `*` origins, `GET`/`POST`/`OPTIONS`, `Content-Type` header
 
-1. Go to [AWS Lambda Console](https://console.aws.amazon.com/lambda/)
-2. Find the function: `publicBooking-<environment>`
-3. Go to "Configuration" → "Function URL"
-4. Click "Create function URL"
-5. Configure:
-   - **Auth type:** `NONE` (for public access)
-   - **CORS:** Enable and configure:
-     - **Allow origins:** `https://onyxdispatch.us` (IMPORTANT: Use ONLY one value - either `*` for all origins OR your specific domain, NOT both)
-     - **Allow methods:** `GET, POST, OPTIONS`
-     - **Allow headers:** `Content-Type`
-     - **Expose headers:** (leave empty)
-     - **Max age:** `3600`
-6. Click "Save"
-
-**⚠️ IMPORTANT CORS Configuration:**
-- Use **ONLY ONE** value in "Allow origins" - either `*` OR `https://onyxdispatch.us`, NOT both
-- If you need multiple origins, use `*` (allows all origins)
-- If you want to restrict to your domain only, use `https://onyxdispatch.us`
-- Having multiple values will cause duplicate header errors
-7. Copy the Function URL (e.g., `https://xxxxx.lambda-url.us-east-1.on.aws/`)
+After deployment, get the URL from:
+1. [AWS Lambda Console](https://console.aws.amazon.com/lambda/) → your `publicBooking-*` function
+2. **Configuration** → **Function URL** → copy the URL (e.g. `https://xxxxx.lambda-url.us-east-1.on.aws/`)
 
 ### Step 3: Configure Environment Variable
 
@@ -86,55 +71,43 @@ If permissions are missing, Amplify should grant them automatically. If not, you
 
 ### Step 5: Test the Function
 
-Test the Function URL:
+The API expects **POST** with JSON body. `companyId` in createBooking is the **booking code**, not the company UUID.
 
 ```bash
-# Test getCompany action
-curl "https://YOUR-FUNCTION-URL?action=getCompany&code=YOURCODE"
+# Test getCompany action (POST with JSON)
+curl -X POST "https://YOUR-FUNCTION-URL" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"getCompany","code":"YOURCODE"}'
 
-# Test createBooking action
+# Test createBooking action (companyId = booking code)
 curl -X POST "https://YOUR-FUNCTION-URL" \
   -H "Content-Type: application/json" \
   -d '{
     "action": "createBooking",
-    "companyId": "YOUR-COMPANY-ID",
+    "companyId": "YOUR_BOOKING_CODE",
     "customerName": "Test Customer",
-    "customerEmail": "test@onyxdispatch.us",
+    "customerEmail": "test@example.com",
     "customerPhone": "555-1234",
     "tripType": "Airport Trip",
-    "pickupDate": "2024-01-01T10:00:00Z",
+    "pickupDate": "2025-01-30T10:00:00Z",
     "flightNumber": "AA1234",
     "pickupLocation": "123 Main St",
     "dropoffLocation": "456 Oak Ave",
-    "numberOfPassengers": 2
+    "numberOfPassengers": 2,
+    "isRoundTrip": false
   }'
 ```
 
 ## Important Notes
 
-### Amplify Configuration in Lambda
+### How the Lambda Calls AppSync
 
-The Lambda function uses `generateClient<Schema>({ authMode: 'iam' })` to access the Data API. This requires:
+The Lambda calls the AppSync GraphQL API over HTTP with **IAM signing** (aws4). The backend sets:
 
-1. **Amplify Backend Outputs:** The Lambda needs access to Amplify backend configuration
-2. **IAM Permissions:** The Lambda execution role must have permissions to call AppSync/Data API
-3. **Environment Variables:** May need to pass Amplify outputs as environment variables
+- `AMPLIFY_DATA_GRAPHQL_ENDPOINT` – AppSync GraphQL URL
+- `AMPLIFY_DATA_REGION` – AWS region
 
-### Current Limitation
-
-The Lambda handler currently initializes the Amplify client, but it may need Amplify configuration (backend outputs) to work properly. You may need to:
-
-1. Pass Amplify outputs as environment variables to the Lambda
-2. Or use AWS SDK directly to access DynamoDB/AppSync
-3. Or configure the Lambda with proper Amplify backend references
-
-### Alternative Approach (If Needed)
-
-If the Amplify Data client doesn't work in Lambda, you can:
-
-1. Use AWS SDK to directly access DynamoDB tables
-2. Use AppSync GraphQL API directly with IAM auth
-3. Create a separate API Gateway endpoint
+Amplify grants the function IAM access to the Data API; no extra config is needed.
 
 ## Troubleshooting
 

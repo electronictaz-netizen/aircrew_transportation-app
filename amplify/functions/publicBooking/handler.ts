@@ -4,10 +4,11 @@
  */
 
 import type { Handler } from 'aws-lambda';
+import aws4 from 'aws4';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
 // These permissions are automatically granted when the function is defined in backend.ts
-// The GraphQL endpoint should be available via environment variables set by Amplify
+// The GraphQL endpoint and region are set by backend.ts (AMPLIFY_DATA_GRAPHQL_ENDPOINT, AMPLIFY_DATA_REGION)
 
 interface GetCompanyRequest {
   action: 'getCompany';
@@ -47,28 +48,66 @@ const responseHeaders = {
   'Content-Type': 'application/json',
 };
 
+const getEndpoint = (): string => {
+  const e = process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT;
+  if (!e) throw new Error('AMPLIFY_DATA_GRAPHQL_ENDPOINT is not set');
+  return e;
+};
+
+const getRegion = (): string => process.env.AMPLIFY_DATA_REGION || 'us-east-1';
+
 /**
- * Get company by booking code
- * TEMPORARY: Simplified to avoid esbuild bundling issues
- * TODO: Fix bundling and restore full functionality
+ * Execute a GraphQL request against AppSync with IAM signing
  */
-async function getCompanyByCode(code: string): Promise<any | null> {
-  // Temporarily disabled due to esbuild bundling issues
-  // Will be fixed in a separate update
-  console.log('getCompanyByCode called with code:', code);
-  throw new Error('Booking portal temporarily disabled - bundling issue being resolved');
+async function executeGraphQL(query: string, variables: Record<string, unknown> = {}): Promise<any> {
+  const endpoint = getEndpoint();
+  const url = new URL(endpoint);
+  const bodyStr = JSON.stringify({ query, variables });
+
+  const opts: { host: string; path: string; method: string; body: string; headers: Record<string, string>; service: string; region: string } = {
+    host: url.hostname,
+    path: url.pathname || '/graphql',
+    method: 'POST',
+    body: bodyStr,
+    headers: { 'Content-Type': 'application/json' },
+    service: 'appsync',
+    region: getRegion(),
+  };
+  aws4.sign(opts);
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: opts.headers as Record<string, string>,
+    body: bodyStr,
+  });
+
+  const json = await res.json();
+  if (json.errors?.length) {
+    throw new Error(`GraphQL errors: ${JSON.stringify(json.errors)}`);
+  }
+  return json.data;
 }
 
 /**
- * Helper function to execute a GraphQL query/mutation
- * TEMPORARY: Simplified to avoid esbuild bundling issues
- * TODO: Fix bundling and restore full functionality
+ * Get company by booking code (bookingEnabled must be true)
  */
-async function executeGraphQL(query: string, variables: any): Promise<any> {
-  // Temporarily disabled due to esbuild bundling issues
-  // Will be fixed in a separate update
-  console.log('executeGraphQL called');
-  throw new Error('Booking portal temporarily disabled - bundling issue being resolved');
+async function getCompanyByCode(code: string): Promise<{ id: string; name: string; displayName?: string | null; logoUrl?: string | null; bookingCode?: string | null; bookingEnabled?: boolean | null } | null> {
+  const query = `
+    query ListCompanies($filter: ModelCompanyFilterInput) {
+      listCompanies(filter: $filter) {
+        items { id name displayName logoUrl bookingCode bookingEnabled }
+        nextToken
+      }
+    }
+  `;
+  const data = await executeGraphQL(query, {
+    filter: {
+      bookingCode: { eq: code },
+      bookingEnabled: { eq: true },
+    },
+  });
+  const items = data?.listCompanies?.items;
+  return items?.length ? items[0] : null;
 }
 
 /**
@@ -150,10 +189,10 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
       }
     }
 
-    // Create trip
-    const flightNumberOrJob = request.tripType === 'Airport Trip' 
-      ? request.flightNumber || ''
-      : request.jobNumber || '';
+    // Create trip (Trip.flightNumber is required; we use jobNumber for Standard Trip)
+    const flightNumberOrJob = (request.tripType === 'Airport Trip'
+      ? request.flightNumber
+      : request.jobNumber) || 'N/A';
 
     const createTripMutation = `
       mutation CreateTrip($input: CreateTripInput!) {
