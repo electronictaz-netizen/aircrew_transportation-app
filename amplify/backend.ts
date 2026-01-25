@@ -1,6 +1,5 @@
 import { defineBackend } from '@aws-amplify/backend';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { stripeWebhook } from './functions/stripeWebhook/resource';
@@ -42,15 +41,17 @@ backend.publicBooking.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEnd
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
 
 // Function URL for public booking (no auth; CORS for browser)
-// Note: AllowMethods only allows GET|PUT|HEAD|POST|PATCH|DELETE|* — OPTIONS is not valid; Lambda handles CORS preflight when cors is set.
-backend.publicBooking.resources.lambda.addFunctionUrl({
-  authType: lambda.FunctionUrlAuthType.NONE,
-  cors: {
-    allowedOrigins: ['*'],
-    allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST],
-    allowedHeaders: ['Content-Type'],
-  },
-});
+// DISABLED: A Function URL already exists on this Lambda (409 on create). The existing URL keeps working.
+// To have CDK manage it: 1) Lambda Console → publicBooking → Configuration → Function URL → Delete;
+// 2) add: import * as lambda from 'aws-cdk-lib/aws-lambda'; 3) uncomment the block below; 4) deploy.
+// backend.publicBooking.resources.lambda.addFunctionUrl({
+//   authType: lambda.FunctionUrlAuthType.NONE,
+//   cors: {
+//     allowedOrigins: ['*'],
+//     allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST],
+//     allowedHeaders: ['Content-Type'],
+//   },
+// });
 
 // IAM: allow sendSms to use AWS End User Messaging (SendTextMessage)
 backend.sendSms.resources.lambda.addToRolePolicy(
