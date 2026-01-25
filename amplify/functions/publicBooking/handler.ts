@@ -1,9 +1,11 @@
 /**
  * Public Booking Portal Lambda Function
  * Provides public access to booking portal functionality without authentication.
- * Uses inline AWS SigV4 (crypto + fetch) to avoid bundling issues with aws4.
+ * Uses @aws-sdk/credential-providers (fromNodeProviderChain) for Lambda execution role
+ * credentials and inline SigV4 (crypto + fetch) for AppSync.
  */
 
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { createHmac, createHash } from 'crypto';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -59,18 +61,13 @@ const getRegion = (): string => process.env.AMPLIFY_DATA_REGION || 'us-east-1';
 type Creds = { accessKeyId: string; secretAccessKey: string; sessionToken?: string };
 
 /**
- * Get credentials from Lambda's container credential endpoint.
- * Lambda sets AWS_CONTAINER_CREDENTIALS_RELATIVE_URI; the base is 169.254.170.2.
- * (Do not use EC2 IMDS 169.254.169.254 — it is not available in Lambda.)
+ * Get credentials from the default provider chain (Lambda execution role, env, etc.).
+ * AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is ECS-only; Lambda uses a different mechanism
+ * that fromNodeProviderChain() resolves.
  */
 async function getCreds(): Promise<Creds> {
-  const rel = process.env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI;
-  if (!rel) throw new Error('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is not set (not running in Lambda?)');
-  const url = `http://169.254.170.2${rel}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Lambda credentials endpoint failed: ${r.status}`);
-  const j = (await r.json()) as { AccessKeyId: string; SecretAccessKey: string; Token?: string };
-  return { accessKeyId: j.AccessKeyId, secretAccessKey: j.SecretAccessKey, sessionToken: j.Token };
+  const c = await fromNodeProviderChain()();
+  return { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey, sessionToken: c.sessionToken };
 }
 
 function hmac(key: Buffer | string, data: string): Buffer {
@@ -119,7 +116,7 @@ function toFetchHeaders(h: Record<string, string>): Record<string, string> {
 
 /**
  * Execute a GraphQL request against AppSync with IAM (SigV4) signing.
- * Uses IMDS for credentials and node:crypto for signing (no external deps).
+ * Uses fromNodeProviderChain for credentials and node:crypto for signing.
  */
 async function executeGraphQL(query: string, variables: Record<string, unknown> = {}): Promise<any> {
   const endpoint = getEndpoint();

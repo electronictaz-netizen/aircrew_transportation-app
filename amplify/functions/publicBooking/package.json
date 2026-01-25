@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
-    "@aws-amplify/backend": "*"
+    "@aws-amplify/backend": "*",
+    "@aws-sdk/credential-providers": "^3.700.0"
   }
 }
