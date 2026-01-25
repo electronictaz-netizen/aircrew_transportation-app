@@ -102,16 +102,30 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     }
   };
 
-  const handleEdit = (location: Schema['Location']['type']) => {
-    setEditingLocation(location);
-    setFormData({
-      name: location.name,
-      address: location.address || '',
-      description: location.description || '',
-      category: location.category || '',
-      isActive: location.isActive ?? true,
-    });
-    setShowForm(true);
+  const handleEdit = (location: Schema['Location']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Reset form first to clear any previous state
+    setEditingLocation(null);
+    setShowForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingLocation(location);
+      setFormData({
+        name: location.name,
+        address: location.address || '',
+        description: location.description || '',
+        category: location.category || '',
+        isActive: location.isActive ?? true,
+      });
+      setShowForm(true);
+      setErrors({}); // Clear any previous errors
+    }, 0);
   };
 
   const handleDelete = async (locationId: string) => {
@@ -454,8 +468,9 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
                       <div className="action-buttons">
                         <button
                           className="btn-icon btn-edit"
-                          onClick={() => handleEdit(location)}
+                          onClick={(e) => handleEdit(location, e)}
                           title="Edit"
+                          type="button"
                         >
                           ✏️
                         </button>
