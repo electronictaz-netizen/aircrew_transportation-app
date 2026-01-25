@@ -319,8 +319,14 @@ function AdminDashboard() {
                 }
               `
             });
-            allLocations = graphqlResult.data?.listLocations?.items as Schema['Location']['type'][] | undefined;
-            console.log('✅ GraphQL query succeeded, found locations:', allLocations?.length || 0);
+            // Handle both GraphQLResult and GraphqlSubscriptionResult types
+            if ('data' in graphqlResult) {
+              allLocations = (graphqlResult.data as any)?.listLocations?.items as Schema['Location']['type'][] | undefined;
+              console.log('✅ GraphQL query succeeded, found locations:', allLocations?.length || 0);
+            } else {
+              console.error('❌ GraphQL query returned unexpected result type');
+              throw queryError; // Throw original error
+            }
           } catch (graphqlError: any) {
             console.error('❌ GraphQL query also failed:', graphqlError);
             throw queryError; // Throw original error
