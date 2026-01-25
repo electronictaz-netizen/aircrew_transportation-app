@@ -48,54 +48,52 @@ export function updateManifest(logoUrl: string | null | undefined, companyName?:
     document.head.appendChild(manifestLink);
   }
 
-  // Fetch current manifest or create new one
+  const applyManifest = (manifest: Record<string, unknown>) => {
+    if (companyName) {
+      manifest.name = `${companyName} - Transportation Management`;
+      manifest.short_name = (companyName.length > 12 ? companyName.substring(0, 12) : companyName) as string;
+    }
+    if (logoUrl) {
+      manifest.icons = [
+        { src: logoUrl, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: logoUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ];
+      const shortcuts = manifest.shortcuts as Array<{ icons?: Array<{ src: string }> }> | undefined;
+      if (shortcuts?.length) {
+        shortcuts.forEach((s) => { if (s.icons?.[0]) s.icons[0].src = logoUrl; });
+      }
+    }
+    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+    manifestLink.href = URL.createObjectURL(blob);
+  };
+
+  const defaultManifest: Record<string, unknown> = {
+    name: 'Onyx Transportation App',
+    short_name: 'Onyx',
+    description: 'Manage transportation trips and assignments',
+    theme_color: '#3b82f6',
+    background_color: '#ffffff',
+    display: 'standalone',
+    icons: [
+      { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ],
+    shortcuts: [
+      { name: 'Management Dashboard', url: '/management', icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Driver Dashboard', url: '/driver', icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }] }
+    ]
+  };
+
   fetch('/manifest.json')
-    .then(response => response.json())
-    .then(manifest => {
-      // Update manifest with company info
-      if (companyName) {
-        manifest.name = `${companyName} - Transportation Management`;
-        manifest.short_name = companyName.length > 12 ? companyName.substring(0, 12) : companyName;
-      }
-
-      // Update icons if logo is provided
-      if (logoUrl) {
-        manifest.icons = [
-          {
-            src: logoUrl,
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable'
-          },
-          {
-            src: logoUrl,
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ];
-
-        // Update shortcuts icons
-        if (manifest.shortcuts) {
-          manifest.shortcuts.forEach((shortcut: any) => {
-            if (shortcut.icons) {
-              shortcut.icons[0].src = logoUrl;
-            }
-          });
-        }
-      }
-
-      // Create blob URL for updated manifest
-      const manifestBlob = new Blob([JSON.stringify(manifest, null, 2)], {
-        type: 'application/json'
-      });
-      const manifestUrl = URL.createObjectURL(manifestBlob);
-      manifestLink.href = manifestUrl;
+    .then((response) => {
+      if (!response.ok) throw new Error(`manifest ${response.status}`);
+      const ct = response.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) throw new Error('manifest not JSON');
+      return response.json();
     })
-    .catch(error => {
-      console.error('Error updating manifest:', error);
-      // Fall back to default manifest
-      manifestLink.href = '/manifest.json';
+    .then((manifest: Record<string, unknown>) => applyManifest(manifest))
+    .catch(() => {
+      applyManifest(defaultManifest);
     });
 }
 

@@ -315,6 +315,7 @@ export const handler = async (event: { body?: string | object; queryStringParame
     }
 
     const { action } = body;
+    console.log('Action:', action ?? '(missing)');
 
     // Handle getCompany action
     if (action === 'getCompany') {
@@ -361,15 +362,13 @@ export const handler = async (event: { body?: string | object; queryStringParame
     // Handle createBooking action
     if (action === 'createBooking') {
       const bookingRequest = body as CreateBookingRequest;
-      
-      // Validate required fields
-      // Note: companyId in the request is actually the booking code
       const bookingCode = bookingRequest.companyId;
-      
-      if (!bookingCode || !bookingRequest.customerName || 
+
+      if (!bookingCode || !bookingRequest.customerName ||
           !bookingRequest.customerEmail || !bookingRequest.customerPhone ||
-          !bookingRequest.pickupDate || !bookingRequest.pickupLocation || 
+          !bookingRequest.pickupDate || !bookingRequest.pickupLocation ||
           !bookingRequest.dropoffLocation) {
+        console.log('createBooking: validation failed, missing required fields');
         return {
           statusCode: 400,
           headers: responseHeaders,
@@ -377,19 +376,19 @@ export const handler = async (event: { body?: string | object; queryStringParame
         };
       }
 
-      // Verify company exists and booking is enabled by booking code
+      console.log('createBooking: start', { bookingCode });
       const company = await getCompanyByCode(bookingCode);
       if (!company) {
+        console.log('createBooking: company not found for code', bookingCode);
         return {
           statusCode: 404,
           headers: responseHeaders,
           body: JSON.stringify({ error: 'Company not found or booking not enabled' }),
         };
       }
-      
-      // Use the actual company ID from the fetched company
-      bookingRequest.companyId = company.id;
+      console.log('createBooking: company resolved', { companyId: company.id, bookingCode: company.bookingCode });
 
+      bookingRequest.companyId = company.id;
       const result = await createBooking(bookingRequest);
 
       // Log for debugging: portal trips must have companyId matching Management's company
@@ -411,6 +410,7 @@ export const handler = async (event: { body?: string | object; queryStringParame
       };
     }
 
+    console.log('Invalid action:', action);
     return {
       statusCode: 400,
       headers: responseHeaders,
