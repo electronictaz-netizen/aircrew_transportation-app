@@ -216,6 +216,7 @@ function LocationManagement({ locations, onClose, onUpdate }: LocationManagement
     });
     setEditingLocation(null);
     setShowForm(false);
+    setErrors({}); // Clear errors when resetting
   };
 
   const handleAddAirports = async () => {
