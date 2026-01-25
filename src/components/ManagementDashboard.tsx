@@ -2178,8 +2178,7 @@ function ManagementDashboard() {
           <CompanyManagement
             onClose={() => setShowCompanyManagement(false)}
             onUpdate={() => {
-              // Refresh company context
-              window.location.reload();
+              refreshCompany();
             }}
           />
         )}
