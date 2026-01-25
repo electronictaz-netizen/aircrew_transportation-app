@@ -691,7 +691,7 @@ function AdminDashboard() {
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
               className="btn btn-secondary" 
-              onClick={handleRestoreGLS}
+              onClick={() => handleRestoreGLS(false)}
               title="Find or create GLS Transportation company and link your account"
             >
               Restore GLS Access
