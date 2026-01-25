@@ -3,7 +3,7 @@
  * Notifies users when a new version of the app is available
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { showInfo } from '../utils/toast';
 import './PWAUpdatePrompt.css';
@@ -19,6 +19,7 @@ function PWAUpdatePrompt() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateHandler, setUpdateHandler] = useState<(() => Promise<void>) | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const expectingReloadRef = useRef(false);
 
   useEffect(() => {
     // Listen for service worker update events from vite-plugin-pwa
@@ -34,12 +35,19 @@ function PWAUpdatePrompt() {
     // Listen for the update event (vite-plugin-pwa uses custom event)
     window.addEventListener('vite:pwa-update', handleUpdateAvailable as EventListener);
 
-    // Also check for service worker updates manually
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // Only reload on controllerchange when we explicitly requested an update (user clicked Update).
+    // Unconditional reload on every controllerchange caused a reload loop: reload -> load -> 
+    // controllerchange (or checkForUpdates/ SW edge case) -> reload -> ...
+    const onControllerChange = () => {
+      if (expectingReloadRef.current) {
+        expectingReloadRef.current = false;
         console.log('[PWA] Service worker controller changed - reloading page');
         window.location.reload();
-      });
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
 
       // Check for updates periodically
       const checkForUpdates = async () => {
@@ -61,6 +69,7 @@ function PWAUpdatePrompt() {
 
       return () => {
         window.removeEventListener('vite:pwa-update', handleUpdateAvailable);
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
         clearInterval(updateInterval);
       };
     }
@@ -70,15 +79,20 @@ function PWAUpdatePrompt() {
     if (!updateHandler) return;
 
     setIsUpdating(true);
+    expectingReloadRef.current = true;
     try {
       await updateHandler();
       showInfo('App updated! Reloading...');
-      // The service worker controller change event will trigger a reload
+      // controllerchange will reload when the new SW takes over; fallback if it doesn't fire
       setTimeout(() => {
-        window.location.reload();
+        if (expectingReloadRef.current) {
+          expectingReloadRef.current = false;
+          window.location.reload();
+        }
       }, 1000);
     } catch (error) {
       console.error('[PWA] Error updating app:', error);
+      expectingReloadRef.current = false;
       setIsUpdating(false);
     }
   };
