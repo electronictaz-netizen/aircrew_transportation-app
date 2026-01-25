@@ -251,21 +251,22 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
       const sanitizedName = sanitizeString(formData.name, MAX_LENGTHS.NAME);
       const sanitizedDisplayName = sanitizeString(formData.displayName, MAX_LENGTHS.NAME);
       const logoUrlValidation = validateUrl(formData.logoUrl);
-      // Explicit booking fields: when disabled, clear code; when enabled, send the code (validation ensures non-empty)
-      const bookingCode = formData.bookingEnabled ? formData.bookingCode.trim() : null;
-      const bookingEnabled = formData.bookingEnabled;
-
-      const updateInput = {
+      // When enabling: send bookingCode (validation ensures non-empty).
+      // When disabling: omit bookingCode to avoid "Unauthorized on [bookingCode]" from AppSync;
+      // booking portal stays off via bookingEnabled; existing code in DB is harmless.
+      const updateInput: Record<string, unknown> = {
         id: company.id,
         name: sanitizedName,
         displayName: sanitizedDisplayName || undefined,
         logoUrl: logoUrlValidation.isValid ? logoUrlValidation.sanitized : undefined,
         subdomain: formData.subdomain,
-        bookingCode,
-        bookingEnabled,
+        bookingEnabled: formData.bookingEnabled,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
       };
+      if (formData.bookingEnabled) {
+        updateInput.bookingCode = formData.bookingCode.trim();
+      }
       logger.debug('Company.update input', updateInput);
 
       const { data: updated, errors } = await client.models.Company.update(updateInput);
