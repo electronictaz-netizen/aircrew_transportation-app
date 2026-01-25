@@ -42,11 +42,12 @@ backend.publicBooking.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEnd
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
 
 // Function URL for public booking (no auth; CORS for browser)
+// Note: AllowMethods only allows GET|PUT|HEAD|POST|PATCH|DELETE|* — OPTIONS is not valid; Lambda handles CORS preflight when cors is set.
 backend.publicBooking.resources.lambda.addFunctionUrl({
   authType: lambda.FunctionUrlAuthType.NONE,
   cors: {
     allowedOrigins: ['*'],
-    allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST, lambda.HttpMethod.OPTIONS],
+    allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST],
     allowedHeaders: ['Content-Type'],
   },
 });
