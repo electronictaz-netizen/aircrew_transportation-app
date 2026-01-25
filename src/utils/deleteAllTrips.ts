@@ -10,9 +10,8 @@
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 
-const client = generateClient<Schema>();
-
 export async function deleteAllTrips(skipConfirmation: boolean = false, companyId?: string): Promise<void> {
+  const client = generateClient<Schema>();
   console.log('=== DELETE ALL TRIPS ===\n');
   
   try {

@@ -6,9 +6,8 @@
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 
-const client = generateClient<Schema>();
-
 export async function debugRecurringTrips() {
+  const client = generateClient<Schema>();
   console.log('=== RECURRING TRIPS DEBUG ===\n');
   
   try {

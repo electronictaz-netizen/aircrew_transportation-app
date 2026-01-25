@@ -5,10 +5,6 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import outputs from '../amplify_outputs.json';
-// Import debug utilities (available in console)
-import './utils/flightStatusDebug';
-import './utils/recurringTripsDebug';
-import './utils/deleteAllTrips';
 
 // Explicitly configure Amplify with the correct GraphQL endpoint
 // There are two AppSync APIs:
@@ -37,6 +33,11 @@ const config = {
 };
 
 Amplify.configure(config);
+
+// Load debug utilities after Amplify is configured (they use generateClient/Data)
+import('./utils/flightStatusDebug');
+import('./utils/recurringTripsDebug');
+import('./utils/deleteAllTrips');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

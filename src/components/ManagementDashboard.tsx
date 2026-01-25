@@ -279,8 +279,18 @@ function ManagementDashboard() {
         console.error('Error loading booking requests:', msgs.length ? msgs.join('; ') : JSON.stringify(errors));
       }
       setBookingRequests(data ?? []);
-    } catch (e) {
-      console.error('Error loading booking requests:', e);
+    } catch (e: unknown) {
+      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message?: unknown }).message) : String(e);
+      const isListNotDeployed = /listBookingRequests|ModelBookingRequestFilterInput/i.test(msg);
+      if (isListNotDeployed) {
+        setBookingRequests([]);
+        if (!(window as { __bookingRequestsWarned?: boolean }).__bookingRequestsWarned) {
+          (window as { __bookingRequestsWarned?: boolean }).__bookingRequestsWarned = true;
+          console.warn('Booking Requests: listBookingRequests is not in the deployed API. Redeploy the backend to add it. Hiding requests for now.');
+        }
+      } else {
+        console.error('Error loading booking requests:', e);
+      }
     } finally {
       setRequestsLoading(false);
     }
