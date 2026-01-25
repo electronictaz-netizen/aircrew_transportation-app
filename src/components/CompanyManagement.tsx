@@ -254,7 +254,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
       // When enabling: send bookingCode (validation ensures non-empty).
       // When disabling: omit bookingCode to avoid "Unauthorized on [bookingCode]" from AppSync;
       // booking portal stays off via bookingEnabled; existing code in DB is harmless.
-      const updateInput: Record<string, unknown> = {
+      const updateInput = {
         id: company.id,
         name: sanitizedName,
         displayName: sanitizedDisplayName || undefined,
@@ -263,10 +263,8 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         bookingEnabled: formData.bookingEnabled,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
+        ...(formData.bookingEnabled ? { bookingCode: formData.bookingCode.trim() } : {}),
       };
-      if (formData.bookingEnabled) {
-        updateInput.bookingCode = formData.bookingCode.trim();
-      }
       logger.debug('Company.update input', updateInput);
 
       const { data: updated, errors } = await client.models.Company.update(updateInput);
