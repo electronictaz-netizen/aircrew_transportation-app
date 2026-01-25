@@ -309,14 +309,16 @@ function AdminDashboard() {
           console.log(`All ${migrationResults.locations.total} locations already have companyId. Companies:`, companyIds);
         }
 
-        // Migrate trips - fetch all and filter for those without companyId
+        // Migrate trips - fetch all and filter for those without companyId (or all if forceMigrateAll)
         const { data: allTrips } = await client.models.Trip.list();
         migrationResults.trips.total = allTrips?.length || 0;
-        const orphanedTrips = (allTrips || []).filter(trip => !trip.companyId);
-        migrationResults.trips.orphaned = orphanedTrips.length;
-        console.log(`Found ${orphanedTrips.length} orphaned trips out of ${migrationResults.trips.total} total`);
-        if (orphanedTrips.length > 0) {
-          for (const trip of orphanedTrips) {
+        const tripsToMigrate = forceMigrateAll 
+          ? (allTrips || [])
+          : (allTrips || []).filter(trip => !trip.companyId);
+        migrationResults.trips.orphaned = tripsToMigrate.length;
+        console.log(`${forceMigrateAll ? 'Force migrating' : 'Found'} ${tripsToMigrate.length} ${forceMigrateAll ? 'total' : 'orphaned'} trips out of ${migrationResults.trips.total} total`);
+        if (tripsToMigrate.length > 0) {
+          for (const trip of tripsToMigrate) {
             try {
               await client.models.Trip.update({
                 id: trip.id,
@@ -331,14 +333,16 @@ function AdminDashboard() {
           }
         }
 
-        // Migrate drivers - fetch all and filter for those without companyId
+        // Migrate drivers - fetch all and filter for those without companyId (or all if forceMigrateAll)
         const { data: allDrivers } = await client.models.Driver.list();
         migrationResults.drivers.total = allDrivers?.length || 0;
-        const orphanedDrivers = (allDrivers || []).filter(driver => !driver.companyId);
-        migrationResults.drivers.orphaned = orphanedDrivers.length;
-        console.log(`Found ${orphanedDrivers.length} orphaned drivers out of ${migrationResults.drivers.total} total`);
-        if (orphanedDrivers.length > 0) {
-          for (const driver of orphanedDrivers) {
+        const driversToMigrate = forceMigrateAll
+          ? (allDrivers || [])
+          : (allDrivers || []).filter(driver => !driver.companyId);
+        migrationResults.drivers.orphaned = driversToMigrate.length;
+        console.log(`${forceMigrateAll ? 'Force migrating' : 'Found'} ${driversToMigrate.length} ${forceMigrateAll ? 'total' : 'orphaned'} drivers out of ${migrationResults.drivers.total} total`);
+        if (driversToMigrate.length > 0) {
+          for (const driver of driversToMigrate) {
             try {
               await client.models.Driver.update({
                 id: driver.id,
@@ -353,14 +357,16 @@ function AdminDashboard() {
           }
         }
 
-        // Migrate vehicles - fetch all and filter for those without companyId
+        // Migrate vehicles - fetch all and filter for those without companyId (or all if forceMigrateAll)
         const { data: allVehicles } = await client.models.Vehicle.list();
         migrationResults.vehicles.total = allVehicles?.length || 0;
-        const orphanedVehicles = (allVehicles || []).filter(vehicle => !vehicle.companyId);
-        migrationResults.vehicles.orphaned = orphanedVehicles.length;
-        console.log(`Found ${orphanedVehicles.length} orphaned vehicles out of ${migrationResults.vehicles.total} total`);
-        if (orphanedVehicles.length > 0) {
-          for (const vehicle of orphanedVehicles) {
+        const vehiclesToMigrate = forceMigrateAll
+          ? (allVehicles || [])
+          : (allVehicles || []).filter(vehicle => !vehicle.companyId);
+        migrationResults.vehicles.orphaned = vehiclesToMigrate.length;
+        console.log(`${forceMigrateAll ? 'Force migrating' : 'Found'} ${vehiclesToMigrate.length} ${forceMigrateAll ? 'total' : 'orphaned'} vehicles out of ${migrationResults.vehicles.total} total`);
+        if (vehiclesToMigrate.length > 0) {
+          for (const vehicle of vehiclesToMigrate) {
             try {
               await client.models.Vehicle.update({
                 id: vehicle.id,
@@ -375,14 +381,16 @@ function AdminDashboard() {
           }
         }
 
-        // Migrate customers - fetch all and filter for those without companyId
+        // Migrate customers - fetch all and filter for those without companyId (or all if forceMigrateAll)
         const { data: allCustomers } = await client.models.Customer.list();
         migrationResults.customers.total = allCustomers?.length || 0;
-        const orphanedCustomers = (allCustomers || []).filter(customer => !customer.companyId);
-        migrationResults.customers.orphaned = orphanedCustomers.length;
-        console.log(`Found ${orphanedCustomers.length} orphaned customers out of ${migrationResults.customers.total} total`);
-        if (orphanedCustomers.length > 0) {
-          for (const customer of orphanedCustomers) {
+        const customersToMigrate = forceMigrateAll
+          ? (allCustomers || [])
+          : (allCustomers || []).filter(customer => !customer.companyId);
+        migrationResults.customers.orphaned = customersToMigrate.length;
+        console.log(`${forceMigrateAll ? 'Force migrating' : 'Found'} ${customersToMigrate.length} ${forceMigrateAll ? 'total' : 'orphaned'} customers out of ${migrationResults.customers.total} total`);
+        if (customersToMigrate.length > 0) {
+          for (const customer of customersToMigrate) {
             try {
               await client.models.Customer.update({
                 id: customer.id,
