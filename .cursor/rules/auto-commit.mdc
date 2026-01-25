@@ -1,0 +1,30 @@
+---
+description: Commit changes automatically when work is complete
+alwaysApply: true
+---
+
+# Auto-commit after work
+
+When you finish a task, feature, or fix, **commit the changes** before ending your response.
+
+## When to commit
+
+- After completing a user-requested change (new feature, bugfix, refactor)
+- After finishing a multi-step task
+- When the user has accepted your changes and there are staged or unstaged edits
+
+## When to skip
+
+- Only trivial/exploratory edits with no user ask
+- User explicitly says not to commit
+
+## How to commit
+
+1. `git add` the files you changed (or `git add -A` for the current scope)
+2. `git commit -m "Clear, imperative message"` describing what was done
+3. Optionally `git push` if the user typically pushes (e.g. they work on a single branch)
+
+Keep messages short and imperative, e.g.:
+- "Add rate limiting to publicBooking Lambda"
+- "Fix isActive handling in getCompanyByCode"
+- "Update PUBLIC_BOOKING_LAMBDA_SETUP troubleshooting"
