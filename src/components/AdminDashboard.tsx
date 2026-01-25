@@ -269,11 +269,22 @@ function AdminDashboard() {
       // Migrate orphaned data (locations, trips, drivers without companyId)
       console.log('Migrating orphaned data to GLS company...');
       let migratedCount = 0;
+      const migrationResults = {
+        locations: { total: 0, orphaned: 0, migrated: 0, errors: 0 },
+        trips: { total: 0, orphaned: 0, migrated: 0, errors: 0 },
+        drivers: { total: 0, orphaned: 0, migrated: 0, errors: 0 },
+        vehicles: { total: 0, orphaned: 0, migrated: 0, errors: 0 },
+        customers: { total: 0, orphaned: 0, migrated: 0, errors: 0 },
+      };
       
       try {
         // Migrate locations - fetch all and filter for those without companyId
         const { data: allLocations } = await client.models.Location.list();
+        migrationResults.locations.total = allLocations?.length || 0;
         const orphanedLocations = (allLocations || []).filter(loc => !loc.companyId);
+        migrationResults.locations.orphaned = orphanedLocations.length;
+        console.log(`Found ${orphanedLocations.length} orphaned locations out of ${migrationResults.locations.total} total`);
+        
         if (orphanedLocations.length > 0) {
           for (const location of orphanedLocations) {
             try {
@@ -282,10 +293,16 @@ function AdminDashboard() {
                 companyId: glsCompany.id,
               });
               migratedCount++;
+              migrationResults.locations.migrated++;
             } catch (error) {
               console.error('Error migrating location:', error);
+              migrationResults.locations.errors++;
             }
           }
+        } else if (migrationResults.locations.total > 0) {
+          // Locations exist but all have companyId - show which companies they belong to
+          const companyIds = [...new Set((allLocations || []).map(loc => loc.companyId).filter(Boolean))];
+          console.log(`All ${migrationResults.locations.total} locations already have companyId. Companies:`, companyIds);
         }
 
         // Migrate trips - fetch all and filter for those without companyId
@@ -356,11 +373,39 @@ function AdminDashboard() {
           }
         }
 
-        if (migratedCount > 0) {
-          console.log(`✅ Migrated ${migratedCount} items to GLS company`);
+        // Log migration results
+        const totalMigrated = migrationResults.locations.migrated + 
+                              migrationResults.trips.migrated + 
+                              migrationResults.drivers.migrated + 
+                              migrationResults.vehicles.migrated + 
+                              migrationResults.customers.migrated;
+        
+        if (totalMigrated > 0) {
+          console.log(`✅ Migration complete:`, migrationResults);
+          alert(`GLS access restored!\n\nMigrated:\n` +
+                `- ${migrationResults.locations.migrated} locations\n` +
+                `- ${migrationResults.trips.migrated} trips\n` +
+                `- ${migrationResults.drivers.migrated} drivers\n` +
+                `- ${migrationResults.vehicles.migrated} vehicles\n` +
+                `- ${migrationResults.customers.migrated} customers`);
+        } else {
+          const totalOrphaned = migrationResults.locations.orphaned + 
+                                migrationResults.trips.orphaned + 
+                                migrationResults.drivers.orphaned + 
+                                migrationResults.vehicles.orphaned + 
+                                migrationResults.customers.orphaned;
+          
+          if (totalOrphaned === 0) {
+            console.log('No orphaned data found - all items already have companyId');
+            alert('GLS access restored!\n\nNo orphaned data found - all items are already associated with companies.');
+          } else {
+            console.warn('Migration attempted but no items were migrated:', migrationResults);
+            alert(`GLS access restored!\n\nWarning: Found ${totalOrphaned} orphaned items but migration had errors. Check browser console for details.`);
+          }
         }
       } catch (migrationError) {
         console.error('Error during data migration:', migrationError);
+        alert('GLS access restored, but data migration encountered errors. Check browser console for details.');
         // Don't fail the whole operation if migration has issues
       }
 
