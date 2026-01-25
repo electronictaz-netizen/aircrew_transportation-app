@@ -114,6 +114,7 @@ const schema = a.schema({
       driverPayAmount: a.float(), // Amount paid to driver for this trip (calculated or fixed)
       notes: a.string(), // Additional notes for billing/payroll verification
       customFieldValues: a.hasMany('CustomFieldValue', 'tripId'),
+      bookingRequests: a.hasMany('BookingRequest', 'tripId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -163,6 +164,7 @@ const schema = a.schema({
       notes: a.string(), // Additional notes about the customer
       isActive: a.boolean().default(true),
       trips: a.hasMany('Trip', 'customerId'),
+      bookingRequests: a.hasMany('BookingRequest', 'customerId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
