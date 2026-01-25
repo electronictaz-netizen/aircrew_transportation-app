@@ -144,21 +144,35 @@ function ReportConfigurationManagement({ onClose }: ReportConfigurationManagemen
     }
   };
 
-  const handleEdit = (config: Schema['ReportConfiguration']['type']) => {
-    setEditingConfig(config);
-    setReportType(config.reportType || 'Driver');
-    setFormData({
-      name: config.name,
-      reportType: config.reportType || 'Driver',
-      fields: config.fields ? JSON.parse(config.fields) : [],
-      grouping: config.grouping ? JSON.parse(config.grouping) : [],
-      filters: config.filters ? JSON.parse(config.filters) : [],
-      sortBy: config.sortBy || '',
-      sortOrder: (config.sortOrder as 'asc' | 'desc') || 'asc',
-      displayOrder: config.displayOrder || 0,
-      isActive: config.isActive !== false,
-    });
-    setShowForm(true);
+  const handleEdit = (config: Schema['ReportConfiguration']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Reset form first to clear any previous state
+    setEditingConfig(null);
+    setShowForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingConfig(config);
+      setReportType(config.reportType || 'Driver');
+      setFormData({
+        name: config.name,
+        reportType: config.reportType || 'Driver',
+        fields: config.fields ? JSON.parse(config.fields) : [],
+        grouping: config.grouping ? JSON.parse(config.grouping) : [],
+        filters: config.filters ? JSON.parse(config.filters) : [],
+        sortBy: config.sortBy || '',
+        sortOrder: (config.sortOrder as 'asc' | 'desc') || 'asc',
+        displayOrder: config.displayOrder || 0,
+        isActive: config.isActive !== false,
+      });
+      setShowForm(true);
+      setErrors({}); // Clear any previous errors
+    }, 0);
   };
 
   const handleDelete = async (configId: string) => {
@@ -468,7 +482,8 @@ function ReportConfigurationManagement({ onClose }: ReportConfigurationManagemen
                         <div className="action-buttons">
                           <button
                             className="btn-icon btn-edit"
-                            onClick={() => handleEdit(config)}
+                            onClick={(e) => handleEdit(config, e)}
+                            type="button"
                             title="Edit"
                           >
                             ✏️

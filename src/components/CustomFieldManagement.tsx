@@ -145,20 +145,34 @@ function CustomFieldManagement({ onClose }: CustomFieldManagementProps) {
     }
   };
 
-  const handleEdit = (field: Schema['CustomField']['type']) => {
-    setEditingField(field);
-    setEntityType(field.entityType || 'Trip');
-    setFormData({
-      name: field.name,
-      label: field.label,
-      fieldType: field.fieldType || 'text',
-      options: field.options ? JSON.parse(field.options).join(', ') : '',
-      isRequired: field.isRequired || false,
-      displayOrder: field.displayOrder || 0,
-      isActive: field.isActive !== false,
-      defaultValue: field.defaultValue || '',
-    });
-    setShowForm(true);
+  const handleEdit = (field: Schema['CustomField']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Reset form first to clear any previous state
+    setEditingField(null);
+    setShowForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingField(field);
+      setEntityType(field.entityType || 'Trip');
+      setFormData({
+        name: field.name,
+        label: field.label,
+        fieldType: field.fieldType || 'text',
+        options: field.options ? JSON.parse(field.options).join(', ') : '',
+        isRequired: field.isRequired || false,
+        displayOrder: field.displayOrder || 0,
+        isActive: field.isActive !== false,
+        defaultValue: field.defaultValue || '',
+      });
+      setShowForm(true);
+      setErrors({}); // Clear any previous errors
+    }, 0);
   };
 
   const handleDelete = async (fieldId: string) => {
@@ -408,7 +422,8 @@ function CustomFieldManagement({ onClose }: CustomFieldManagementProps) {
                       <div className="action-buttons">
                         <button
                           className="btn-icon btn-edit"
-                          onClick={() => handleEdit(field)}
+                          onClick={(e) => handleEdit(field, e)}
+                          type="button"
                           title="Edit"
                         >
                           ✏️

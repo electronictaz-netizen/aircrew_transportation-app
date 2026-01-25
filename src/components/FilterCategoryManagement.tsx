@@ -136,27 +136,41 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
     }
   };
 
-  const handleEdit = (category: Schema['FilterCategory']['type']) => {
-    setEditingCategory(category);
-    try {
-      const valuesArray = category.values ? JSON.parse(category.values) : [];
-      setFormData({
-        name: category.name,
-        field: category.field || 'locationCategory',
-        values: Array.isArray(valuesArray) ? valuesArray.join(', ') : category.values || '',
-        displayOrder: category.displayOrder || 0,
-        isActive: category.isActive ?? true,
-      });
-    } catch {
-      setFormData({
-        name: category.name,
-        field: category.field || 'locationCategory',
-        values: category.values || '',
-        displayOrder: category.displayOrder || 0,
-        isActive: category.isActive ?? true,
-      });
+  const handleEdit = (category: Schema['FilterCategory']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-    setShowForm(true);
+    
+    // Reset form first to clear any previous state
+    setEditingCategory(null);
+    setShowForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingCategory(category);
+      try {
+        const valuesArray = category.values ? JSON.parse(category.values) : [];
+        setFormData({
+          name: category.name,
+          field: category.field || 'locationCategory',
+          values: Array.isArray(valuesArray) ? valuesArray.join(', ') : category.values || '',
+          displayOrder: category.displayOrder || 0,
+          isActive: category.isActive ?? true,
+        });
+      } catch {
+        setFormData({
+          name: category.name,
+          field: category.field || 'locationCategory',
+          values: category.values || '',
+          displayOrder: category.displayOrder || 0,
+          isActive: category.isActive ?? true,
+        });
+      }
+      setShowForm(true);
+      setErrors({}); // Clear any previous errors
+    }, 0);
   };
 
   const handleDelete = async (categoryId: string) => {
@@ -188,6 +202,7 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
     });
     setEditingCategory(null);
     setShowForm(false);
+    setErrors({}); // Clear errors when resetting
   };
 
   return (
@@ -443,7 +458,8 @@ function FilterCategoryManagement({ onClose, onUpdate, locations = [], trips = [
                         <div className="action-buttons">
                           <button
                             className="btn-icon btn-edit"
-                            onClick={() => handleEdit(category)}
+                            onClick={(e) => handleEdit(category, e)}
+                            type="button"
                             title="Edit"
                           >
                             ✏️
