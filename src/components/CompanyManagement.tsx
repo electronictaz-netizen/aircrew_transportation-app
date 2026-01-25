@@ -4,6 +4,7 @@ import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
+import { showSuccess as toastSuccess, showError as toastError } from '../utils/toast';
 import { validateUrl, sanitizeString, MAX_LENGTHS } from '../utils/validation';
 import { logger } from '../utils/logger';
 import { sendInvitationEmailViaLambda } from '../utils/sendInvitationEmail';
@@ -265,17 +266,17 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
 
       await refreshCompany();
       onUpdate();
-      showSuccess('Company information updated successfully!');
+      toastSuccess('Company information updated successfully!');
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error: any) {
       logger.error('Error updating company:', error);
       if (error.errors?.[0]?.message?.includes('unique')) {
-        showError('This subdomain is already taken. Please choose another.');
+        toastError('This subdomain is already taken. Please choose another.');
         setErrors({ subdomain: 'This subdomain is already taken' });
       } else {
-        showError('Failed to update company information. Please try again.');
+        toastError('Failed to update company information. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -429,7 +430,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
                 onChange={(e) => handleSubdomainChange(e.target.value)}
                 required
                 placeholder="company"
-                pattern="[-a-z0-9]+"
+                pattern="[a-z0-9\-]+"
               />
               <span className="subdomain-suffix">.onyxdispatch.us</span>
             </div>

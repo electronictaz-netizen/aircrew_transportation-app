@@ -844,7 +844,7 @@ function AdminDashboard() {
                   onChange={(e) => setFormData({ ...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                   required
                   placeholder="e.g., acme"
-                  pattern="[-a-z0-9]+"
+                  pattern="[a-z0-9\-]+"
                 />
                 <small>Lowercase letters, numbers, and hyphens only</small>
               </div>
