@@ -251,18 +251,37 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
       const sanitizedName = sanitizeString(formData.name, MAX_LENGTHS.NAME);
       const sanitizedDisplayName = sanitizeString(formData.displayName, MAX_LENGTHS.NAME);
       const logoUrlValidation = validateUrl(formData.logoUrl);
-      
-      await client.models.Company.update({
+      // Explicit booking fields: when disabled, clear code; when enabled, send the code (validation ensures non-empty)
+      const bookingCode = formData.bookingEnabled ? formData.bookingCode.trim() : null;
+      const bookingEnabled = formData.bookingEnabled;
+
+      const updateInput = {
         id: company.id,
         name: sanitizedName,
         displayName: sanitizedDisplayName || undefined,
         logoUrl: logoUrlValidation.isValid ? logoUrlValidation.sanitized : undefined,
         subdomain: formData.subdomain,
-        bookingCode: formData.bookingCode || undefined,
-        bookingEnabled: formData.bookingEnabled,
+        bookingCode,
+        bookingEnabled,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
-      });
+      };
+      logger.debug('Company.update input', updateInput);
+
+      const { data: updated, errors } = await client.models.Company.update(updateInput);
+
+      if (errors && errors.length > 0) {
+        logger.error('Company.update errors', errors);
+        const msg = errors[0].message || '';
+        if (msg.includes('unique')) {
+          toastError('This subdomain is already taken. Please choose another.');
+          setErrors({ subdomain: 'This subdomain is already taken' });
+        } else {
+          toastError(`Failed to update company: ${msg}`);
+        }
+        return;
+      }
+      logger.debug('Company.update result', { bookingEnabled: updated?.bookingEnabled, bookingCode: updated?.bookingCode });
 
       await refreshCompany();
       onUpdate();
