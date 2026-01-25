@@ -171,8 +171,12 @@ function AdminDashboard() {
     }
   };
 
-  const handleRestoreGLS = async () => {
-    if (!confirm('This will find or create the GLS Transportation company and link your account to it. Continue?')) {
+  const handleRestoreGLS = async (forceMigrateAll: boolean = false) => {
+    const confirmMessage = forceMigrateAll
+      ? 'This will find or create the GLS Transportation company, link your account, and MOVE ALL locations/trips/drivers to GLS (even if they belong to other companies). Continue?'
+      : 'This will find or create the GLS Transportation company and link your account to it. Continue?';
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -706,10 +710,18 @@ function AdminDashboard() {
           )}
           <button 
             className="btn btn-secondary" 
-            onClick={handleRestoreGLS}
+            onClick={() => handleRestoreGLS(false)}
             title="Find or create GLS Transportation company and link your account"
           >
             Restore GLS Access
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => handleRestoreGLS(true)}
+            title="Restore GLS Access and move ALL data (locations, trips, drivers) to GLS company"
+            style={{ fontSize: '0.9rem' }}
+          >
+            Restore GLS + Migrate All Data
           </button>
           <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
             + Create New Company
