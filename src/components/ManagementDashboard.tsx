@@ -1314,9 +1314,22 @@ function ManagementDashboard() {
     }
   };
 
-  const handleEditTrip = (trip: Schema['Trip']['type']) => {
-    setEditingTrip(trip);
-    setShowTripForm(true);
+  const handleEditTrip = (trip: Schema['Trip']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Reset editing state first to ensure clean state
+    setEditingTrip(null);
+    setShowTripForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingTrip(trip);
+      setShowTripForm(true);
+    }, 0);
   };
 
 
