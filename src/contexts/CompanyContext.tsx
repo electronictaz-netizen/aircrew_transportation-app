@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { getCurrentUser } from 'aws-amplify/auth';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
@@ -249,7 +250,6 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       
       // Verify authentication before proceeding
       try {
-        const { getCurrentUser } = await import('aws-amplify/auth');
         const currentUser = await getCurrentUser();
         console.log('✅ User authenticated:', currentUser.userId);
       } catch (authError) {

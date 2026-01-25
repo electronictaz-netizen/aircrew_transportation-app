@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getCurrentUser } from 'aws-amplify/auth';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
@@ -230,7 +231,6 @@ function AdminDashboard() {
       }
 
       // Get current user
-      const { getCurrentUser } = await import('aws-amplify/auth');
       const user = await getCurrentUser();
       const userId = user.userId;
       const userEmail = user.signInDetails?.loginId || user.username || '';
