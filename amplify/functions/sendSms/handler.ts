@@ -9,7 +9,6 @@
  * Env: ORIGINATION_IDENTITY (required), CONFIGURATION_SET_NAME, PROTECT_CONFIGURATION_ID, MESSAGE_TYPE
  */
 
-import type { Handler } from 'aws-lambda';
 import {
   PinpointSMSVoiceV2Client,
   SendTextMessageCommand,
@@ -72,7 +71,7 @@ function parseInput(event: any): { destinationPhoneNumber: string; messageBody: 
   return { destinationPhoneNumber, messageBody: message };
 }
 
-export const handler: Handler = async (event: any) => {
+export const handler = async (event: unknown) => {
   const origination = process.env.ORIGINATION_IDENTITY?.trim();
   if (!origination) {
     const err = { success: false, error: 'ORIGINATION_IDENTITY is not configured. Set it in the Lambda environment.' };
