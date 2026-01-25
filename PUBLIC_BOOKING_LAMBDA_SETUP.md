@@ -204,6 +204,14 @@ If the regex is rejected or doesn’t work, you can try a catch‑all (only if y
 ```
 (`<<*>>` is Amplify’s wildcard for “any path”. Prefer the regex rule so assets like `/assets/…/*.js` are not rewritten.)
 
+### Company shows enabled in UI but Lambda returns "Not found"
+
+If **Configuration → Company Settings** shows "Enable Public Booking Portal" checked, **Booking Code** (e.g. TEST) set and "Active", but the Lambda logs **Company lookup result: Not found** for that code:
+
+1. **Save the form** – Ensure you clicked **Save Changes** after enabling the portal and setting the booking code. The UI can show the values before they are persisted.
+2. **Multi-company / Admin** – The Lambda only sees companies with `bookingEnabled: true`. If you use **Admin** and switch companies, the company you are editing must be the one that should have this booking code. Only one company in the filtered list can match a given code. If two companies both had `bookingEnabled: true` and the same code, behavior would be ambiguous; keep codes unique per company.
+3. **CloudWatch `codes` log** – After the change, the Lambda logs `getCompanyByCode: { normalized, totalBookingEnabled, afterIsActiveFilter, matched, codes }`. The `codes` array lists each company's `id`, `bookingCode`, and `isActive`. If your code (e.g. TEST) does not appear there, no company in the database has `bookingEnabled: true` and that booking code — re-save the form for the correct company. If your code appears but `isActive` is `false`, the company is excluded; the app does not yet expose `isActive` in Company Settings; you would need to set `isActive: true` via the AppSync/Data API or a backend change.
+
 ### CORS Errors
 - Check Function URL CORS configuration
 - Verify `Access-Control-Allow-Origin` header is set correctly

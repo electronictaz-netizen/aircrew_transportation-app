@@ -140,7 +140,8 @@ async function executeGraphQL(query: string, variables: Record<string, unknown> 
 }
 
 /**
- * Get company by booking code (bookingEnabled and isActive must be true).
+ * Get company by booking code. Requires bookingEnabled=true. Treats isActive
+ * as active when true or when missing (for companies created before isActive existed).
  * Matching is case-insensitive: "TEST", "test", and "Test" all match the same stored value.
  */
 async function getCompanyByCode(code: string): Promise<{ id: string; name: string; displayName?: string | null; logoUrl?: string | null; bookingCode?: string | null; bookingEnabled?: boolean | null } | null> {
@@ -149,20 +150,25 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
   const query = `
     query ListCompanies($filter: ModelCompanyFilterInput) {
       listCompanies(filter: $filter) {
-        items { id name displayName logoUrl bookingCode bookingEnabled }
+        items { id name displayName logoUrl bookingCode bookingEnabled isActive }
         nextToken
       }
     }
   `;
   const data = await executeGraphQL(query, {
-    filter: {
-      bookingEnabled: { eq: true },
-      isActive: { eq: true },
-    },
+    filter: { bookingEnabled: { eq: true } },
   });
   const items = data?.listCompanies?.items || [];
-  const match = items.find((c: { bookingCode?: string | null }) => (c.bookingCode || '').toUpperCase().trim() === normalized);
-  console.log('getCompanyByCode:', { normalized, totalWithBookingEnabled: items.length, matched: !!match });
+  // Exclude only when isActive is explicitly false; treat null/undefined as active
+  const active = items.filter((c: { isActive?: boolean | null }) => c.isActive !== false);
+  const match = active.find((c: { bookingCode?: string | null }) => (c.bookingCode || '').toUpperCase().trim() === normalized);
+  console.log('getCompanyByCode:', {
+    normalized,
+    totalBookingEnabled: items.length,
+    afterIsActiveFilter: active.length,
+    matched: !!match,
+    codes: active.map((c: { id?: string; bookingCode?: string | null; isActive?: boolean | null }) => ({ id: c.id, bookingCode: c.bookingCode, isActive: c.isActive })),
+  });
   return match || null;
 }
 
