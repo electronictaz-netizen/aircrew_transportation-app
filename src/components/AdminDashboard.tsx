@@ -307,7 +307,10 @@ function AdminDashboard() {
 
         // Migrate trips - fetch all and filter for those without companyId
         const { data: allTrips } = await client.models.Trip.list();
+        migrationResults.trips.total = allTrips?.length || 0;
         const orphanedTrips = (allTrips || []).filter(trip => !trip.companyId);
+        migrationResults.trips.orphaned = orphanedTrips.length;
+        console.log(`Found ${orphanedTrips.length} orphaned trips out of ${migrationResults.trips.total} total`);
         if (orphanedTrips.length > 0) {
           for (const trip of orphanedTrips) {
             try {
@@ -316,15 +319,20 @@ function AdminDashboard() {
                 companyId: glsCompany.id,
               });
               migratedCount++;
+              migrationResults.trips.migrated++;
             } catch (error) {
               console.error('Error migrating trip:', error);
+              migrationResults.trips.errors++;
             }
           }
         }
 
         // Migrate drivers - fetch all and filter for those without companyId
         const { data: allDrivers } = await client.models.Driver.list();
+        migrationResults.drivers.total = allDrivers?.length || 0;
         const orphanedDrivers = (allDrivers || []).filter(driver => !driver.companyId);
+        migrationResults.drivers.orphaned = orphanedDrivers.length;
+        console.log(`Found ${orphanedDrivers.length} orphaned drivers out of ${migrationResults.drivers.total} total`);
         if (orphanedDrivers.length > 0) {
           for (const driver of orphanedDrivers) {
             try {
@@ -333,15 +341,20 @@ function AdminDashboard() {
                 companyId: glsCompany.id,
               });
               migratedCount++;
+              migrationResults.drivers.migrated++;
             } catch (error) {
               console.error('Error migrating driver:', error);
+              migrationResults.drivers.errors++;
             }
           }
         }
 
         // Migrate vehicles - fetch all and filter for those without companyId
         const { data: allVehicles } = await client.models.Vehicle.list();
+        migrationResults.vehicles.total = allVehicles?.length || 0;
         const orphanedVehicles = (allVehicles || []).filter(vehicle => !vehicle.companyId);
+        migrationResults.vehicles.orphaned = orphanedVehicles.length;
+        console.log(`Found ${orphanedVehicles.length} orphaned vehicles out of ${migrationResults.vehicles.total} total`);
         if (orphanedVehicles.length > 0) {
           for (const vehicle of orphanedVehicles) {
             try {
@@ -350,15 +363,20 @@ function AdminDashboard() {
                 companyId: glsCompany.id,
               });
               migratedCount++;
+              migrationResults.vehicles.migrated++;
             } catch (error) {
               console.error('Error migrating vehicle:', error);
+              migrationResults.vehicles.errors++;
             }
           }
         }
 
         // Migrate customers - fetch all and filter for those without companyId
         const { data: allCustomers } = await client.models.Customer.list();
+        migrationResults.customers.total = allCustomers?.length || 0;
         const orphanedCustomers = (allCustomers || []).filter(customer => !customer.companyId);
+        migrationResults.customers.orphaned = orphanedCustomers.length;
+        console.log(`Found ${orphanedCustomers.length} orphaned customers out of ${migrationResults.customers.total} total`);
         if (orphanedCustomers.length > 0) {
           for (const customer of orphanedCustomers) {
             try {
@@ -367,8 +385,10 @@ function AdminDashboard() {
                 companyId: glsCompany.id,
               });
               migratedCount++;
+              migrationResults.customers.migrated++;
             } catch (error) {
               console.error('Error migrating customer:', error);
+              migrationResults.customers.errors++;
             }
           }
         }
