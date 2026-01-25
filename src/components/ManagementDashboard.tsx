@@ -267,11 +267,13 @@ function ManagementDashboard() {
     if (!companyId) return;
     try {
       setRequestsLoading(true);
-      const { data, errors } = await client.models.BookingRequest.list({
+      // @ts-expect-error TS2590 - Amplify BookingRequest.list return type is too complex
+      const raw = await client.models.BookingRequest.list({
         filter: { companyId: { eq: companyId } },
       });
+      const { data, errors } = raw as { data?: Schema['BookingRequest']['type'][]; errors?: { message?: string }[] };
       if (errors?.length) console.error('Error loading booking requests:', errors);
-      setBookingRequests((data || []) as Array<Schema['BookingRequest']['type']>);
+      setBookingRequests(data ?? []);
     } catch (e) {
       console.error('Error loading booking requests:', e);
     } finally {
