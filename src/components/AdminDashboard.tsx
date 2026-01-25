@@ -272,6 +272,8 @@ function AdminDashboard() {
 
       // Migrate orphaned data (locations, trips, drivers without companyId)
       console.log('Migrating orphaned data to GLS company...');
+      console.log('📋 Current GLS company ID:', glsCompany.id);
+      console.log('📋 Current GLS company name:', glsCompany.name);
       let migratedCount = 0;
       const migrationResults = {
         locations: { total: 0, orphaned: 0, migrated: 0, errors: 0 },
