@@ -284,7 +284,46 @@ function AdminDashboard() {
       try {
         // Migrate locations - fetch all and filter for those without companyId (or all if forceMigrateAll)
         console.log('🔍 Fetching all locations from database...');
-        const { data: allLocations } = await client.models.Location.list();
+        console.log('🔍 Attempting to query locations without filters...');
+        let allLocations: Schema['Location']['type'][] | undefined;
+        try {
+          const result = await client.models.Location.list();
+          allLocations = result.data;
+          console.log('✅ Location query succeeded, data:', allLocations);
+        } catch (queryError: any) {
+          console.error('❌ Error querying locations:', queryError);
+          console.error('❌ Error details:', {
+            message: queryError?.message,
+            errors: queryError?.errors,
+            name: queryError?.name,
+            stack: queryError?.stack
+          });
+          // Try using GraphQL directly to bypass any filters
+          console.log('🔄 Attempting direct GraphQL query...');
+          try {
+            const graphqlResult = await client.graphql({
+              query: `
+                query ListLocations {
+                  listLocations {
+                    items {
+                      id
+                      name
+                      address
+                      category
+                      companyId
+                      isActive
+                    }
+                  }
+                }
+              `
+            });
+            allLocations = graphqlResult.data?.listLocations?.items as Schema['Location']['type'][] | undefined;
+            console.log('✅ GraphQL query succeeded, found locations:', allLocations?.length || 0);
+          } catch (graphqlError: any) {
+            console.error('❌ GraphQL query also failed:', graphqlError);
+            throw queryError; // Throw original error
+          }
+        }
         migrationResults.locations.total = allLocations?.length || 0;
         console.log(`📊 Total locations in database: ${migrationResults.locations.total}`);
         
