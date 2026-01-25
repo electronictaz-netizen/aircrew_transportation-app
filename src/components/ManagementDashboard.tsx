@@ -197,8 +197,9 @@ function ManagementDashboard() {
       if (errors && errors.length > 0) {
         console.error('Errors loading trips:', errors);
       }
-      
-      console.log('Loaded trips:', tripsData?.length || 0);
+
+      // Debug: portal trips use companyId from getCompanyByCode(bookingCode). Must match this companyId.
+      console.log('Loaded trips:', tripsData?.length || 0, 'companyId:', companyId);
       setTrips(tripsData as Array<Schema['Trip']['type']>);
     } catch (error) {
       console.error('Error loading trips:', error);

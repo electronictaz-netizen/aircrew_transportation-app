@@ -528,32 +528,39 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
             </div>
 
             {formData.bookingEnabled && (
-              <div className="form-group">
-                <label htmlFor="bookingCode">Booking Code *</label>
-                <input
-                  type="text"
-                  id="bookingCode"
-                  value={formData.bookingCode}
-                  onChange={(e) => {
-                    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    setFormData({ ...formData, bookingCode: value });
-                    if (errors.bookingCode) setErrors({ ...errors, bookingCode: '' });
-                  }}
-                  required={formData.bookingEnabled}
-                  placeholder="ACME123"
-                  pattern="[A-Z0-9]{3,20}"
-                  maxLength={20}
-                  style={{ textTransform: 'uppercase' }}
-                />
-                <small style={{ display: 'block', marginTop: '0.5rem', color: '#666' }}>
-                  3-20 characters, letters and numbers only. This code will be used in your booking URL.
-                </small>
-                {errors.bookingCode && (
-                  <div style={{ marginTop: '0.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
-                    {errors.bookingCode}
+              <>
+                <div className="form-group">
+                  <label htmlFor="bookingCode">Booking Code *</label>
+                  <input
+                    type="text"
+                    id="bookingCode"
+                    value={formData.bookingCode}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                      setFormData({ ...formData, bookingCode: value });
+                      if (errors.bookingCode) setErrors({ ...errors, bookingCode: '' });
+                    }}
+                    required={formData.bookingEnabled}
+                    placeholder="ACME123"
+                    pattern="[A-Z0-9]{3,20}"
+                    maxLength={20}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  <small style={{ display: 'block', marginTop: '0.5rem', color: '#666' }}>
+                    3-20 characters, letters and numbers only. This code will be used in your booking URL.
+                  </small>
+                  {errors.bookingCode && (
+                    <div style={{ marginTop: '0.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                      {errors.bookingCode}
+                    </div>
+                  )}
+                </div>
+                {formData.bookingCode && (
+                  <div style={{ padding: '0.75rem', marginTop: '0.5rem', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd', fontSize: '0.875rem', color: '#0c4a6e' }}>
+                    <strong>Where do portal bookings appear?</strong> Trips from /booking/<code>{formData.bookingCode}</code> are created for <strong>this company</strong> and show in the Management dashboard. Use the booking URL with this exact code. If you use Admin mode, make sure this company is selected.
                   </div>
                 )}
-              </div>
+              </>
             )}
 
             {!formData.bookingCode && !formData.bookingEnabled && (

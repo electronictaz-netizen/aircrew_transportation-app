@@ -148,6 +148,16 @@ Then push to `main` or redeploy in Amplify.
 - Check that `bookingEnabled: true` for the company
 - Verify the company is active
 
+### Portal booking shows confirmation but does not appear in Management dashboard
+
+Trips from the booking portal are created for the **company that has the booking code** you used in the URL. They only show in Management when you are viewing **that same company**.
+
+**Checklist:**
+1. **Same company** – In **Configuration → Company Settings**, ensure **Enable Public Booking Portal** is on and **Booking Code** is set. The code in your booking URL (e.g. `/booking/GLS`) must match this code. Trips are created for this company only.
+2. **Management company** – The Management dashboard lists trips for the company you’re logged into (from **CompanyUser**). If you use **Admin mode**, the selected company in Admin must be the one with the booking code. If you manage multiple companies, switch to the company that owns the booking code.
+3. **Date / filters** – In the trip list, set **View** to **All Trips** so the date filter doesn’t hide the new booking. Check **Status** (e.g. Unassigned) and other filters.
+4. **Logs** – After a booking, the Lambda logs `Booking created: { companyId, tripId, bookingCode }`. In Management, the browser console logs `Loaded trips: N companyId: <id>`. The `companyId` in both must match. In **AWS Lambda → publicBooking → Monitor → View logs**, search for `Booking created` and note `companyId`. In the Management page (F12 → Console), confirm `companyId` in `Loaded trips` is the same.
+
 ### CORS Errors
 - Check Function URL CORS configuration
 - Verify `Access-Control-Allow-Origin` header is set correctly

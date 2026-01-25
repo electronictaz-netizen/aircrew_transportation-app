@@ -140,9 +140,12 @@ async function executeGraphQL(query: string, variables: Record<string, unknown> 
 }
 
 /**
- * Get company by booking code (bookingEnabled must be true)
+ * Get company by booking code (bookingEnabled must be true).
+ * Code is normalized to uppercase to match Company Settings (stored as uppercase).
  */
 async function getCompanyByCode(code: string): Promise<{ id: string; name: string; displayName?: string | null; logoUrl?: string | null; bookingCode?: string | null; bookingEnabled?: boolean | null } | null> {
+  const normalized = (code || '').toUpperCase().trim();
+  if (!normalized) return null;
   const query = `
     query ListCompanies($filter: ModelCompanyFilterInput) {
       listCompanies(filter: $filter) {
@@ -153,7 +156,7 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
   `;
   const data = await executeGraphQL(query, {
     filter: {
-      bookingCode: { eq: code },
+      bookingCode: { eq: normalized },
       bookingEnabled: { eq: true },
     },
   });
@@ -388,7 +391,14 @@ export const handler = async (event: { body?: string | object; queryStringParame
       bookingRequest.companyId = company.id;
 
       const result = await createBooking(bookingRequest);
-      
+
+      // Log for debugging: portal trips must have companyId matching Management's company
+      console.log('Booking created:', {
+        companyId: company.id,
+        tripId: result.tripId,
+        bookingCode: company.bookingCode,
+      });
+
       return {
         statusCode: 200,
         headers: responseHeaders,
