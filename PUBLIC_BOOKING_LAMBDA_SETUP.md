@@ -158,6 +158,52 @@ The booking portal sends requests to `VITE_BOOKING_API_URL`. A **404** means tha
 
 3. **After any change to the Lambda** (new deploy, URL recreated), copy the URL from Lambda → **Configuration** → **Function URL** and set `VITE_BOOKING_API_URL` in Amplify, then redeploy the app.
 
+### Booking requests not showing in Management / `listBookingRequests` or `ModelBookingRequestFilterInput` undefined
+
+If the Lambda creates booking requests (CloudWatch shows "Booking request created") but the Management **Booking Requests** view is empty and the console shows:
+- `Field 'listBookingRequests' in type 'Query' is undefined`
+- `Unknown type ModelBookingRequestFilterInput`
+
+then the **deployed AppSync (Data) API does not include the BookingRequest model’s list/filter**. That usually happens when the backend deploy that added BookingRequest **rolled back** (e.g. due to the addFunctionUrl error). The Lambda uses the `createBookingRequest` mutation, which can exist even if the list was never deployed successfully.
+
+**Fix:**
+1. Ensure `amplify/backend.ts` does **not** use `addFunctionUrl` for publicBooking (it was removed to avoid CloudFormation "Properties validation failed").
+2. **Redeploy the app** (push a commit or “Redeploy this version” in Amplify) so the **Backend** phase runs `npx ampx pipeline-deploy` without errors.
+3. In Amplify build logs, confirm the **Backend** step completes and there is **no** `UPDATE_ROLLBACK_COMPLETE` or CloudFormation failure.
+4. After a successful backend deploy, the Data/AppSync API should include `listBookingRequests` and `ModelBookingRequestFilterInput`. Reload the Management **Booking Requests** view.
+
+### 404 on /booking/CODE – "Booking portal not found", no CloudWatch
+
+If `/booking/TEST` (or `/booking/<code>`) returns **404** in the browser and there is **no** corresponding request in the publicBooking Lambda’s CloudWatch logs, the request never reaches your app or the Lambda. The host is returning 404 for the path because:
+
+- The app is a **SPA**: routes like `/booking/TEST` are handled by React Router only after `index.html` and the JS have loaded.
+- For a direct request to `https://onyxdispatch.us/booking/TEST`, the host looks for a file at that path, does not find one, and returns 404. The React app and Lambda are never hit.
+
+**Fix: SPA redirect/rewrite in Amplify**
+
+1. [Amplify Console](https://console.aws.amazon.com/amplify/) → your app → **Hosting** → **Rewrites and redirects** → **Manage redirects**.
+2. In the JSON editor, add a **rewrite (200)** so that paths that don’t match static assets are served by `index.html`.  
+   - If you have no rules yet, use:
+     ```json
+     [
+       {"source": "/^[^.]+$|[.](?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/", "status": "200", "target": "/index.html", "condition": null}
+     ]
+     ```
+   - If you already have redirects (e.g. Amplify URL → custom domain), **append** this object to the existing array (order matters; this SPA rule is often last so it doesn’t override more specific ones):
+     ```json
+     {"source": "/^[^.]+$|[.](?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/", "status": "200", "target": "/index.html", "condition": null}
+     ```
+3. **Save**. Reload `https://onyxdispatch.us/booking/TEST`; it should load the app and the portal.
+
+Copy‑paste: `docs/amplify-spa-redirects.json` (regex, preferred) or `docs/amplify-spa-redirects-simple.json` (catch‑all). If you already have rules, add only the new object to the array.
+
+**Simpler fallback (rewrite everything):**  
+If the regex is rejected or doesn’t work, you can try a catch‑all (only if you have no static files at unknown paths, or you’re ok risking breaking some assets):
+```json
+{"source": "/<<*>>", "status": "200", "target": "/index.html", "condition": null}
+```
+(`<<*>>` is Amplify’s wildcard for “any path”. Prefer the regex rule so assets like `/assets/…/*.js` are not rewritten.)
+
 ### CORS Errors
 - Check Function URL CORS configuration
 - Verify `Access-Control-Allow-Origin` header is set correctly
