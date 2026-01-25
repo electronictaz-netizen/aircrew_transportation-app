@@ -23,6 +23,7 @@ const CompanyManagement = lazy(() => import('./CompanyManagement'));
 const SubscriptionManagement = lazy(() => import('./SubscriptionManagement'));
 const TripList = lazy(() => import('./TripList'));
 const TripCalendar = lazy(() => import('./TripCalendar'));
+const BookingRequestsList = lazy(() => import('./BookingRequestsList'));
 const DriverReports = lazy(() => import('./DriverReports'));
 const TripReports = lazy(() => import('./TripReports'));
 const VehicleTrackingMap = lazy(() => import('./VehicleTrackingMap'));
@@ -69,7 +70,9 @@ function ManagementDashboard() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [showEmailDriverDialog, setShowEmailDriverDialog] = useState(false);
   const [selectedEmailDriverId, setSelectedEmailDriverId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map' | 'requests'>('list');
+  const [bookingRequests, setBookingRequests] = useState<Array<Schema['BookingRequest']['type']>>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -123,8 +126,8 @@ function ManagementDashboard() {
       loadLocations();
       loadVehicles();
       loadCustomers();
-      // Generate upcoming recurring trips on load (only for managers/admins)
       if (canManageTrips(userRole) || isAdminOverride) {
+        loadBookingRequests();
         generateUpcomingRecurringTrips(companyId || undefined).then(() => {
           loadTrips(); // Reload trips after generating recurring ones
         });
@@ -257,6 +260,84 @@ function ManagementDashboard() {
       setCustomers(customersData as Array<Schema['Customer']['type']>);
     } catch (error) {
       console.error('Error loading customers:', error);
+    }
+  };
+
+  const loadBookingRequests = async () => {
+    if (!companyId) return;
+    try {
+      setRequestsLoading(true);
+      const { data, errors } = await client.models.BookingRequest.list({
+        filter: { companyId: { eq: companyId } },
+      });
+      if (errors?.length) console.error('Error loading booking requests:', errors);
+      setBookingRequests((data || []) as Array<Schema['BookingRequest']['type']>);
+    } catch (e) {
+      console.error('Error loading booking requests:', e);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const handleAcceptBookingRequest = async (r: Schema['BookingRequest']['type']) => {
+    if (!companyId) return;
+    try {
+      let customerId: string | undefined;
+      const email = (r.customerEmail || '').toLowerCase().trim();
+      const { data: existing } = await client.models.Customer.list({
+        filter: { companyId: { eq: companyId }, email: { eq: email } },
+      });
+      if (existing?.length) {
+        customerId = existing[0].id;
+      } else {
+        const { data: created } = await client.models.Customer.create({
+          companyId,
+          name: r.customerName,
+          email,
+          phone: r.customerPhone,
+          companyName: r.customerCompany,
+          isActive: true,
+        });
+        customerId = created?.id;
+      }
+      const flightNumber =
+        r.tripType === 'Airport Trip' ? (r.flightNumber || 'N/A') : (r.jobNumber || 'N/A');
+      const { data: trip } = await client.models.Trip.create({
+        companyId,
+        pickupDate: r.pickupDate,
+        flightNumber,
+        pickupLocation: r.pickupLocation,
+        dropoffLocation: r.dropoffLocation,
+        numberOfPassengers: r.numberOfPassengers ?? 1,
+        status: 'Unassigned',
+        customerId,
+        notes: r.specialInstructions,
+      });
+      if (!trip?.id) throw new Error('Failed to create trip');
+      await client.models.BookingRequest.update({
+        id: r.id,
+        status: 'Accepted',
+        tripId: trip.id,
+        customerId,
+      });
+      await loadBookingRequests();
+      await loadTrips();
+      await loadCustomers();
+      alert('Booking request accepted. Trip added to the trip list.');
+    } catch (e: any) {
+      console.error('Error accepting booking request:', e);
+      alert(e?.message || 'Failed to accept booking request.');
+    }
+  };
+
+  const handleRejectBookingRequest = async (r: Schema['BookingRequest']['type']) => {
+    try {
+      await client.models.BookingRequest.update({ id: r.id, status: 'Rejected' });
+      await loadBookingRequests();
+      alert('Booking request rejected.');
+    } catch (e: any) {
+      console.error('Error rejecting booking request:', e);
+      alert(e?.message || 'Failed to reject.');
     }
   };
 
@@ -1577,7 +1658,7 @@ function ManagementDashboard() {
         <div className="dashboard-header">
           <h2>Management Dashboard</h2>
         </div>
-        {viewMode === 'list' ? <TripListSkeleton /> : <TripCalendarSkeleton />}
+        {(viewMode === 'list' || viewMode === 'requests') ? <TripListSkeleton /> : <TripCalendarSkeleton />}
       </div>
     );
   }
@@ -1929,6 +2010,20 @@ function ManagementDashboard() {
             >
               🗺️ Map
             </button>
+            {(canManageTrips(userRole) || isAdminOverride) && (
+              <button
+                className={`view-toggle-btn ${viewMode === 'requests' ? 'active' : ''}`}
+                onClick={() => setViewMode('requests')}
+                title="Booking Requests from portal"
+              >
+                📥 Booking Requests
+                {bookingRequests.some((r) => r.status === 'Pending') && (
+                  <span className="view-toggle-badge" style={{ marginLeft: '0.35rem' }}>
+                    {bookingRequests.filter((r) => r.status === 'Pending').length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -2107,7 +2202,16 @@ function ManagementDashboard() {
       </Suspense>
 
       <Suspense fallback={ComponentLoadingFallback}>
-        {viewMode === 'list' ? (
+        {viewMode === 'requests' ? (
+          <BookingRequestsList
+            requests={bookingRequests}
+            onAccept={handleAcceptBookingRequest}
+            onReject={handleRejectBookingRequest}
+            onRefresh={loadBookingRequests}
+            loading={requestsLoading}
+            canManage={canManageTrips(userRole) || isAdminOverride}
+          />
+        ) : viewMode === 'list' ? (
           <TripList
             trips={trips}
             drivers={drivers}

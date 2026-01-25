@@ -1,0 +1,90 @@
+.booking-requests-list {
+  padding: 1rem 0;
+}
+
+.booking-requests-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.booking-requests-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.booking-requests-desc {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.booking-requests-loading,
+.booking-requests-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.booking-requests-table-wrap {
+  overflow-x: auto;
+}
+
+.booking-requests-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.booking-requests-table th,
+.booking-requests-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.booking-requests-table th {
+  font-weight: 600;
+  color: #374151;
+  background: #f9fafb;
+}
+
+.booking-requests-table td {
+  vertical-align: middle;
+}
+
+.request-status {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.request-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.request-status-accepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.request-status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.request-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.request-linked {
+  font-size: 0.8rem;
+  color: #059669;
+}

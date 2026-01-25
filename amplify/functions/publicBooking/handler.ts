@@ -165,123 +165,44 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
 }
 
 /**
- * Create booking (trip and customer)
- * Uses AWS Signature V4 for GraphQL mutations
+ * Create a BookingRequest (Pending). A manager accepts it in the Management
+ * "Booking Requests" view to create the Trip and Customer.
  */
-async function createBooking(request: CreateBookingRequest): Promise<{ tripId: string; customerId?: string }> {
+async function createBookingRequest(request: CreateBookingRequest): Promise<{ requestId: string }> {
   try {
-    // Create or find customer
-    let customerId: string | undefined;
-    
-    if (request.customerEmail) {
-      // Check if customer exists
-      const listCustomersQuery = `
-        query ListCustomers($filter: ModelCustomerFilterInput) {
-          listCustomers(filter: $filter) {
-            items {
-              id
-              name
-              phone
-              companyName
-            }
-          }
-        }
-      `;
-      
-      const listData = await executeGraphQL(listCustomersQuery, {
-        filter: {
-          companyId: { eq: request.companyId },
-          email: { eq: request.customerEmail.toLowerCase().trim() },
-        },
-      });
-      
-      const existingCustomers = listData?.listCustomers?.items;
-      
-      if (existingCustomers && existingCustomers.length > 0) {
-        customerId = existingCustomers[0].id;
-        // Update customer info if provided
-        if (request.customerName || request.customerPhone) {
-          const updateCustomerMutation = `
-            mutation UpdateCustomer($input: UpdateCustomerInput!) {
-              updateCustomer(input: $input) {
-                id
-              }
-            }
-          `;
-          
-          await executeGraphQL(updateCustomerMutation, {
-            input: {
-              id: customerId,
-              name: request.customerName || existingCustomers[0].name,
-              phone: request.customerPhone || existingCustomers[0].phone,
-              companyName: request.customerCompany || existingCustomers[0].companyName,
-            },
-          });
-        }
-      } else {
-        // Create new customer
-        const createCustomerMutation = `
-          mutation CreateCustomer($input: CreateCustomerInput!) {
-            createCustomer(input: $input) {
-              id
-            }
-          }
-        `;
-        
-        const createData = await executeGraphQL(createCustomerMutation, {
-          input: {
-            companyId: request.companyId,
-            name: request.customerName,
-            email: request.customerEmail.toLowerCase().trim(),
-            phone: request.customerPhone,
-            companyName: request.customerCompany,
-            isActive: true,
-          },
-        });
-        
-        customerId = createData?.createCustomer?.id;
-      }
-    }
-
-    // Create trip (Trip.flightNumber is required; we use jobNumber for Standard Trip)
-    const flightNumberOrJob = (request.tripType === 'Airport Trip'
-      ? request.flightNumber
-      : request.jobNumber) || 'N/A';
-
-    const createTripMutation = `
-      mutation CreateTrip($input: CreateTripInput!) {
-        createTrip(input: $input) {
+    const mutation = `
+      mutation CreateBookingRequest($input: CreateBookingRequestInput!) {
+        createBookingRequest(input: $input) {
           id
         }
       }
     `;
-    
-    const tripData = await executeGraphQL(createTripMutation, {
-      input: {
-        companyId: request.companyId,
-        pickupDate: request.pickupDate,
-        flightNumber: flightNumberOrJob,
-        pickupLocation: request.pickupLocation,
-        dropoffLocation: request.dropoffLocation,
-        numberOfPassengers: request.numberOfPassengers,
-        status: 'Unassigned',
-        customerId: customerId,
-        notes: request.specialInstructions || undefined,
-      },
-    });
-
-    const trip = tripData?.createTrip;
-    
-    if (!trip || !trip.id) {
-      throw new Error('Failed to create trip');
-    }
-
-    return {
-      tripId: trip.id,
-      customerId: customerId,
+    const input: Record<string, unknown> = {
+      companyId: request.companyId,
+      status: 'Pending',
+      customerName: request.customerName,
+      customerEmail: request.customerEmail,
+      customerPhone: request.customerPhone,
+      customerCompany: request.customerCompany || undefined,
+      tripType: request.tripType || undefined,
+      pickupDate: request.pickupDate,
+      flightNumber: request.flightNumber || undefined,
+      jobNumber: request.jobNumber || undefined,
+      pickupLocation: request.pickupLocation,
+      dropoffLocation: request.dropoffLocation,
+      numberOfPassengers: request.numberOfPassengers ?? 1,
+      vehicleType: request.vehicleType || undefined,
+      isRoundTrip: request.isRoundTrip ?? false,
+      returnDate: request.returnDate || undefined,
+      returnTime: request.returnTime || undefined,
+      specialInstructions: request.specialInstructions || undefined,
     };
+    const data = await executeGraphQL(mutation, { input });
+    const rec = data?.createBookingRequest;
+    if (!rec?.id) throw new Error('Failed to create booking request');
+    return { requestId: rec.id };
   } catch (error) {
-    console.error('Error creating booking:', error);
+    console.error('Error creating booking request:', error);
     console.error('GraphQL error details:', JSON.stringify(error, null, 2));
     throw error;
   }
@@ -389,12 +310,11 @@ export const handler = async (event: { body?: string | object; queryStringParame
       console.log('createBooking: company resolved', { companyId: company.id, bookingCode: company.bookingCode });
 
       bookingRequest.companyId = company.id;
-      const result = await createBooking(bookingRequest);
+      const result = await createBookingRequest(bookingRequest);
 
-      // Log for debugging: portal trips must have companyId matching Management's company
-      console.log('Booking created:', {
+      console.log('Booking request created:', {
         companyId: company.id,
-        tripId: result.tripId,
+        requestId: result.requestId,
         bookingCode: company.bookingCode,
       });
 
@@ -403,9 +323,9 @@ export const handler = async (event: { body?: string | object; queryStringParame
         headers: responseHeaders,
         body: JSON.stringify({
           success: true,
-          bookingId: result.tripId,
-          customerId: result.customerId,
-          message: 'Booking created successfully',
+          bookingId: result.requestId,
+          requestId: result.requestId,
+          message: 'Booking request submitted. A manager will review and confirm your trip.',
         }),
       };
     }

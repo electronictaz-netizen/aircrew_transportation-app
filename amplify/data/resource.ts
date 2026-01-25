@@ -29,6 +29,7 @@ const schema = a.schema({
       locations: a.hasMany('Location', 'companyId'),
       vehicles: a.hasMany('Vehicle', 'companyId'),
       customers: a.hasMany('Customer', 'companyId'),
+      bookingRequests: a.hasMany('BookingRequest', 'companyId'),
       filterCategories: a.hasMany('FilterCategory', 'companyId'),
       customFields: a.hasMany('CustomField', 'companyId'),
       customFieldValues: a.hasMany('CustomFieldValue', 'companyId'),
@@ -162,6 +163,36 @@ const schema = a.schema({
       notes: a.string(), // Additional notes about the customer
       isActive: a.boolean().default(true),
       trips: a.hasMany('Trip', 'customerId'),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  BookingRequest: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      status: a.enum(['Pending', 'Accepted', 'Rejected']),
+      customerName: a.string().required(),
+      customerEmail: a.string().required(),
+      customerPhone: a.string().required(),
+      customerCompany: a.string(),
+      tripType: a.string(), // 'Airport Trip' | 'Standard Trip'
+      pickupDate: a.datetime().required(),
+      flightNumber: a.string(),
+      jobNumber: a.string(),
+      pickupLocation: a.string().required(),
+      dropoffLocation: a.string().required(),
+      numberOfPassengers: a.integer().default(1),
+      vehicleType: a.string(),
+      isRoundTrip: a.boolean().default(false),
+      returnDate: a.datetime(),
+      returnTime: a.string(),
+      specialInstructions: a.string(),
+      tripId: a.id(), // Set when accepted; created Trip
+      trip: a.belongsTo('Trip', 'tripId'),
+      customerId: a.id(), // Set when accepted; created or matched Customer
+      customer: a.belongsTo('Customer', 'customerId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

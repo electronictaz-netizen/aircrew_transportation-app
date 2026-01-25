@@ -218,11 +218,11 @@ export default function BookingPortal() {
       <div className="booking-portal-container">
         <div className="booking-confirmation">
           <div className="confirmation-icon">✓</div>
-          <h2>Booking Confirmed!</h2>
-          <p>Your booking has been submitted successfully.</p>
-          <p className="booking-id">Booking ID: {bookingId.substring(0, 8)}</p>
+          <h2>Request Received</h2>
+          <p>Your booking request has been submitted successfully.</p>
+          <p className="booking-id">Request ID: {bookingId.substring(0, 8)}</p>
           <p className="confirmation-message">
-            You will receive a confirmation email shortly. Our team will contact you to confirm your trip details.
+            A manager will review your request and confirm your trip. You will be contacted once it is approved.
           </p>
           <button
             onClick={() => {
