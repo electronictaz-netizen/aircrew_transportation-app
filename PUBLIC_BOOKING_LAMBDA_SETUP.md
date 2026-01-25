@@ -111,6 +111,30 @@ Amplify grants the function IAM access to the Data API; no extra config is neede
 
 ## Troubleshooting
 
+### Error: "FunctionUrlConfig exists for this Lambda function" (409) on deploy
+
+The Lambda already has a Function URL (from a prior deploy or manual setup). Lambda allows only one Function URL per function, so CloudFormation cannot create another.
+
+**Fix: delete the existing Function URL, then redeploy.**
+
+**Option A – Lambda Console**
+
+1. [AWS Lambda Console](https://console.aws.amazon.com/lambda/) → **Functions**
+2. Search for `publicBooking` and open the `amplify-d1wxo3x0z5r1oq-ma-publicBookinglambda...` function
+3. **Configuration** tab → **Function URL** (left) → **Delete**
+4. Trigger a new Amplify deploy (push to `main` or “Redeploy this version” in Amplify). The backend will recreate the Function URL via CloudFormation.
+
+**Option B – AWS CLI**
+
+```bash
+# Replace with your function name if it differs (e.g. from Lambda console)
+aws lambda delete-function-url-config \
+  --function-name "amplify-d1wxo3x0z5r1oq-ma-publicBookinglambda48251-BidjAte9Ibm6" \
+  --region us-east-1
+```
+
+Then push to `main` or redeploy in Amplify.
+
 ### Error: "Cannot find module '@aws-amplify/backend'"
 - Make sure `package.json` includes the dependency
 - Run `npm install` in the function directory
