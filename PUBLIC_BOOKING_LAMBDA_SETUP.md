@@ -36,17 +36,18 @@ git commit -m "Add public booking Lambda function"
 git push
 ```
 
-### Step 2: Function URL (managed by backend)
+### Step 2: Function URL (create in Lambda Console)
 
-The Function URL is created and managed by the backend (`amplify/backend.ts`). It uses:
-- **Auth type:** `NONE` (public access)
-- **CORS:** `*` origins, `GET`/`POST`/`OPTIONS`, `Content-Type` header
+The Function URL is **not** managed by the backend (CDK `addFunctionUrl` caused CloudFormation "Properties validation failed"). Create it in the Lambda Console:
 
-If you see "FunctionUrlConfig exists" (409) on deploy, delete the existing Function URL in Lambda → Configuration → Function URL, then redeploy.
-
-After deployment, get the URL from:
-1. [AWS Lambda Console](https://console.aws.amazon.com/lambda/) → your `publicBooking-*` function
-2. **Configuration** → **Function URL** → copy the URL (e.g. `https://xxxxx.lambda-url.us-east-1.on.aws/`)
+1. [AWS Lambda Console](https://console.aws.amazon.com/lambda/) → **Functions** → search for `publicBooking` (or `ma-publicBookinglambda`) and open it
+2. **Configuration** tab → **Function URL** (left) → **Create function URL**
+3. **Auth type:** `NONE`
+4. **CORS:** Enable and set:
+   - **Allow origin:** `*` (or your app’s origin, e.g. `https://onyxdispatch.us`)
+   - **Allow methods:** `GET`, `POST`
+   - **Allow headers:** `Content-Type`
+5. **Save** and copy the URL (e.g. `https://xxxxx.lambda-url.us-east-1.on.aws/`)
 
 ### Step 3: Configure Environment Variable
 
@@ -115,27 +116,7 @@ Amplify grants the function IAM access to the Data API; no extra config is neede
 
 ### Error: "FunctionUrlConfig exists for this Lambda function" (409) on deploy
 
-The Lambda already has a Function URL (from a prior deploy or manual setup). Lambda allows only one Function URL per function, so CloudFormation cannot create another.
-
-**Fix: delete the existing Function URL, then redeploy.**
-
-**Option A – Lambda Console**
-
-1. [AWS Lambda Console](https://console.aws.amazon.com/lambda/) → **Functions**
-2. Search for `publicBooking` and open the `amplify-d1wxo3x0z5r1oq-ma-publicBookinglambda...` function
-3. **Configuration** tab → **Function URL** (left) → **Delete**
-4. Trigger a new Amplify deploy (push to `main` or “Redeploy this version” in Amplify). The backend will recreate the Function URL via CloudFormation.
-
-**Option B – AWS CLI**
-
-```bash
-# Replace with your function name if it differs (e.g. from Lambda console)
-aws lambda delete-function-url-config \
-  --function-name "amplify-d1wxo3x0z5r1oq-ma-publicBookinglambda48251-BidjAte9Ibm6" \
-  --region us-east-1
-```
-
-Then push to `main` or redeploy in Amplify.
+If you re-enable `addFunctionUrl` in `amplify/backend.ts` and deploy, CloudFormation can fail with 409 because the Lambda already has a Function URL. **Fix:** Lambda Console → publicBooking → **Configuration** → **Function URL** → **Delete**, then redeploy. (The backend does not currently use `addFunctionUrl`; create the URL manually per Step 2.)
 
 ### Error: "Cannot find module '@aws-amplify/backend'"
 - Make sure `package.json` includes the dependency
@@ -175,8 +156,7 @@ The booking portal sends requests to `VITE_BOOKING_API_URL`. A **404** means tha
    - Set `VITE_BOOKING_API_URL` = the URL you copied (with or without a trailing slash).
    - **Save** and **Redeploy** the app (or run a new build for the frontend).
 
-3. **If the backend manages the Function URL**
-   - The `amplify/backend.ts` uses `addFunctionUrl` for `publicBooking`. Each deploy ensures the URL exists. If you previously had a different (e.g. manually created) URL that now 404s, the CDK-created URL will have a new ID—always re-copy from Lambda → Function URL after a deploy and update `VITE_BOOKING_API_URL`.
+3. **After any change to the Lambda** (new deploy, URL recreated), copy the URL from Lambda → **Configuration** → **Function URL** and set `VITE_BOOKING_API_URL` in Amplify, then redeploy the app.
 
 ### CORS Errors
 - Check Function URL CORS configuration

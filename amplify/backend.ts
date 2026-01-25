@@ -1,6 +1,5 @@
 import { defineBackend } from '@aws-amplify/backend';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { stripeWebhook } from './functions/stripeWebhook/resource';
@@ -41,17 +40,9 @@ if ('graphqlUrl' in backend.data.resources.graphqlApi && backend.data.resources.
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
 
-// Function URL for public booking (no auth; CORS for browser)
-// Managed by CDK. If deploy fails with "FunctionUrlConfig exists" (409): Lambda Console
-// → publicBooking → Configuration → Function URL → Delete, then redeploy.
-backend.publicBooking.resources.lambda.addFunctionUrl({
-  authType: lambda.FunctionUrlAuthType.NONE,
-  cors: {
-    allowedOrigins: ['*'],
-    allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST, lambda.HttpMethod.OPTIONS],
-    allowedHeaders: ['Content-Type'],
-  },
-});
+// Function URL for publicBooking: create and manage in Lambda Console (Configuration → Function URL).
+// CDK addFunctionUrl caused "Properties validation failed" (publicBookinglambdaFunctionUrl65375A8A).
+// Set the URL in Amplify env as VITE_BOOKING_API_URL. See PUBLIC_BOOKING_LAMBDA_SETUP.md.
 
 // IAM: allow sendSms to use AWS End User Messaging (SendTextMessage)
 backend.sendSms.resources.lambda.addToRolePolicy(
