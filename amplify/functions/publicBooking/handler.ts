@@ -177,6 +177,35 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
     matched: !!match,
     codes: active.map((c: { id?: string; bookingCode?: string | null; isActive?: boolean | null }) => ({ id: c.id, bookingCode: c.bookingCode, isActive: c.isActive })),
   });
+
+  // When the requested code is not found and we only see 1 booking-enabled company,
+  // run an unfiltered list to verify what is in the DB (helps if a second company
+  // was never saved with bookingEnabled/bookingCode).
+  if (!match && allItems.length <= 1) {
+    const diagQuery = `
+      query ListCompaniesDiag($limit: Int, $nextToken: String) {
+        listCompanies(limit: $limit, nextToken: $nextToken) {
+          items { id name bookingEnabled bookingCode }
+          nextToken
+        }
+      }
+    `;
+    const diag: Array<{ id: string; name?: string | null; bookingEnabled?: boolean | null; bookingCode?: string | null }> = [];
+    let dt: string | null | undefined;
+    do {
+      const v: Record<string, unknown> = { limit: 50 };
+      if (dt != null) v.nextToken = dt;
+      const d = await executeGraphQL(diagQuery, v);
+      const items = d?.listCompanies?.items || [];
+      dt = d?.listCompanies?.nextToken;
+      diag.push(...items);
+    } while (dt);
+    console.log('getCompanyByCode diagnostic (all companies, paginated):', {
+      total: diag.length,
+      byBooking: diag.map((c) => ({ name: c.name, bookingEnabled: c.bookingEnabled, bookingCode: c.bookingCode })),
+    });
+  }
+
   return match || null;
 }
 
