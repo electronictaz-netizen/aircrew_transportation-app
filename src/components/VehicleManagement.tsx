@@ -126,19 +126,33 @@ function VehicleManagement({ vehicles, onClose, onUpdate }: VehicleManagementPro
     }
   };
 
-  const handleEdit = (vehicle: Schema['Vehicle']['type']) => {
-    setEditingVehicle(vehicle);
-    setFormData({
-      name: vehicle.name,
-      make: vehicle.make || '',
-      model: vehicle.model || '',
-      year: vehicle.year ? String(vehicle.year) : '',
-      licensePlate: vehicle.licensePlate || '',
-      vin: vehicle.vin || '',
-      description: vehicle.description || '',
-      isActive: vehicle.isActive ?? true,
-    });
-    setShowForm(true);
+  const handleEdit = (vehicle: Schema['Vehicle']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Reset form first to clear any previous state
+    setEditingVehicle(null);
+    setShowForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingVehicle(vehicle);
+      setFormData({
+        name: vehicle.name,
+        make: vehicle.make || '',
+        model: vehicle.model || '',
+        year: vehicle.year ? String(vehicle.year) : '',
+        licensePlate: vehicle.licensePlate || '',
+        vin: vehicle.vin || '',
+        description: vehicle.description || '',
+        isActive: vehicle.isActive ?? true,
+      });
+      setShowForm(true);
+      setErrors({}); // Clear any previous errors
+    }, 0);
   };
 
   const handleDelete = async (vehicleId: string) => {
@@ -232,6 +246,7 @@ function VehicleManagement({ vehicles, onClose, onUpdate }: VehicleManagementPro
     });
     setEditingVehicle(null);
     setShowForm(false);
+    setErrors({}); // Clear errors when resetting
   };
 
   // Filter vehicles to ensure only vehicles for the current company are shown
@@ -478,7 +493,8 @@ function VehicleManagement({ vehicles, onClose, onUpdate }: VehicleManagementPro
                       <div className="action-buttons">
                         <button
                           className="btn-icon btn-edit"
-                          onClick={() => handleEdit(vehicle)}
+                          onClick={(e) => handleEdit(vehicle, e)}
+                          type="button"
                           title="Edit"
                         >
                           ✏️

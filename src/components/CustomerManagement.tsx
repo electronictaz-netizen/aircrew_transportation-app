@@ -157,17 +157,31 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
     }
   };
 
-  const handleEdit = (customer: Schema['Customer']['type']) => {
-    setEditingCustomer(customer);
-    setFormData({
-      name: customer.name,
-      email: customer.email || '',
-      phone: customer.phone || '',
-      companyName: customer.companyName || '',
-      notes: customer.notes || '',
-      isActive: customer.isActive ?? true,
-    });
-    setShowForm(true);
+  const handleEdit = (customer: Schema['Customer']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Reset form first to clear any previous state
+    setEditingCustomer(null);
+    setShowForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingCustomer(customer);
+      setFormData({
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        companyName: customer.companyName || '',
+        notes: customer.notes || '',
+        isActive: customer.isActive ?? true,
+      });
+      setShowForm(true);
+      setErrors({}); // Clear any previous errors
+    }, 0);
   };
 
   const handleDelete = async (customerId: string) => {
@@ -508,8 +522,9 @@ function CustomerManagement({ customers, onClose, onUpdate }: CustomerManagement
                         </button>
                         <button
                           className="btn-icon btn-edit"
-                          onClick={() => handleEdit(customer)}
+                          onClick={(e) => handleEdit(customer, e)}
                           title="Edit"
+                          type="button"
                         >
                           ✏️
                         </button>

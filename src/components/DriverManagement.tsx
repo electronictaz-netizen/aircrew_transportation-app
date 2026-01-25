@@ -292,19 +292,32 @@ function DriverManagement() {
     }
   };
 
-  const handleEdit = (driver: Schema['Driver']['type']) => {
-    setEditingDriver(driver);
-    form.reset({
-      name: driver.name,
-      email: driver.email || '',
-      phone: driver.phone || '',
-      licenseNumber: driver.licenseNumber || '',
-      isActive: driver.isActive ?? true,
-      notificationPreference: (driver.notificationPreference as 'email' | 'both') || 'email',
-      payRatePerTrip: driver.payRatePerTrip !== null && driver.payRatePerTrip !== undefined ? String(driver.payRatePerTrip) : '',
-      payRatePerHour: driver.payRatePerHour !== null && driver.payRatePerHour !== undefined ? String(driver.payRatePerHour) : '',
-    });
-    setShowForm(true);
+  const handleEdit = (driver: Schema['Driver']['type'], e?: React.MouseEvent) => {
+    // Prevent event propagation to avoid conflicts
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Reset form first to clear any previous state
+    setEditingDriver(null);
+    setShowForm(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setEditingDriver(driver);
+      form.reset({
+        name: driver.name,
+        email: driver.email || '',
+        phone: driver.phone || '',
+        licenseNumber: driver.licenseNumber || '',
+        isActive: driver.isActive ?? true,
+        notificationPreference: (driver.notificationPreference as 'email' | 'both') || 'email',
+        payRatePerTrip: driver.payRatePerTrip !== null && driver.payRatePerTrip !== undefined ? String(driver.payRatePerTrip) : '',
+        payRatePerHour: driver.payRatePerHour !== null && driver.payRatePerHour !== undefined ? String(driver.payRatePerHour) : '',
+      });
+      setShowForm(true);
+    }, 0);
   };
 
   const handleDelete = async (driverId: string) => {
@@ -714,7 +727,8 @@ function DriverManagement() {
                       <div className="action-buttons">
                         <button
                           className="btn-icon btn-edit"
-                          onClick={() => handleEdit(driver)}
+                          onClick={(e) => handleEdit(driver, e)}
+                          type="button"
                           title="Edit"
                         >
                           ✏️
