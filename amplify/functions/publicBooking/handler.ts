@@ -56,17 +56,20 @@ const getEndpoint = (): string => {
 
 const getRegion = (): string => process.env.AMPLIFY_DATA_REGION || 'us-east-1';
 
-const IMDS = 'http://169.254.169.254';
-
 type Creds = { accessKeyId: string; secretAccessKey: string; sessionToken?: string };
 
+/**
+ * Get credentials from Lambda's container credential endpoint.
+ * Lambda sets AWS_CONTAINER_CREDENTIALS_RELATIVE_URI; the base is 169.254.170.2.
+ * (Do not use EC2 IMDS 169.254.169.254 — it is not available in Lambda.)
+ */
 async function getCreds(): Promise<Creds> {
-  const r = await fetch(`${IMDS}/latest/meta-data/iam/security-credentials/`, { headers: { 'X-aws-ec2-metadata-token-ttl-seconds': '300' } });
-  if (!r.ok) throw new Error('IMDS role name failed');
-  const role = (await r.text()).trim();
-  const cr = await fetch(`${IMDS}/latest/meta-data/iam/security-credentials/${role}`, { headers: { 'X-aws-ec2-metadata-token-ttl-seconds': '300' } });
-  if (!cr.ok) throw new Error('IMDS credentials failed');
-  const j = (await cr.json()) as { AccessKeyId: string; SecretAccessKey: string; Token?: string };
+  const rel = process.env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI;
+  if (!rel) throw new Error('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is not set (not running in Lambda?)');
+  const url = `http://169.254.170.2${rel}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Lambda credentials endpoint failed: ${r.status}`);
+  const j = (await r.json()) as { AccessKeyId: string; SecretAccessKey: string; Token?: string };
   return { accessKeyId: j.AccessKeyId, secretAccessKey: j.SecretAccessKey, sessionToken: j.Token };
 }
 
