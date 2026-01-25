@@ -60,7 +60,14 @@ export async function getCompanyByBookingCodeWithDetail(code: string): Promise<G
     const data = (await response.json().catch(() => ({}))) as CompanyResponse & { hint?: string };
     if (!response.ok) {
       if (response.status === 404) {
-        return { company: null, error: data.error, hint: data.hint };
+        // Our Lambda returns { error, hint } for "company not found". If we get 404 without that,
+        // the URL may be wrong or the Function URL was removed.
+        const hint =
+          data.hint ||
+          (!data.error
+            ? 'The booking API URL may be wrong or the Lambda Function URL was removed. In Amplify: set VITE_BOOKING_API_URL to the Function URL from Lambda → publicBooking → Configuration → Function URL, then redeploy.'
+            : undefined);
+        return { company: null, error: data.error || 'Not found', hint };
       }
       throw new Error(data.error || `HTTP error! status: ${response.status}`);
     }
