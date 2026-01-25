@@ -282,15 +282,28 @@ function AdminDashboard() {
       };
       
       try {
-        // Migrate locations - fetch all and filter for those without companyId
+        // Migrate locations - fetch all and filter for those without companyId (or all if forceMigrateAll)
+        console.log('🔍 Fetching all locations from database...');
         const { data: allLocations } = await client.models.Location.list();
         migrationResults.locations.total = allLocations?.length || 0;
-        const orphanedLocations = (allLocations || []).filter(loc => !loc.companyId);
-        migrationResults.locations.orphaned = orphanedLocations.length;
-        console.log(`Found ${orphanedLocations.length} orphaned locations out of ${migrationResults.locations.total} total`);
+        console.log(`📊 Total locations in database: ${migrationResults.locations.total}`);
         
-        if (orphanedLocations.length > 0) {
-          for (const location of orphanedLocations) {
+        let locationsToMigrate: Schema['Location']['type'][];
+        if (forceMigrateAll) {
+          // Force migrate ALL locations to GLS, regardless of current companyId
+          locationsToMigrate = allLocations || [];
+          migrationResults.locations.orphaned = locationsToMigrate.length;
+          console.log(`🔄 Force migrating ALL ${locationsToMigrate.length} locations to GLS company`);
+        } else {
+          // Only migrate orphaned locations (no companyId)
+          locationsToMigrate = (allLocations || []).filter(loc => !loc.companyId);
+          migrationResults.locations.orphaned = locationsToMigrate.length;
+          console.log(`Found ${locationsToMigrate.length} orphaned locations out of ${migrationResults.locations.total} total`);
+        }
+        
+        if (locationsToMigrate.length > 0) {
+          console.log(`🚀 Starting migration of ${locationsToMigrate.length} locations...`);
+          for (const location of locationsToMigrate) {
             try {
               await client.models.Location.update({
                 id: location.id,
@@ -298,15 +311,19 @@ function AdminDashboard() {
               });
               migratedCount++;
               migrationResults.locations.migrated++;
+              console.log(`✅ Migrated location: ${location.name || location.id}`);
             } catch (error) {
-              console.error('Error migrating location:', error);
+              console.error('❌ Error migrating location:', error);
               migrationResults.locations.errors++;
             }
           }
+          console.log(`✅ Completed location migration: ${migrationResults.locations.migrated} migrated, ${migrationResults.locations.errors} errors`);
         } else if (migrationResults.locations.total > 0) {
           // Locations exist but all have companyId - show which companies they belong to
           const companyIds = [...new Set((allLocations || []).map(loc => loc.companyId).filter(Boolean))];
-          console.log(`All ${migrationResults.locations.total} locations already have companyId. Companies:`, companyIds);
+          console.log(`ℹ️ All ${migrationResults.locations.total} locations already have companyId. Companies:`, companyIds);
+        } else {
+          console.log('⚠️ No locations found in database');
         }
 
         // Migrate trips - fetch all and filter for those without companyId (or all if forceMigrateAll)
