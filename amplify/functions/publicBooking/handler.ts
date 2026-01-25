@@ -1,10 +1,10 @@
 /**
  * Public Booking Portal Lambda Function
- * Provides public access to booking portal functionality without authentication
+ * Provides public access to booking portal functionality without authentication.
+ * Uses inline AWS SigV4 (crypto + fetch) to avoid bundling issues with aws4.
  */
 
-import type { Handler } from 'aws-lambda';
-import aws4 from 'aws4';
+import { createHmac, createHash } from 'crypto';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
 // These permissions are automatically granted when the function is defined in backend.ts
@@ -56,28 +56,79 @@ const getEndpoint = (): string => {
 
 const getRegion = (): string => process.env.AMPLIFY_DATA_REGION || 'us-east-1';
 
+const IMDS = 'http://169.254.169.254';
+
+type Creds = { accessKeyId: string; secretAccessKey: string; sessionToken?: string };
+
+async function getCreds(): Promise<Creds> {
+  const r = await fetch(`${IMDS}/latest/meta-data/iam/security-credentials/`, { headers: { 'X-aws-ec2-metadata-token-ttl-seconds': '300' } });
+  if (!r.ok) throw new Error('IMDS role name failed');
+  const role = (await r.text()).trim();
+  const cr = await fetch(`${IMDS}/latest/meta-data/iam/security-credentials/${role}`, { headers: { 'X-aws-ec2-metadata-token-ttl-seconds': '300' } });
+  if (!cr.ok) throw new Error('IMDS credentials failed');
+  const j = (await cr.json()) as { AccessKeyId: string; SecretAccessKey: string; Token?: string };
+  return { accessKeyId: j.AccessKeyId, secretAccessKey: j.SecretAccessKey, sessionToken: j.Token };
+}
+
+function hmac(key: Buffer | string, data: string): Buffer {
+  return createHmac('sha256', key).update(data, 'utf8').digest();
+}
+
+function sha256(data: string): string {
+  return createHash('sha256').update(data, 'utf8').digest('hex');
+}
+
+function sign(creds: Creds, method: string, url: URL, body: string, service: string, region: string): Record<string, string> {
+  const amz = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const dateStamp = amz.slice(0, 8);
+  const payloadHash = sha256(body);
+  const host = url.hostname;
+  const path = url.pathname || '/';
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'host': host,
+    'x-amz-content-sha256': payloadHash,
+    'x-amz-date': amz,
+  };
+  if (creds.sessionToken) headers['x-amz-security-token'] = creds.sessionToken;
+  const signedHeaders = Object.keys(headers).sort().join(';');
+  const canoH = Object.keys(headers).sort().map((k) => `${k}:${headers[k].trim()}`).join('\n') + '\n';
+  const cano = `${method}\n${path}\n\n${canoH}\n${signedHeaders}\n${payloadHash}`;
+  const scope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const strToSign = `AWS4-HMAC-SHA256\n${amz}\n${scope}\n${sha256(cano)}`;
+  const kSign = hmac(hmac(hmac(hmac('AWS4' + creds.secretAccessKey, dateStamp), region), service), 'aws4_request');
+  const sig = hmac(kSign, strToSign).toString('hex');
+  return {
+    ...Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase() === 'host' ? 'Host' : k === 'content-type' ? 'Content-Type' : k === 'x-amz-content-sha256' ? 'X-Amz-Content-Sha256' : k === 'x-amz-date' ? 'X-Amz-Date' : k === 'x-amz-security-token' ? 'X-Amz-Security-Token' : k, v])),
+    'Authorization': `AWS4-HMAC-SHA256 Credential=${creds.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${sig}`,
+  };
+}
+
+// Normalize header names to HTTP style (e.g. Content-Type) for fetch
+function toFetchHeaders(h: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(h)) {
+    const n = k === 'host' ? 'Host' : k === 'content-type' ? 'Content-Type' : k === 'x-amz-content-sha256' ? 'X-Amz-Content-Sha256' : k === 'x-amz-date' ? 'X-Amz-Date' : k === 'x-amz-security-token' ? 'X-Amz-Security-Token' : k === 'authorization' ? 'Authorization' : k;
+    out[n] = v;
+  }
+  return out;
+}
+
 /**
- * Execute a GraphQL request against AppSync with IAM signing
+ * Execute a GraphQL request against AppSync with IAM (SigV4) signing.
+ * Uses IMDS for credentials and node:crypto for signing (no external deps).
  */
 async function executeGraphQL(query: string, variables: Record<string, unknown> = {}): Promise<any> {
   const endpoint = getEndpoint();
   const url = new URL(endpoint);
   const bodyStr = JSON.stringify({ query, variables });
-
-  const opts: { host: string; path: string; method: string; body: string; headers: Record<string, string>; service: string; region: string } = {
-    host: url.hostname,
-    path: url.pathname || '/graphql',
-    method: 'POST',
-    body: bodyStr,
-    headers: { 'Content-Type': 'application/json' },
-    service: 'appsync',
-    region: getRegion(),
-  };
-  aws4.sign(opts);
+  const region = getRegion();
+  const creds = await getCreds();
+  const headers = toFetchHeaders(sign(creds, 'POST', url, bodyStr, 'appsync', region));
 
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: opts.headers as Record<string, string>,
+    headers,
     body: bodyStr,
   });
 
@@ -236,7 +287,7 @@ async function createBooking(request: CreateBookingRequest): Promise<{ tripId: s
 /**
  * Lambda handler
  */
-export const handler: Handler = async (event): Promise<LambdaResponse> => {
+export const handler = async (event: { body?: string | object; queryStringParameters?: Record<string, string>; requestContext?: { http?: { method?: string; path?: string } }; requestMethod?: string; path?: string }): Promise<LambdaResponse> => {
   // Note: CORS preflight (OPTIONS) is handled automatically by Lambda Function URL
   // No need to handle it in the handler
 
