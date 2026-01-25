@@ -121,7 +121,7 @@ function AdminDashboard() {
     e.preventDefault();
     
     // Validate subdomain
-    const subdomainRegex = /^[a-z0-9-]+$/;
+    const subdomainRegex = /^[-a-z0-9]+$/;
     if (!subdomainRegex.test(formData.subdomain)) {
       alert('Subdomain can only contain lowercase letters, numbers, and hyphens');
       return;
@@ -844,7 +844,7 @@ function AdminDashboard() {
                   onChange={(e) => setFormData({ ...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                   required
                   placeholder="e.g., acme"
-                  pattern="[a-z0-9-]+"
+                  pattern="[-a-z0-9]+"
                 />
                 <small>Lowercase letters, numbers, and hyphens only</small>
               </div>

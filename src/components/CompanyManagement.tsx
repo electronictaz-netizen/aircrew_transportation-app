@@ -429,7 +429,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
                 onChange={(e) => handleSubdomainChange(e.target.value)}
                 required
                 placeholder="company"
-                pattern="[a-z0-9-]+"
+                pattern="[-a-z0-9]+"
               />
               <span className="subdomain-suffix">.onyxdispatch.us</span>
             </div>
