@@ -140,8 +140,8 @@ async function executeGraphQL(query: string, variables: Record<string, unknown> 
 }
 
 /**
- * Get company by booking code (bookingEnabled must be true).
- * Code is normalized to uppercase to match Company Settings (stored as uppercase).
+ * Get company by booking code (bookingEnabled and isActive must be true).
+ * Matching is case-insensitive: "TEST", "test", and "Test" all match the same stored value.
  */
 async function getCompanyByCode(code: string): Promise<{ id: string; name: string; displayName?: string | null; logoUrl?: string | null; bookingCode?: string | null; bookingEnabled?: boolean | null } | null> {
   const normalized = (code || '').toUpperCase().trim();
@@ -156,12 +156,14 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
   `;
   const data = await executeGraphQL(query, {
     filter: {
-      bookingCode: { eq: normalized },
       bookingEnabled: { eq: true },
+      isActive: { eq: true },
     },
   });
-  const items = data?.listCompanies?.items;
-  return items?.length ? items[0] : null;
+  const items = data?.listCompanies?.items || [];
+  const match = items.find((c: { bookingCode?: string | null }) => (c.bookingCode || '').toUpperCase().trim() === normalized);
+  console.log('getCompanyByCode:', { normalized, totalWithBookingEnabled: items.length, matched: !!match });
+  return match || null;
 }
 
 /**
@@ -258,7 +260,11 @@ export const handler = async (event: { body?: string | object; queryStringParame
         return {
           statusCode: 404,
           headers: responseHeaders,
-          body: JSON.stringify({ error: 'Company not found or booking portal not enabled' }),
+          body: JSON.stringify({
+            success: false,
+            error: 'Company not found or booking portal not enabled',
+            hint: 'Ensure the company has this Booking Code and "Enable Public Booking Portal" turned on in Configuration → Company Settings.',
+          }),
         };
       }
 
@@ -304,7 +310,11 @@ export const handler = async (event: { body?: string | object; queryStringParame
         return {
           statusCode: 404,
           headers: responseHeaders,
-          body: JSON.stringify({ error: 'Company not found or booking not enabled' }),
+          body: JSON.stringify({
+            success: false,
+            error: 'Company not found or booking not enabled',
+            hint: 'Ensure the company has this Booking Code and "Enable Public Booking Portal" turned on in Configuration → Company Settings.',
+          }),
         };
       }
       console.log('createBooking: company resolved', { companyId: company.id, bookingCode: company.bookingCode });

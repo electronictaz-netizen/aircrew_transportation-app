@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getBookingCodeFromURL, calculatePrice, type PricingRequest, type PricingResult } from '../utils/bookingUtils';
-import { getCompanyByBookingCode, createBookingViaAPI, type CompanyData } from '../utils/bookingApi';
+import { getCompanyByBookingCodeWithDetail, createBookingViaAPI, type CompanyData } from '../utils/bookingApi';
 import { logger } from '../utils/logger';
 import './BookingPortal.css';
 
@@ -79,15 +79,16 @@ export default function BookingPortal() {
           return;
         }
 
-        const companyData = await getCompanyByBookingCode(code);
-        
-        if (!companyData) {
-          setError(`No booking portal found for code "${code}". Please verify your booking link.`);
+        const result = await getCompanyByBookingCodeWithDetail(code);
+
+        if (!result.company) {
+          const msg = [result.error, result.hint].filter(Boolean).join(' ') || `No booking portal found for code "${code}". Please verify your booking link.`;
+          setError(msg);
           setLoading(false);
           return;
         }
 
-        setCompany(companyData);
+        setCompany(result.company);
       } catch (err) {
         logger.error('Error loading company:', err);
         setError('Failed to load booking portal. Please try again later.');
@@ -173,7 +174,8 @@ export default function BookingPortal() {
       });
 
       if (!result.success || !result.bookingId) {
-        throw new Error(result.error || 'Failed to create booking');
+        const msg = [result.error, result.hint].filter(Boolean).join(' ');
+        throw new Error(msg || 'Failed to create booking');
       }
 
       setBookingId(result.bookingId);
@@ -185,7 +187,7 @@ export default function BookingPortal() {
       logger.info('Booking created successfully:', { bookingId: result.bookingId, companyId: company.id });
     } catch (err) {
       logger.error('Error creating booking:', err);
-      setError('Failed to submit booking. Please try again or contact us directly.');
+      setError((err as Error)?.message || 'Failed to submit booking. Please try again or contact us directly.');
     } finally {
       setSubmitting(false);
     }

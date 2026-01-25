@@ -272,7 +272,12 @@ function ManagementDashboard() {
         filter: { companyId: { eq: companyId } },
       });
       const { data, errors } = raw as { data?: Schema['BookingRequest']['type'][]; errors?: { message?: string }[] };
-      if (errors?.length) console.error('Error loading booking requests:', errors);
+      if (errors?.length) {
+        const msgs = errors.map((e) =>
+          (e && typeof e === 'object' && 'message' in e ? (e as { message?: string }).message : null) || (typeof e === 'string' ? e : JSON.stringify(e))
+        ).filter(Boolean);
+        console.error('Error loading booking requests:', msgs.length ? msgs.join('; ') : JSON.stringify(errors));
+      }
       setBookingRequests(data ?? []);
     } catch (e) {
       console.error('Error loading booking requests:', e);

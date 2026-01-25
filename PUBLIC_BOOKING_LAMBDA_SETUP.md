@@ -36,11 +36,13 @@ git commit -m "Add public booking Lambda function"
 git push
 ```
 
-### Step 2: Function URL (automatic)
+### Step 2: Function URL (managed by backend)
 
-The Function URL is created automatically by the backend (see `amplify/backend.ts`). It uses:
+The Function URL is created and managed by the backend (`amplify/backend.ts`). It uses:
 - **Auth type:** `NONE` (public access)
 - **CORS:** `*` origins, `GET`/`POST`/`OPTIONS`, `Content-Type` header
+
+If you see "FunctionUrlConfig exists" (409) on deploy, delete the existing Function URL in Lambda → Configuration → Function URL, then redeploy.
 
 After deployment, get the URL from:
 1. [AWS Lambda Console](https://console.aws.amazon.com/lambda/) → your `publicBooking-*` function
@@ -157,6 +159,24 @@ Trips from the booking portal are created for the **company that has the booking
 2. **Management company** – The Management dashboard lists trips for the company you’re logged into (from **CompanyUser**). If you use **Admin mode**, the selected company in Admin must be the one with the booking code. If you manage multiple companies, switch to the company that owns the booking code.
 3. **Date / filters** – In the trip list, set **View** to **All Trips** so the date filter doesn’t hide the new booking. Check **Status** (e.g. Unassigned) and other filters.
 4. **Logs** – After a booking, the Lambda logs `Booking created: { companyId, tripId, bookingCode }`. In Management, the browser console logs `Loaded trips: N companyId: <id>`. The `companyId` in both must match. In **AWS Lambda → publicBooking → Monitor → View logs**, search for `Booking created` and note `companyId`. In the Management page (F12 → Console), confirm `companyId` in `Loaded trips` is the same.
+
+### POST to Lambda URL returns 404 (Not Found)
+
+The booking portal sends requests to `VITE_BOOKING_API_URL`. A **404** means that URL is wrong or the Function URL was removed/recreated.
+
+1. **Get the current Function URL**
+   - [AWS Lambda Console](https://console.aws.amazon.com/lambda/) → **Functions**
+   - Search for `publicBooking` (or `ma-publicBookinglambda`) and open it
+   - **Configuration** tab → **Function URL** (left). If you see **Create function URL**, the Lambda has no URL yet—create it, or redeploy the app so the backend can create it.
+   - Copy the URL (e.g. `https://xxxxx.lambda-url.us-east-1.on.aws/`).
+
+2. **Set it in Amplify**
+   - [Amplify Console](https://console.aws.amazon.com/amplify/) → your app → **Environment variables**
+   - Set `VITE_BOOKING_API_URL` = the URL you copied (with or without a trailing slash).
+   - **Save** and **Redeploy** the app (or run a new build for the frontend).
+
+3. **If the backend manages the Function URL**
+   - The `amplify/backend.ts` uses `addFunctionUrl` for `publicBooking`. Each deploy ensures the URL exists. If you previously had a different (e.g. manually created) URL that now 404s, the CDK-created URL will have a new ID—always re-copy from Lambda → Function URL after a deploy and update `VITE_BOOKING_API_URL`.
 
 ### CORS Errors
 - Check Function URL CORS configuration

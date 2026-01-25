@@ -22,6 +22,7 @@ export interface BookingResponse {
   customerId?: string;
   message?: string;
   error?: string;
+  hint?: string;
 }
 
 export interface CompanyResponse {
@@ -30,44 +31,44 @@ export interface CompanyResponse {
   error?: string;
 }
 
+export type GetCompanyResult = { company: CompanyData } | { company: null; error?: string; hint?: string };
+
 /**
  * Get company by booking code via Lambda function
  */
 export async function getCompanyByBookingCode(code: string): Promise<CompanyData | null> {
+  const result = await getCompanyByBookingCodeWithDetail(code);
+  return result.company;
+}
+
+/**
+ * Get company by booking code with error detail (for 404 hint)
+ */
+export async function getCompanyByBookingCodeWithDetail(code: string): Promise<GetCompanyResult> {
   if (!BOOKING_API_URL) {
     console.error('Booking API URL not configured. Set VITE_BOOKING_API_URL environment variable.');
-    return null;
+    return { company: null, error: 'Booking API URL not configured' };
   }
 
   try {
     const response = await fetch(BOOKING_API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: 'getCompany',
-        code: code,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getCompany', code }),
     });
 
+    const data = (await response.json().catch(() => ({}))) as CompanyResponse & { hint?: string };
     if (!response.ok) {
       if (response.status === 404) {
-        return null;
+        return { company: null, error: data.error, hint: data.hint };
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(data.error || `HTTP error! status: ${response.status}`);
     }
-
-    const data: CompanyResponse = await response.json();
-    
-    if (data.success && data.company) {
-      return data.company;
-    }
-
-    return null;
+    if (data.success && data.company) return { company: data.company };
+    return { company: null, error: data.error, hint: data.hint };
   } catch (error) {
     console.error('Error fetching company from booking API:', error);
-    return null;
+    return { company: null, error: (error as Error)?.message };
   }
 }
 
