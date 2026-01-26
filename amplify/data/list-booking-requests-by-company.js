@@ -2,19 +2,16 @@ import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
   const companyId = ctx.args.companyId;
-  const dynamoDbValue = util.dynamodb.toDynamoDB(companyId);
   
-  // Scan the main table with filter
-  // The GSI exists but Query syntax isn't working, so use Scan for now
-  // Filter should match companyId attribute
+  // Use the transform utility to create the filter expression
+  // This should properly format the DynamoDB filter
+  const filter = util.transform.toDynamoDBFilterExpression({
+    companyId: { eq: companyId }
+  });
+  
   return {
     operation: 'Scan',
-    filter: {
-      expression: 'companyId = :cid',
-      expressionValues: {
-        ':cid': dynamoDbValue
-      }
-    },
+    filter: JSON.parse(filter),
     limit: 100,
   };
 }
