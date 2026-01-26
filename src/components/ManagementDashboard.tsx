@@ -277,6 +277,11 @@ function ManagementDashboard() {
 
     const companyName = company.displayName || company.name || 'Your Transportation Company';
     
+    // Helper to convert null to undefined for optional string fields
+    const toUndefined = (value: string | null | undefined): string | undefined => {
+      return value ?? undefined;
+    };
+
     const emailResult = await sendBookingEmailViaLambda({
       type,
       to: bookingRequest.customerEmail,
@@ -289,12 +294,12 @@ function ManagementDashboard() {
       pickupLocation: bookingRequest.pickupLocation,
       dropoffLocation: bookingRequest.dropoffLocation,
       numberOfPassengers: bookingRequest.numberOfPassengers ?? 1,
-      tripType: bookingRequest.tripType,
-      flightNumber: bookingRequest.flightNumber,
-      vehicleType: bookingRequest.vehicleType,
+      tripType: toUndefined(bookingRequest.tripType),
+      flightNumber: toUndefined(bookingRequest.flightNumber),
+      vehicleType: toUndefined(bookingRequest.vehicleType),
       isRoundTrip: bookingRequest.isRoundTrip ?? false,
-      returnDate: bookingRequest.returnDate || undefined,
-      specialInstructions: bookingRequest.specialInstructions || undefined,
+      returnDate: toUndefined(bookingRequest.returnDate),
+      specialInstructions: toUndefined(bookingRequest.specialInstructions),
       tripId: tripId,
     });
 
