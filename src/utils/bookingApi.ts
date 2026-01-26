@@ -120,7 +120,17 @@ export async function createBookingViaAPI(bookingData: {
       }),
     });
 
-    const data: BookingResponse = await response.json();
+    const data = (await response.json().catch(() => ({}))) as BookingResponse;
+    
+    // Check if response is OK and data indicates success
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || data.message || `HTTP error! status: ${response.status}`,
+      };
+    }
+    
+    // Return the response data (should have success: true on success)
     return data;
   } catch (error: any) {
     console.error('Error creating booking via API:', error);
