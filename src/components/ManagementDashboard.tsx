@@ -270,7 +270,27 @@ function ManagementDashboard() {
     try {
       setRequestsLoading(true);
       console.log('[ManagementDashboard] Loading booking requests for companyId:', companyId);
-      const { data, errors } = await client.queries.listBookingRequestsForCompany({ companyId });
+      
+      // Try the new query name first, fallback to old name for compatibility
+      let data, errors;
+      try {
+        const result = await client.queries.listBookingRequestsForCompany({ companyId });
+        data = result.data;
+        errors = result.errors;
+        console.log('[ManagementDashboard] Used query: listBookingRequestsForCompany');
+      } catch (e: any) {
+        // If the new query doesn't exist, try the old name
+        if (e?.message?.includes('listBookingRequestsForCompany') || e?.message?.includes('undefined')) {
+          console.warn('[ManagementDashboard] listBookingRequestsForCompany not found, trying listBookingRequestsByCompany');
+          const result = await (client.queries as any).listBookingRequestsByCompany({ companyId });
+          data = result.data;
+          errors = result.errors;
+          console.log('[ManagementDashboard] Used query: listBookingRequestsByCompany (fallback)');
+        } else {
+          throw e;
+        }
+      }
+      
       if (errors?.length) {
         const joined = errors.map((e) => (e?.message ?? JSON.stringify(e))).join('; ');
         console.error('[ManagementDashboard] Query errors:', errors);

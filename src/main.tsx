@@ -32,6 +32,10 @@ const config = {
 
 Amplify.configure(config);
 
+// Log the configured API endpoint for debugging
+console.log('[Amplify Config] AppSync API URL:', config.data?.url);
+console.log('[Amplify Config] AppSync API ID:', config.data?.url?.match(/https:\/\/([^.]+)\.appsync-api/)?.[1]);
+
 // Load debug utilities after Amplify is configured (they use generateClient/Data)
 import('./utils/flightStatusDebug');
 import('./utils/recurringTripsDebug');
