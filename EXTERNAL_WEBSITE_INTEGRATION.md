@@ -36,8 +36,8 @@ https://[your-amplify-domain].amplifyapp.com/?signup=true&plan=basic
 
 Available plan values:
 - `free` - Free plan
-- `basic` - Basic plan ($49/month)
-- `premium` - Premium plan ($99/month)
+- `basic` - Basic plan ($59/month)
+- `premium` - Premium plan ($129/month)
 
 ### Option 3: Subscribe Button (After Sign-Up)
 

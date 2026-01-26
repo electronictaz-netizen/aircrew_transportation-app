@@ -227,8 +227,8 @@ After the first deployment:
 
 2. **Subscription Plans**:
    - **Free**: 10 trips/month, basic features
-   - **Basic** ($49/month): Unlimited trips, location management, custom fields
-   - **Premium** ($99/month): Everything in Basic plus advanced reports and flight status API
+   - **Basic** ($59/month): Unlimited trips, location management, custom fields
+   - **Premium** ($129/month): Everything in Basic plus advanced reports and flight status API
    - See [docs/SUBSCRIPTION_AND_TRIAL_GUIDE.md](./docs/SUBSCRIPTION_AND_TRIAL_GUIDE.md) for details
 
 2. **Add Drivers**:

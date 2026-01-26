@@ -541,8 +541,8 @@ On mobile devices:
 Your company's subscription determines which features you have access to:
 
 - **Free Tier**: Up to 10 trips/month, basic features
-- **Basic Plan** ($49/month): Unlimited trips, location management, custom fields
-- **Premium Plan** ($99/month): Everything in Basic plus advanced reports and flight status API
+- **Basic Plan** ($59/month): Unlimited trips, location management, custom fields
+- **Premium Plan** ($129/month): Everything in Basic plus advanced reports and flight status API
 
 ### Accessing Subscription Management
 

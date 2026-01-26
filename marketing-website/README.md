@@ -120,8 +120,8 @@ The website links to your app with these URL parameters:
 
 - `?signup=true` - Shows sign-up form instead of sign-in
 - `?plan=free` - Pre-selects Free plan
-- `?plan=basic` - Pre-selects Basic plan ($49/month)
-- `?plan=premium` - Pre-selects Premium plan ($99/month)
+- `?plan=basic` - Pre-selects Basic plan ($59/month)
+- `?plan=premium` - Pre-selects Premium plan ($129/month)
 
 ## Features
 

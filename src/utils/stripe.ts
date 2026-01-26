@@ -37,7 +37,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     id: 'basic',
     name: 'Basic',
     description: 'For small teams',
-    price: 49,
+    price: 59,
     interval: 'month',
     features: [
       'Unlimited trips',
@@ -53,7 +53,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     id: 'premium',
     name: 'Premium',
     description: 'For growing businesses',
-    price: 99,
+    price: 129,
     interval: 'month',
     features: [
       'Everything in Basic',

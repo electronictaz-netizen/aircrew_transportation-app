@@ -22,7 +22,7 @@ This guide will help you set up Stripe for subscription management in the Onyx T
 
 ### Premium Plan
 - **Name**: Premium Plan
-- **Price**: $99/month
+- **Price**: $129/month
 - **Billing period**: Monthly
 - **Copy the Price ID** (starts with `price_`)
 

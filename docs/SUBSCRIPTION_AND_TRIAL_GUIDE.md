@@ -68,7 +68,7 @@ If you don't subscribe before your trial ends:
 
 ### Basic Plan
 
-**Price**: $49/month
+**Price**: $59/month
 
 **Features**:
 - **Unlimited trips**
@@ -82,7 +82,7 @@ If you don't subscribe before your trial ends:
 
 ### Premium Plan
 
-**Price**: $99/month
+**Price**: $129/month
 
 **Features**:
 - Everything in Basic

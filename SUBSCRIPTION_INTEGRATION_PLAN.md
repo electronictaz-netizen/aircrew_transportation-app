@@ -53,7 +53,7 @@ Integration of Stripe for subscription management in the Onyx Transportation App
 - Standard reports
 - Email support
 
-**Premium Tier** ($99/month)
+**Premium Tier** ($129/month)
 - All Basic features
 - Advanced reports
 - Flight status API integration
