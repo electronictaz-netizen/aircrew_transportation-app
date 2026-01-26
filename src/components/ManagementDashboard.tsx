@@ -38,6 +38,7 @@ import { notifyDriver, notifyPreviousDriver } from '../utils/driverNotifications
 import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
 import { sendDailyAssignmentEmailsToAllDrivers, sendDailyAssignmentToDriver } from '../utils/dailyAssignmentEmail';
 import { hasFeatureAccess, isTrialActive, isTrialExpired, getTrialDaysRemaining } from '../utils/stripe';
+import { sendBookingEmailViaLambda } from '../utils/sendBookingEmail';
 import './ManagementDashboard.css';
 
 const client = generateClient<Schema>();
@@ -264,6 +265,44 @@ function ManagementDashboard() {
     }
   };
 
+  // Helper function to send booking status emails (acceptance/rejection)
+  const sendBookingStatusEmail = async (
+    bookingRequest: Schema['BookingRequest']['type'],
+    type: 'booking_accepted' | 'booking_rejected',
+    tripId?: string
+  ): Promise<void> => {
+    if (!company || !bookingRequest.customerEmail) {
+      return; // Skip if no company info or customer email
+    }
+
+    const companyName = company.displayName || company.name || 'Your Transportation Company';
+    
+    const emailResult = await sendBookingEmailViaLambda({
+      type,
+      to: bookingRequest.customerEmail,
+      customerName: bookingRequest.customerName,
+      customerEmail: bookingRequest.customerEmail,
+      customerPhone: bookingRequest.customerPhone,
+      companyName: companyName,
+      bookingId: bookingRequest.id,
+      pickupDate: bookingRequest.pickupDate,
+      pickupLocation: bookingRequest.pickupLocation,
+      dropoffLocation: bookingRequest.dropoffLocation,
+      numberOfPassengers: bookingRequest.numberOfPassengers ?? 1,
+      tripType: bookingRequest.tripType,
+      flightNumber: bookingRequest.flightNumber,
+      vehicleType: bookingRequest.vehicleType,
+      isRoundTrip: bookingRequest.isRoundTrip ?? false,
+      returnDate: bookingRequest.returnDate || undefined,
+      specialInstructions: bookingRequest.specialInstructions || undefined,
+      tripId: tripId,
+    });
+
+    if (emailResult && !emailResult.success) {
+      console.warn('Failed to send booking status email:', emailResult.error);
+    }
+  };
+
   const loadBookingRequests = async () => {
     if (!companyId) return;
     setBookingRequestsError(null);
@@ -351,6 +390,12 @@ function ManagementDashboard() {
         tripId: trip.id,
         customerId,
       });
+      
+      // Send acceptance email (non-blocking)
+      sendBookingStatusEmail(r, 'booking_accepted', trip.id).catch((emailError) => {
+        console.error('Error sending booking acceptance email (non-critical):', emailError);
+      });
+      
       await loadBookingRequests();
       await loadTrips();
       await loadCustomers();
@@ -364,6 +409,12 @@ function ManagementDashboard() {
   const handleRejectBookingRequest = async (r: Schema['BookingRequest']['type']) => {
     try {
       await client.models.BookingRequest.update({ id: r.id, status: 'Rejected' });
+      
+      // Send rejection email (non-blocking)
+      sendBookingStatusEmail(r, 'booking_rejected').catch((emailError) => {
+        console.error('Error sending booking rejection email (non-critical):', emailError);
+      });
+      
       await loadBookingRequests();
       alert('Booking request rejected.');
     } catch (e: any) {
