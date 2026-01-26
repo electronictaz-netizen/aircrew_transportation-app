@@ -2,10 +2,12 @@
 
 ## Overview
 
-The booking portal now sends automatic email notifications when customers submit booking requests:
+The booking portal now sends automatic email notifications throughout the booking lifecycle:
 
 1. **Customer Confirmation Email**: Sent to the customer confirming their booking request was received
-2. **Manager Notification Email**: (Future enhancement) Will notify company managers of new booking requests
+2. **Booking Accepted Email**: Sent to the customer when a manager accepts their booking request
+3. **Booking Rejected Email**: Sent to the customer when a manager rejects their booking request
+4. **Manager Notification Email**: (Future enhancement) Will notify company managers of new booking requests
 
 ## Prerequisites
 
@@ -48,20 +50,52 @@ The `sendBookingEmail` Lambda function is already included in the backend. After
    - **Key**: `BOOKING_EMAIL_FUNCTION_URL`
    - **Value**: The Function URL you copied from Step 1
 
-### Step 3: Test
+### Step 3: Configure Frontend Environment Variable
+
+For acceptance/rejection emails to work from the Management Dashboard:
+
+1. Go to AWS Amplify Console
+2. Select your app
+3. Go to **App settings** → **Environment variables**
+4. Add:
+   - **Key**: `VITE_BOOKING_EMAIL_FUNCTION_URL`
+   - **Value**: The same Function URL from Step 1 (for `sendBookingEmail`)
+5. **Save** and **redeploy frontend**
+
+### Step 4: Test
 
 1. Submit a booking request through the booking portal
 2. Check the customer's email for the confirmation email
-3. Check CloudWatch logs for `publicBooking` and `sendBookingEmail` functions to verify emails are being sent
+3. Accept or reject the booking in the Management Dashboard
+4. Check the customer's email for the acceptance/rejection email
+5. Check CloudWatch logs for `publicBooking` and `sendBookingEmail` functions to verify emails are being sent
 
 ## Email Templates
 
 ### Customer Confirmation Email
 
-Includes:
+Sent when a booking request is submitted. Includes:
 - Booking request ID
 - Trip details (pickup date/time, locations, passengers, etc.)
 - Next steps information
+- Company contact information
+
+### Booking Accepted Email
+
+Sent when a manager accepts a booking request. Includes:
+- Confirmation that the trip is confirmed
+- Booking request ID and Trip ID
+- Complete trip details
+- Information about driver assignment process
+- Company contact information
+
+### Booking Rejected Email
+
+Sent when a manager rejects a booking request. Includes:
+- Notification that the booking was declined
+- Booking request ID
+- Requested trip details
+- Optional rejection reason (if provided)
 - Company contact information
 
 ### Manager Notification Email (Future)
@@ -99,14 +133,17 @@ If you see "BOOKING_EMAIL_FUNCTION_URL not configured" in logs:
 ## Current Status
 
 ✅ **Implemented:**
-- Customer confirmation emails
+- Customer confirmation emails (on booking submission)
+- Booking accepted emails (when manager accepts)
+- Booking rejected emails (when manager rejects)
 - Email templates (HTML and plain text)
 - Error handling (non-blocking)
 - Integration with existing email service (SendGrid/Postmark)
+- Frontend utility for sending status emails
 
 ⏳ **Future Enhancements:**
 - Manager notification emails (requires fetching manager emails from CompanyUser records)
-- Email notifications when booking status changes (accepted/rejected)
+- Optional rejection reason field in UI
 - SMS notifications option
 - Customizable email templates per company
 
