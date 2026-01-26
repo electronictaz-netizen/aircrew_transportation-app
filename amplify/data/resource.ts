@@ -202,6 +202,14 @@ const schema = a.schema({
       // allow.resource(publicBooking) not available; Lambda createBookingRequest uses IAM.
     ]),
 
+  // Custom query to work around missing model-generated listBookingRequests / ModelBookingRequestFilterInput in AppSync.
+  listBookingRequestsByCompany: a
+    .query()
+    .arguments({ companyId: a.id().required() })
+    .returns(a.ref('BookingRequest').array())
+    .handler(a.handler.function('listBookingRequests'))
+    .authorization((allow) => [allow.authenticated()]),
+
   TripVehicle: a
     .model({
       tripId: a.id().required(),

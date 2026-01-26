@@ -8,6 +8,7 @@ import { stripeCheckout } from './functions/stripeCheckout/resource';
 import { stripePortal } from './functions/stripePortal/resource';
 import { sendInvitationEmail } from './functions/sendInvitationEmail/resource';
 import { publicBooking } from './functions/publicBooking/resource';
+import { listBookingRequests } from './functions/listBookingRequests/resource';
 import { sendSms } from './functions/sendSms/resource';
 
 export const backend = defineBackend({
@@ -18,6 +19,7 @@ export const backend = defineBackend({
   stripePortal,
   sendInvitationEmail,
   publicBooking,
+  listBookingRequests,
   sendSms,
 });
 
@@ -43,6 +45,18 @@ try {
   }
 } catch (_) {
   // Skip: COMPANY_TABLE_NAME not set; Lambda DynamoDB fallback will be disabled.
+}
+
+// listBookingRequestsByCompany custom query: Lambda needs to read BookingRequest table.
+try {
+  const tables = (backend.data.resources as { tables?: Record<string, { tableName: string; grantReadData: (grantee: unknown) => void }> }).tables;
+  const brTable = tables?.['BookingRequest'] ?? tables?.['BookingRequestTable'];
+  if (brTable) {
+    backend.listBookingRequests.addEnvironment('BOOKING_REQUEST_TABLE_NAME', brTable.tableName);
+    brTable.grantReadData(backend.listBookingRequests.resources.lambda);
+  }
+} catch (_) {
+  // Skip: BOOKING_REQUEST_TABLE_NAME not set.
 }
 
 // Function URL for publicBooking: create and manage in Lambda Console (Configuration → Function URL).

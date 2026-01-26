@@ -269,42 +269,18 @@ function ManagementDashboard() {
     setBookingRequestsError(null);
     try {
       setRequestsLoading(true);
-      // @ts-expect-error TS2590 - Amplify BookingRequest.list return type is too complex
-      const raw = await client.models.BookingRequest.list({
-        filter: { companyId: { eq: companyId } },
-      });
-      const { data, errors } = raw as { data?: Schema['BookingRequest']['type'][]; errors?: { message?: string }[] };
+      const { data, errors } = await client.queries.listBookingRequestsByCompany({ companyId });
       if (errors?.length) {
-        const msgs = errors.map((e) =>
-          (e && typeof e === 'object' && 'message' in e ? (e as { message?: string }).message : null) || (typeof e === 'string' ? e : JSON.stringify(e))
-        ).filter(Boolean);
-        const joined = msgs.join('; ');
-        const isListNotDeployed = /listBookingRequests|ModelBookingRequestFilterInput/i.test(joined);
-        if (isListNotDeployed) {
-          setBookingRequests([]);
-          setBookingRequestsError(
-            "Booking requests can't be loaded: the API is missing listBookingRequests. Redeploy the backend (push to trigger Amplify build or run npx ampx pipeline-deploy) to add it. Portal bookings are still being saved."
-          );
-        } else {
-          setBookingRequests([]);
-          console.error('Error loading booking requests:', joined || JSON.stringify(errors));
-          setBookingRequestsError('Failed to load booking requests.');
-        }
+        const joined = errors.map((e) => (e?.message ?? JSON.stringify(e))).join('; ');
+        setBookingRequests([]);
+        setBookingRequestsError(joined || 'Failed to load booking requests.');
         return;
       }
-      setBookingRequests(data ?? []);
+      setBookingRequests((data ?? []) as Array<Schema['BookingRequest']['type']>);
     } catch (e: unknown) {
-      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message?: unknown }).message) : String(e);
-      const isListNotDeployed = /listBookingRequests|ModelBookingRequestFilterInput/i.test(msg);
-      if (isListNotDeployed) {
-        setBookingRequests([]);
-        setBookingRequestsError(
-          "Booking requests can't be loaded: the API is missing listBookingRequests. Redeploy the backend (push to trigger Amplify build or run npx ampx pipeline-deploy) to add it. Portal bookings are still being saved."
-        );
-      } else {
-        console.error('Error loading booking requests:', e);
-        setBookingRequestsError('Failed to load booking requests.');
-      }
+      console.error('Error loading booking requests:', e);
+      setBookingRequests([]);
+      setBookingRequestsError(e instanceof Error ? e.message : 'Failed to load booking requests.');
     } finally {
       setRequestsLoading(false);
     }
@@ -345,6 +321,7 @@ function ManagementDashboard() {
         notes: r.specialInstructions,
       });
       if (!trip?.id) throw new Error('Failed to create trip');
+      // @ts-expect-error TS2590 - Amplify update return type is too complex
       await client.models.BookingRequest.update({
         id: r.id,
         status: 'Accepted',

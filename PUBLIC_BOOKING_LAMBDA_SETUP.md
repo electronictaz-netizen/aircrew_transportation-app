@@ -166,7 +166,11 @@ If the Lambda creates booking requests (CloudWatch shows "Booking request create
 
 then the **deployed AppSync (Data) API does not include the BookingRequest model’s list/filter**. That usually happens when the backend deploy that added BookingRequest **rolled back** (e.g. due to the addFunctionUrl error). The Lambda uses the `createBookingRequest` mutation, which can exist even if the list was never deployed successfully. The Management **Booking Requests** view now shows an inline error when this happens; portal bookings are still saved.
 
-**Fix:**
+**Workaround (implemented):** A **custom query** `listBookingRequestsByCompany` and a **listBookingRequests** Lambda were added. The Management **Booking Requests** view now uses `client.queries.listBookingRequestsByCompany({ companyId })` instead of `client.models.BookingRequest.list`. The Lambda scans the BookingRequest DynamoDB table by `companyId`. This does not depend on the model-generated `listBookingRequests` or `ModelBookingRequestFilterInput`.
+
+**To use the workaround:** Redeploy the backend (push a commit or Redeploy in Amplify) so the **Backend** phase runs successfully. The deploy adds the `listBookingRequests` Lambda and the custom AppSync query `listBookingRequestsByCompany`. After a successful deploy, the **Booking Requests** view will load via the custom query.
+
+**Fix (alternative – restore model list):**
 1. Ensure `amplify/backend.ts` does **not** use `addFunctionUrl` for publicBooking (it was removed to avoid CloudFormation "Properties validation failed").
 2. **Redeploy the app** (push a commit or “Redeploy this version” in Amplify) so the **Backend** phase runs `npx ampx pipeline-deploy` without errors.
 3. In Amplify build logs, confirm the **Backend** step completes and there is **no** `UPDATE_ROLLBACK_COMPLETE` or CloudFormation failure.
