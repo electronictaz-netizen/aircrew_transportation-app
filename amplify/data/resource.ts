@@ -207,7 +207,12 @@ const schema = a.schema({
     .query()
     .arguments({ companyId: a.id().required() })
     .returns(a.ref('BookingRequest').array())
-    .handler(a.handler.function('listBookingRequests'))
+    .handler(
+      a.handler.custom({
+        dataSource: a.ref('BookingRequest'),
+        entry: './list-booking-requests-by-company.js',
+      })
+    )
     .authorization((allow) => [allow.authenticated()]),
 
   TripVehicle: a
