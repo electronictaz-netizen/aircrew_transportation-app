@@ -9,6 +9,7 @@ interface BookingRequestsListProps {
   requests: BookingRequest[];
   onAccept: (r: BookingRequest) => Promise<void>;
   onReject: (r: BookingRequest) => Promise<void>;
+  onDelete?: (ids: string[]) => Promise<void>;
   onRefresh: () => void;
   loading?: boolean;
   canManage?: boolean;
@@ -19,6 +20,7 @@ export default function BookingRequestsList({
   requests,
   onAccept,
   onReject,
+  onDelete,
   onRefresh,
   loading = false,
   canManage = true,
@@ -28,6 +30,8 @@ export default function BookingRequestsList({
   const [statusFilter, setStatusFilter] = useState<'all' | 'Pending' | 'Accepted' | 'Rejected'>('all');
   const [dateFilterStart, setDateFilterStart] = useState('');
   const [dateFilterEnd, setDateFilterEnd] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter and search requests
   const filteredRequests = useMemo(() => {
@@ -83,11 +87,67 @@ export default function BookingRequestsList({
   const accepted = filteredRequests.filter((r) => r.status === 'Accepted');
   const rejected = filteredRequests.filter((r) => r.status === 'Rejected');
 
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(filteredRequests.map(r => r.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!onDelete || selectedIds.size === 0) return;
+    
+    const count = selectedIds.size;
+    const confirmMessage = `Are you sure you want to delete ${count} booking request${count > 1 ? 's' : ''}? This action cannot be undone.`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await onDelete(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting booking requests:', error);
+      alert('Failed to delete booking requests. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const allSelected = filteredRequests.length > 0 && selectedIds.size === filteredRequests.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < filteredRequests.length;
+
   const renderRow = (r: BookingRequest) => {
     const flightOrJob =
       r.tripType === 'Airport Trip' ? (r.flightNumber || '—') : (r.jobNumber || '—');
+    const isSelected = selectedIds.has(r.id);
     return (
-      <tr key={r.id}>
+      <tr key={r.id} style={{ backgroundColor: isSelected ? '#eff6ff' : undefined }}>
+        {canManage && onDelete && (
+          <td>
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => handleSelectOne(r.id, e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+          </td>
+        )}
         <td>{r.customerName}</td>
         <td>{r.customerEmail}</td>
         <td>{r.customerPhone}</td>
@@ -275,7 +335,34 @@ export default function BookingRequestsList({
         {/* Results Count */}
         <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
           Showing {filteredRequests.length} of {requests.length} booking requests
+          {selectedIds.size > 0 && (
+            <span style={{ marginLeft: '1rem', fontWeight: '500', color: '#2563eb' }}>
+              ({selectedIds.size} selected)
+            </span>
+          )}
         </div>
+
+        {/* Delete Selected Button */}
+        {canManage && onDelete && selectedIds.size > 0 && (
+          <button
+            type="button"
+            onClick={handleDeleteSelected}
+            disabled={isDeleting}
+            style={{
+              marginTop: '0.75rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: isDeleting ? '#9ca3af' : '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isDeleting ? 'not-allowed' : 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+            }}
+          >
+            {isDeleting ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}
+          </button>
+        )}
       </div>
 
       {requests.length === 0 ? (
@@ -291,6 +378,20 @@ export default function BookingRequestsList({
           <table className="booking-requests-table">
             <thead>
               <tr>
+                {canManage && onDelete && (
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={(input) => {
+                        if (input) input.indeterminate = someSelected;
+                      }}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      style={{ cursor: 'pointer' }}
+                      title={allSelected ? 'Deselect all' : 'Select all'}
+                    />
+                  </th>
+                )}
                 <th>Customer</th>
                 <th>Email</th>
                 <th>Phone</th>

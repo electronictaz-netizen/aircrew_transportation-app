@@ -431,6 +431,27 @@ function ManagementDashboard() {
     }
   };
 
+  const handleDeleteBookingRequests = async (ids: string[]) => {
+    if (!ids.length) return;
+    
+    try {
+      // Delete all selected booking requests
+      const deletePromises = ids.map(id => 
+        client.models.BookingRequest.delete({ id })
+      );
+      
+      await Promise.all(deletePromises);
+      await loadBookingRequests();
+      
+      const count = ids.length;
+      alert(`Successfully deleted ${count} booking request${count > 1 ? 's' : ''}.`);
+    } catch (e: any) {
+      console.error('Error deleting booking requests:', e);
+      alert(e?.message || 'Failed to delete booking requests.');
+      throw e;
+    }
+  };
+
   // Helper function to save custom field values
   const saveCustomFieldValues = async (
     entityId: string,
@@ -2296,6 +2317,7 @@ function ManagementDashboard() {
             requests={bookingRequests}
             onAccept={handleAcceptBookingRequest}
             onReject={handleRejectBookingRequest}
+            onDelete={handleDeleteBookingRequests}
             onRefresh={loadBookingRequests}
             loading={requestsLoading}
             canManage={canManageTrips(userRole) || isAdminOverride}
