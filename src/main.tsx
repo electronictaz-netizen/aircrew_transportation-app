@@ -33,8 +33,11 @@ const config = {
 Amplify.configure(config);
 
 // Log the configured API endpoint for debugging
-console.log('[Amplify Config] AppSync API URL:', config.data?.url);
-console.log('[Amplify Config] AppSync API ID:', config.data?.url?.match(/https:\/\/([^.]+)\.appsync-api/)?.[1]);
+const apiUrl = config.data?.url || 'NOT SET';
+const apiId = apiUrl.match(/https:\/\/([^.]+)\.appsync-api/)?.[1] || 'UNKNOWN';
+console.log('[Amplify Config] AppSync API URL:', apiUrl);
+console.log('[Amplify Config] AppSync API ID:', apiId);
+console.warn('[Amplify Config] If booking requests are not showing, verify this API ID matches the API where booking requests were created.');
 
 // Load debug utilities after Amplify is configured (they use generateClient/Data)
 import('./utils/flightStatusDebug');
