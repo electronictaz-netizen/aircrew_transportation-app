@@ -15,9 +15,11 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
-  // Handle errors first
+  // If there's an error, append it but still return an empty array to satisfy GraphQL schema
+  // Using appendError instead of error so execution continues and we return an array
   if (ctx.error) {
-    util.error(ctx.error.message, ctx.error.type);
+    util.appendError(ctx.error.message, ctx.error.type || 'UnknownError');
+    return [];
   }
   
   // If no result, return empty array
