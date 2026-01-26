@@ -895,7 +895,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
                                       if (checked) {
                                         field.onChange([...currentIds, vehicle.id]);
                                       } else {
-                                        field.onChange(currentIds.filter(id => id !== vehicle.id));
+                                        field.onChange(currentIds.filter((id: string) => id !== vehicle.id));
                                       }
                                     }}
                                   />
