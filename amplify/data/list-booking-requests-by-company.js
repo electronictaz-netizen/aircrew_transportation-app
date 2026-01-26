@@ -10,7 +10,7 @@ export function request(ctx) {
   return {
     operation: 'Query',
     index: 'gsi-Company.bookingRequests',
-    query: {
+    key: {
       expression: 'companyId = :cid',
       expressionValues: {
         ':cid': dynamoDbValue
