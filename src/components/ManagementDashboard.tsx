@@ -2121,7 +2121,7 @@ function ManagementDashboard() {
             >
               🗺️ Map
             </button>
-            {(canManageTrips(userRole) || isAdminOverride) && (
+            {(canManageTrips(userRole) || isAdminOverride) && (company?.bookingEnabled || bookingRequests.length > 0) && (
               <button
                 className={`view-toggle-btn ${viewMode === 'requests' ? 'active' : ''}`}
                 onClick={() => setViewMode('requests')}
