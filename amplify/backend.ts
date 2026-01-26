@@ -35,15 +35,55 @@ backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
 // Company table by bookingEnabled and bookingCode. Pass table name and grant Scan.
 // Optional chaining: resources.tables may be missing or use different keys in some Amplify versions.
 try {
-  const tables = (backend.data.resources as { tables?: Record<string, { tableName: string; grantReadData: (grantee: unknown) => void }> }).tables;
+  const tables = (backend.data.resources as { tables?: Record<string, { tableName: string; grantReadData: (grantee: unknown) => void; grantWriteData: (grantee: unknown) => void }> }).tables;
   const companyTable = tables?.['Company'] ?? tables?.['CompanyTable'];
+  const bookingRequestTable = tables?.['BookingRequest'] ?? tables?.['BookingRequestTable'];
+  
   if (companyTable) {
     backend.publicBooking.addEnvironment('COMPANY_TABLE_NAME', companyTable.tableName);
     companyTable.grantReadData(backend.publicBooking.resources.lambda);
   }
+  
+  // Grant write access to BookingRequest table for creating booking requests
+  if (bookingRequestTable) {
+    bookingRequestTable.grantWriteData(backend.publicBooking.resources.lambda);
+  }
 } catch (_) {
   // Skip: COMPANY_TABLE_NAME not set; Lambda DynamoDB fallback will be disabled.
 }
+
+// Explicit IAM permissions for publicBooking Lambda
+// Amplify Gen 2 should grant these automatically, but we add them explicitly to ensure they exist
+backend.publicBooking.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    sid: 'AllowAppSyncGraphQL',
+    effect: iam.Effect.ALLOW,
+    actions: ['appsync:GraphQL'],
+    resources: [`${cfn.cfnGraphqlApi.attrArn}/*`],
+  })
+);
+
+// Additional DynamoDB permissions for fallback mechanism and booking request creation
+// These complement the grantReadData/grantWriteData calls above
+const stack = Stack.of(backend.data);
+backend.publicBooking.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    sid: 'AllowDynamoDBOperations',
+    effect: iam.Effect.ALLOW,
+    actions: [
+      'dynamodb:Scan',      // For scanning Company table when AppSync query fails
+      'dynamodb:Query',     // For querying DynamoDB tables
+      'dynamodb:GetItem',   // For reading items from DynamoDB
+      'dynamodb:PutItem',   // For creating booking requests
+    ],
+    resources: [
+      // Company table (for fallback lookup) - use pattern matching for table name
+      `arn:aws:dynamodb:${stack.region}:${stack.account}:table/Company-*`,
+      // BookingRequest table (for creating bookings)
+      `arn:aws:dynamodb:${stack.region}:${stack.account}:table/BookingRequest-*`,
+    ],
+  })
+);
 
 // Function URL for publicBooking: create and manage in Lambda Console (Configuration → Function URL).
 // CDK addFunctionUrl caused "Properties validation failed" (publicBookinglambdaFunctionUrl65375A8A).
