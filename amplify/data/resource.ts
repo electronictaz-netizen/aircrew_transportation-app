@@ -191,6 +191,7 @@ const schema = a.schema({
       returnDate: a.datetime(),
       returnTime: a.string(),
       specialInstructions: a.string(),
+      receivedAt: a.datetime(), // When the request was received (portal or API)
       tripId: a.id(), // Set when accepted; created Trip
       trip: a.belongsTo('Trip', 'tripId'),
       customerId: a.id(), // Set when accepted; created or matched Customer

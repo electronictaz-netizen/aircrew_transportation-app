@@ -281,6 +281,7 @@ async function createBookingRequest(request: CreateBookingRequest): Promise<{ re
       returnDate: request.returnDate || undefined,
       returnTime: request.returnTime || undefined,
       specialInstructions: request.specialInstructions || undefined,
+      receivedAt: new Date().toISOString(),
     };
     const data = await executeGraphQL(mutation, { input });
     const rec = data?.createBookingRequest;
