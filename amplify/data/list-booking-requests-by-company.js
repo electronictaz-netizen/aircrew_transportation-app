@@ -5,10 +5,10 @@ export function request(ctx) {
   
   // Query the GSI gsi-Company.bookingRequests using companyId as the partition key
   return ddb.query({
-    index: 'gsi-Company.bookingRequests',
-    key: {
-      companyId: companyId
+    query: {
+      companyId: { eq: companyId }
     },
+    index: 'gsi-Company.bookingRequests',
     limit: 100,
   });
 }
