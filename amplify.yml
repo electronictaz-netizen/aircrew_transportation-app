@@ -4,6 +4,13 @@ backend:
     build:
       commands:
         - npm install --legacy-peer-deps
+        - |
+          if [ -z "$AWS_BRANCH" ] || [ -z "$AWS_APP_ID" ]; then
+            echo "ERROR: AWS_BRANCH and AWS_APP_ID must be set for pipeline-deploy. Amplify Hosting sets these automatically; if missing, check Build settings or run this in an Amplify build environment."
+            echo "AWS_BRANCH is set: $([ -n \"$AWS_BRANCH\" ] && echo 'yes' || echo 'NO')"
+            echo "AWS_APP_ID is set: $([ -n \"$AWS_APP_ID\" ] && echo 'yes' || echo 'NO')"
+            exit 1
+          fi
         - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID --outputs-out-dir .
         # Check Lambda runtimes after deployment (non-blocking)
         - echo "Checking Lambda function runtimes..."

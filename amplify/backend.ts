@@ -42,11 +42,16 @@ backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
 
 // DynamoDB fallback: when listCompanies (IAM) doesn't return a company, the Lambda can Scan the
 // Company table by bookingEnabled and bookingCode. Pass table name and grant Scan.
-const companyTable =
-  backend.data.resources.tables?.['Company'] ?? backend.data.resources.tables?.['CompanyTable'];
-if (companyTable) {
-  backend.publicBooking.addEnvironment('COMPANY_TABLE_NAME', companyTable.tableName);
-  companyTable.grantReadData(backend.publicBooking.resources.lambda);
+// Optional chaining: resources.tables may be missing or use different keys in some Amplify versions.
+try {
+  const tables = (backend.data.resources as { tables?: Record<string, { tableName: string; grantReadData: (grantee: unknown) => void }> }).tables;
+  const companyTable = tables?.['Company'] ?? tables?.['CompanyTable'];
+  if (companyTable) {
+    backend.publicBooking.addEnvironment('COMPANY_TABLE_NAME', companyTable.tableName);
+    companyTable.grantReadData(backend.publicBooking.resources.lambda);
+  }
+} catch (_) {
+  // Skip: COMPANY_TABLE_NAME not set; Lambda DynamoDB fallback will be disabled.
 }
 
 // Function URL for publicBooking: create and manage in Lambda Console (Configuration → Function URL).
