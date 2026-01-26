@@ -267,7 +267,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
       };
       logger.debug('Company.update input', updateInput);
 
-      const { data: updated, errors } = await client.models.Company.update(updateInput);
+      const { errors } = await client.models.Company.update(updateInput);
 
       if (errors && errors.length > 0) {
         logger.error('Company.update errors', errors);
