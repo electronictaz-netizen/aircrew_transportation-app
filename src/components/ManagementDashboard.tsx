@@ -269,13 +269,16 @@ function ManagementDashboard() {
     setBookingRequestsError(null);
     try {
       setRequestsLoading(true);
+      console.log('[ManagementDashboard] Loading booking requests for companyId:', companyId);
       const { data, errors } = await client.queries.listBookingRequestsForCompany({ companyId });
       if (errors?.length) {
         const joined = errors.map((e) => (e?.message ?? JSON.stringify(e))).join('; ');
+        console.error('[ManagementDashboard] Query errors:', errors);
         setBookingRequests([]);
         setBookingRequestsError(joined || 'Failed to load booking requests.');
         return;
       }
+      console.log('[ManagementDashboard] Query result:', { companyId, count: data?.length ?? 0, data });
       setBookingRequests((data ?? []) as Array<Schema['BookingRequest']['type']>);
     } catch (e: unknown) {
       console.error('Error loading booking requests:', e);
