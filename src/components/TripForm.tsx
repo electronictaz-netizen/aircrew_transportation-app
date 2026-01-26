@@ -1013,7 +1013,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
               <h4 className="mb-4 text-base font-semibold text-foreground">Financial Information (for Billing & Payroll)</h4>
               
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="tripRate"
                 render={({ field }) => (
                   <FormItem>
@@ -1059,7 +1059,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
               />
 
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
