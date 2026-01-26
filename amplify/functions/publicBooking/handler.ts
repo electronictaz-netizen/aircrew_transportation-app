@@ -270,27 +270,56 @@ async function createBookingRequest(request: CreateBookingRequest): Promise<{ re
         }
       }
     `;
+    // Helper to convert empty strings to null for optional fields
+    const toNullIfEmpty = (value: string | undefined | null): string | null | undefined => {
+      if (value === undefined || value === null) return undefined;
+      return value.trim() === '' ? null : value;
+    };
+
     const input: Record<string, unknown> = {
       companyId: request.companyId,
       status: 'Pending',
       customerName: request.customerName,
       customerEmail: request.customerEmail,
       customerPhone: request.customerPhone,
-      customerCompany: request.customerCompany || undefined,
-      tripType: request.tripType || undefined,
       pickupDate: request.pickupDate,
-      flightNumber: request.flightNumber || undefined,
-      jobNumber: request.jobNumber || undefined,
       pickupLocation: request.pickupLocation,
       dropoffLocation: request.dropoffLocation,
       numberOfPassengers: request.numberOfPassengers ?? 1,
-      vehicleType: request.vehicleType || undefined,
       isRoundTrip: request.isRoundTrip ?? false,
-      returnDate: request.returnDate || undefined,
-      returnTime: request.returnTime || undefined,
-      specialInstructions: request.specialInstructions || undefined,
       receivedAt: new Date().toISOString(),
     };
+
+    // Only include optional fields if they have values (not empty strings)
+    if (request.customerCompany?.trim()) {
+      input.customerCompany = request.customerCompany.trim();
+    }
+    if (request.tripType?.trim()) {
+      input.tripType = request.tripType.trim();
+    }
+    if (request.flightNumber?.trim()) {
+      input.flightNumber = request.flightNumber.trim();
+    }
+    if (request.jobNumber?.trim()) {
+      input.jobNumber = request.jobNumber.trim();
+    }
+    if (request.vehicleType?.trim()) {
+      input.vehicleType = request.vehicleType.trim();
+    }
+    if (request.specialInstructions?.trim()) {
+      input.specialInstructions = request.specialInstructions.trim();
+    }
+    
+    // Handle returnDate and returnTime - convert empty strings to null for GraphQL
+    const returnDateValue = toNullIfEmpty(request.returnDate);
+    if (returnDateValue !== undefined) {
+      input.returnDate = returnDateValue;
+    }
+    
+    const returnTimeValue = toNullIfEmpty(request.returnTime);
+    if (returnTimeValue !== undefined) {
+      input.returnTime = returnTimeValue;
+    }
     const data = await executeGraphQL(mutation, { input });
     const rec = data?.createBookingRequest;
     if (!rec?.id) throw new Error('Failed to create booking request');
