@@ -58,10 +58,49 @@ export function updateManifest(logoUrl: string | null | undefined, companyName?:
         { src: logoUrl, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
         { src: logoUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
       ];
-      const shortcuts = manifest.shortcuts as Array<{ icons?: Array<{ src: string }> }> | undefined;
-      if (shortcuts?.length) {
-        shortcuts.forEach((s) => { if (s.icons?.[0]) s.icons[0].src = logoUrl; });
+    }
+    // Ensure all shortcuts have absolute URLs (required for blob: URL manifests)
+    const shortcuts = manifest.shortcuts as Array<{ icons?: Array<{ src: string }>; url?: string }> | undefined;
+    if (shortcuts?.length) {
+      shortcuts.forEach((s) => {
+        // Ensure url is absolute (required for blob: URL manifests)
+        if (s.url) {
+          try {
+            s.url = new URL(s.url, window.location.origin).href;
+          } catch {
+            s.url = window.location.origin + (s.url.startsWith('/') ? s.url : '/' + s.url);
+          }
+        } else {
+          s.url = window.location.origin + '/';
+        }
+        // Update shortcut icon if logoUrl is provided
+        if (logoUrl && s.icons?.[0]) {
+          s.icons[0].src = logoUrl;
+        }
+      });
+    }
+    // Convert start_url and scope to absolute URLs (required when manifest is loaded from blob: URL)
+    if (manifest.start_url) {
+      try {
+        manifest.start_url = new URL(manifest.start_url as string, window.location.origin).href;
+      } catch {
+        manifest.start_url = window.location.origin + ((manifest.start_url as string).startsWith('/') 
+          ? (manifest.start_url as string) 
+          : '/' + (manifest.start_url as string));
       }
+    } else {
+      manifest.start_url = window.location.origin + '/?utm_source=pwa';
+    }
+    if (manifest.scope) {
+      try {
+        manifest.scope = new URL(manifest.scope as string, window.location.origin).href;
+      } catch {
+        manifest.scope = window.location.origin + ((manifest.scope as string).startsWith('/') 
+          ? (manifest.scope as string) 
+          : '/' + (manifest.scope as string));
+      }
+    } else {
+      manifest.scope = window.location.origin + '/';
     }
     const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
     manifestLink.href = URL.createObjectURL(blob);
@@ -74,13 +113,15 @@ export function updateManifest(logoUrl: string | null | undefined, companyName?:
     theme_color: '#3b82f6',
     background_color: '#ffffff',
     display: 'standalone',
+    scope: window.location.origin + '/',
+    start_url: window.location.origin + '/?utm_source=pwa',
     icons: [
       { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
       { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
     ],
     shortcuts: [
-      { name: 'Management Dashboard', url: '/management', icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }] },
-      { name: 'Driver Dashboard', url: '/driver', icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }] }
+      { name: 'Management Dashboard', url: window.location.origin + '/management', icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Driver Dashboard', url: window.location.origin + '/driver', icons: [{ src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }] }
     ]
   };
 
