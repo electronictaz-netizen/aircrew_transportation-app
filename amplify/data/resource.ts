@@ -1,5 +1,4 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
-import { publicBooking } from '../functions/publicBooking/resource';
 
 const schema = a.schema({
   Company: a
@@ -40,7 +39,8 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update']),
-      allow.resource(publicBooking).to(['query']), // publicBooking needs listCompanies by bookingCode
+      // allow.resource(publicBooking) is not a function in this @aws-amplify/backend version.
+      // publicBooking Lambda uses IAM-signed listCompanies (Cognito may see more companies).
     ]),
 
   CompanyUser: a
@@ -198,7 +198,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
-      allow.resource(publicBooking).to(['mutate']), // publicBooking creates Pending requests
+      // allow.resource(publicBooking) not available; Lambda createBookingRequest uses IAM.
     ]),
 
   TripVehicle: a

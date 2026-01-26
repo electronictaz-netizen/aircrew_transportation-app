@@ -3,9 +3,12 @@
  * Provides public access to booking portal functionality without authentication.
  * Uses @aws-sdk/credential-providers (fromNodeProviderChain) for Lambda execution role
  * credentials and inline SigV4 (crypto + fetch) for AppSync.
+ * DynamoDB Scan fallback when listCompanies (IAM) does not return a company.
  */
 
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
+import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { createHmac, createHash } from 'crypto';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
@@ -204,6 +207,43 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
       total: diag.length,
       byBooking: diag.map((c) => ({ name: c.name, bookingEnabled: c.bookingEnabled, bookingCode: c.bookingCode })),
     });
+  }
+
+  // DynamoDB fallback: listCompanies (IAM) may not return all companies (e.g. Cognito sees
+  // "Company" but IAM does not). Scan the Company table for bookingEnabled=true and
+  // match bookingCode case-insensitively in JS (DynamoDB has no case-insensitive filter).
+  if (!match && process.env.COMPANY_TABLE_NAME) {
+    try {
+      const ddb = new DynamoDBClient({ region: getRegion() });
+      const collected: Record<string, unknown>[] = [];
+      let lastKey: Record<string, unknown> | undefined;
+      do {
+        const res = await ddb.send(new ScanCommand({
+          TableName: process.env.COMPANY_TABLE_NAME,
+          FilterExpression: 'bookingEnabled = :enb',
+          ExpressionAttributeValues: { ':enb': { BOOL: true } },
+          ExclusiveStartKey: lastKey,
+        }));
+        const items = (res.Items || []).map((it) => unmarshall(it) as Record<string, unknown>);
+        collected.push(...items);
+        lastKey = res.LastEvaluatedKey;
+      } while (lastKey);
+      const activeList = collected.filter((c) => (c.isActive as boolean) !== false);
+      const ddbMatch = activeList.find((c) => ((c.bookingCode as string) || '').toUpperCase().trim() === normalized);
+      if (ddbMatch && typeof ddbMatch.id === 'string' && typeof ddbMatch.name === 'string') {
+        console.log('getCompanyByCode: found via DynamoDB fallback', { id: ddbMatch.id, bookingCode: ddbMatch.bookingCode });
+        return {
+          id: ddbMatch.id,
+          name: String(ddbMatch.name),
+          displayName: (ddbMatch.displayName as string | null) ?? null,
+          logoUrl: (ddbMatch.logoUrl as string | null) ?? null,
+          bookingCode: (ddbMatch.bookingCode as string | null) ?? null,
+          bookingEnabled: (ddbMatch.bookingEnabled as boolean | null) ?? null,
+        };
+      }
+    } catch (e) {
+      console.warn('getCompanyByCode: DynamoDB fallback error', e);
+    }
   }
 
   return match || null;

@@ -40,6 +40,15 @@ if ('graphqlUrl' in backend.data.resources.graphqlApi && backend.data.resources.
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
 backend.publicBooking.addEnvironment('AMPLIFY_DATA_REGION', region);
 
+// DynamoDB fallback: when listCompanies (IAM) doesn't return a company, the Lambda can Scan the
+// Company table by bookingEnabled and bookingCode. Pass table name and grant Scan.
+const companyTable =
+  backend.data.resources.tables?.['Company'] ?? backend.data.resources.tables?.['CompanyTable'];
+if (companyTable) {
+  backend.publicBooking.addEnvironment('COMPANY_TABLE_NAME', companyTable.tableName);
+  companyTable.grantReadData(backend.publicBooking.resources.lambda);
+}
+
 // Function URL for publicBooking: create and manage in Lambda Console (Configuration → Function URL).
 // CDK addFunctionUrl caused "Properties validation failed" (publicBookinglambdaFunctionUrl65375A8A).
 // Set the URL in Amplify env as VITE_BOOKING_API_URL. See PUBLIC_BOOKING_LAMBDA_SETUP.md.
