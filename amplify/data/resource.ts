@@ -191,6 +191,7 @@ const schema = a.schema({
       isActive: a.boolean().default(true),
       trips: a.hasMany('Trip', 'customerId'),
       bookingRequests: a.hasMany('BookingRequest', 'customerId'),
+      tripTemplates: a.hasMany('TripTemplate', 'customerId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
