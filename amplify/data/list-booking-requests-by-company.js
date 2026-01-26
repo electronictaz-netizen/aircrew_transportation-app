@@ -4,11 +4,15 @@ export function request(ctx) {
   const companyId = ctx.args.companyId;
   const dynamoDbValue = util.dynamodb.toDynamoDB(companyId);
   
+  // Use Query on the GSI instead of Scan with filter
+  // GSI name: gsi-Company.bookingRequests
+  // Partition key: companyId
   return {
-    operation: 'Scan',
-    filter: {
+    operation: 'Query',
+    index: 'gsi-Company.bookingRequests',
+    query: {
       expression: 'companyId = :cid',
-      expressionValues: { 
+      expressionValues: {
         ':cid': dynamoDbValue
       },
     },
