@@ -17,12 +17,6 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
-  const scannedCount = ctx.result.ScannedCount || 0;
-  const count = ctx.result.Count || 0;
   const items = ctx.result.Items || [];
-  
-  // Log using string concatenation (AppSync might not support multiple arguments)
-  util.log('Scan result - Scanned: ' + scannedCount + ' Matched: ' + count + ' Returned: ' + items.length);
-  
   return items;
 }
