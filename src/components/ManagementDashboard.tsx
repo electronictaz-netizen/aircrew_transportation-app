@@ -269,7 +269,7 @@ function ManagementDashboard() {
     setBookingRequestsError(null);
     try {
       setRequestsLoading(true);
-      const { data, errors } = await client.queries.listBookingRequestsByCompany({ companyId });
+      const { data, errors } = await client.queries.listBookingRequestsForCompany({ companyId });
       if (errors?.length) {
         const joined = errors.map((e) => (e?.message ?? JSON.stringify(e))).join('; ');
         setBookingRequests([]);

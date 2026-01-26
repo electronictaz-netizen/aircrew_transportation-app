@@ -203,7 +203,8 @@ const schema = a.schema({
     ]),
 
   // Custom query to work around missing model-generated listBookingRequests / ModelBookingRequestFilterInput in AppSync.
-  listBookingRequestsByCompany: a
+  // Named listBookingRequestsForCompany to avoid "Resource already exists" for listBookingRequestsByCompany.
+  listBookingRequestsForCompany: a
     .query()
     .arguments({ companyId: a.id().required() })
     .returns(a.ref('BookingRequest').array())
