@@ -251,21 +251,65 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
       const sanitizedName = sanitizeString(formData.name, MAX_LENGTHS.NAME);
       const sanitizedDisplayName = sanitizeString(formData.displayName, MAX_LENGTHS.NAME);
       const logoUrlValidation = validateUrl(formData.logoUrl);
-      // When enabling: send bookingCode (validation ensures non-empty).
-      // When disabling: omit bookingCode to avoid "Unauthorized on [bookingCode]" from AppSync;
-      // booking portal stays off via bookingEnabled; existing code in DB is harmless.
+      
+      // CRITICAL: Always update booking fields in a separate, dedicated update call first.
+      // This ensures they persist even if the main update has issues with optional fields.
+      // Amplify Gen 2's auto-generated resolvers can sometimes drop optional fields in large updates.
+      const bookingUpdateInput: any = {
+        id: company.id,
+        bookingEnabled: formData.bookingEnabled,
+      };
+      
+      // When enabling: always include bookingCode (validation ensures it's non-empty).
+      // When disabling: explicitly set bookingCode to null to clear it from DynamoDB.
+      if (formData.bookingEnabled) {
+        bookingUpdateInput.bookingCode = formData.bookingCode.trim();
+      } else {
+        // Explicitly set to null to ensure it's cleared when disabling
+        bookingUpdateInput.bookingCode = null;
+      }
+      
+      logger.debug('Company.update (booking fields first)', bookingUpdateInput);
+      
+      // Update booking fields first in a dedicated call
+      const { errors: bookingErrors } = await client.models.Company.update(bookingUpdateInput);
+      
+      if (bookingErrors && bookingErrors.length > 0) {
+        logger.error('Company.update (booking fields) errors', bookingErrors);
+        const msg = bookingErrors[0].message || '';
+        if (msg.includes('Unauthorized')) {
+          // If we get "Unauthorized on [bookingCode]", try without setting it to null when disabling
+          if (!formData.bookingEnabled) {
+            const bookingUpdateInput2 = {
+              id: company.id,
+              bookingEnabled: false,
+            };
+            const { errors: bookingErrors2 } = await client.models.Company.update(bookingUpdateInput2);
+            if (bookingErrors2 && bookingErrors2.length > 0) {
+              toastError(`Failed to update booking portal: ${bookingErrors2[0].message}`);
+              return;
+            }
+          } else {
+            toastError(`Failed to update booking portal: ${msg}`);
+            return;
+          }
+        } else {
+          toastError(`Failed to update booking portal: ${msg}`);
+          return;
+        }
+      }
+      
+      // Now update the rest of the company fields
       const updateInput = {
         id: company.id,
         name: sanitizedName,
         displayName: sanitizedDisplayName || undefined,
         logoUrl: logoUrlValidation.isValid ? logoUrlValidation.sanitized : undefined,
         subdomain: formData.subdomain,
-        bookingEnabled: formData.bookingEnabled,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
-        ...(formData.bookingEnabled ? { bookingCode: formData.bookingCode.trim() } : {}),
       };
-      logger.debug('Company.update input', updateInput);
+      logger.debug('Company.update (other fields)', updateInput);
 
       const { errors } = await client.models.Company.update(updateInput);
 
@@ -281,33 +325,27 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         return;
       }
 
-      // Verify booking fields persisted (UpdateCompany can return input while DynamoDB is not updated)
+      // Verify booking fields persisted (critical check)
       const { data: verify } = await client.models.Company.get({ id: company.id });
       const expectedCode = formData.bookingEnabled ? formData.bookingCode.trim() : null;
-      const okEnabled = formData.bookingEnabled ? verify?.bookingEnabled === true : (verify?.bookingEnabled === false || verify?.bookingEnabled == null);
+      const okEnabled = formData.bookingEnabled 
+        ? verify?.bookingEnabled === true 
+        : (verify?.bookingEnabled === false || verify?.bookingEnabled == null);
       const okCode = formData.bookingEnabled
         ? (verify?.bookingCode || '').trim().toUpperCase() === (expectedCode || '').toUpperCase()
-        : true;
+        : (verify?.bookingCode == null || verify?.bookingCode === '');
+      
       if (!okEnabled || !okCode) {
-        // Retry with only booking fields in case a large payload causes the resolver to drop them
-        const retryInput = {
-          id: company.id,
-          bookingEnabled: formData.bookingEnabled,
-          ...(formData.bookingEnabled ? { bookingCode: formData.bookingCode.trim() } : {}),
-        };
-        await client.models.Company.update(retryInput);
-        const { data: verify2 } = await client.models.Company.get({ id: company.id });
-        const ok2Enabled = formData.bookingEnabled ? verify2?.bookingEnabled === true : (verify2?.bookingEnabled === false || verify2?.bookingEnabled == null);
-        const ok2Code = formData.bookingEnabled
-          ? ((verify2?.bookingCode || '').trim().toUpperCase() === (expectedCode || '').toUpperCase())
-          : true;
-        if (!ok2Enabled || !ok2Code) {
-          logger.error('Booking fields did not persist', { verify, verify2, sent: { bookingEnabled: formData.bookingEnabled, bookingCode: expectedCode } });
-          toastError(
-            'Booking portal settings did not save. The update may not be applied by the backend. Use /booking/GLS for the working code, or try again after a backend redeploy.'
-          );
-          return;
-        }
+        logger.error('Booking fields did not persist after dedicated update', { 
+          verify, 
+          sent: { bookingEnabled: formData.bookingEnabled, bookingCode: expectedCode },
+          verifyBookingEnabled: verify?.bookingEnabled,
+          verifyBookingCode: verify?.bookingCode
+        });
+        toastError(
+          'Booking portal settings did not save correctly. Please try again or contact support if the issue persists.'
+        );
+        return;
       }
 
       await refreshCompany();
