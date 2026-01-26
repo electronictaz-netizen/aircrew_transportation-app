@@ -37,6 +37,15 @@ import {
   SelectValue,
 } from './ui/select';
 import { Checkbox } from './ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { showSuccess } from '../utils/toast';
 import './TripForm.css';
 
 const client = generateClient<Schema>();
@@ -51,7 +60,7 @@ interface TripFormProps {
   onCancel: () => void;
 }
 
-function TripForm({ trip, drivers, locations = [], vehicles = [], customers = [], onSubmit, onCancel }: TripFormProps) {
+function TripForm({ trip, template, drivers, locations = [], vehicles = [], customers = [], onSubmit, onCancel }: TripFormProps) {
   const { companyId, company } = useCompany();
   const { notification, showError, hideNotification } = useNotification();
   
@@ -85,29 +94,82 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
   const initialTripType = trip?.flightNumber ? getInitialTripType(trip.flightNumber) : 'Airport Trip';
   const isInitialAirportTrip = initialTripType === 'Airport Trip';
 
+  // Determine initial values from trip, template, or defaults
+  const getInitialValues = () => {
+    if (trip) {
+      // Editing existing trip
+      return {
+        tripType: initialTripType,
+        primaryLocationCategory: trip.primaryLocationCategory || trip.airport || '',
+        pickupDate: format(new Date(trip.pickupDate), "yyyy-MM-dd'T'HH:mm"),
+        flightNumber: isInitialAirportTrip ? (trip.flightNumber || '') : '',
+        standardTripIdentifier: !isInitialAirportTrip ? (trip.flightNumber || '') : '',
+        pickupLocation: trip.pickupLocation || '',
+        dropoffLocation: trip.dropoffLocation || '',
+        numberOfPassengers: trip.numberOfPassengers || 1,
+        driverId: trip.driverId || '',
+        customerId: trip.customerId || '',
+        vehicleIds: [],
+        status: (trip.status as 'Unassigned' | 'Assigned' | 'In Progress' | 'Completed' | 'Cancelled') || 'Unassigned',
+        isRecurring: trip.isRecurring || !!trip.parentTripId || false,
+        recurringPattern: (trip.recurringPattern as 'daily' | 'weekly' | 'monthly') || 'weekly',
+        recurringEndDate: trip.recurringEndDate ? format(new Date(trip.recurringEndDate), "yyyy-MM-dd'T'HH:mm") : '',
+        tripRate: trip.tripRate !== null && trip.tripRate !== undefined ? String(trip.tripRate) : '',
+        driverPayAmount: trip.driverPayAmount !== null && trip.driverPayAmount !== undefined ? String(trip.driverPayAmount) : '',
+        notes: trip.notes || '',
+      };
+    } else if (template) {
+      // Creating from template
+      const templateTripType = template.tripType || 'Airport Trip';
+      return {
+        tripType: templateTripType,
+        primaryLocationCategory: template.primaryLocationCategory || '',
+        pickupDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Current date/time
+        flightNumber: templateTripType === 'Airport Trip' ? (template.flightNumber || '') : '',
+        standardTripIdentifier: templateTripType === 'Standard Trip' ? (template.jobNumber || '') : '',
+        pickupLocation: template.pickupLocation || '',
+        dropoffLocation: template.dropoffLocation || '',
+        numberOfPassengers: template.numberOfPassengers || 1,
+        driverId: '',
+        customerId: template.customerId || '',
+        vehicleIds: [],
+        status: 'Unassigned' as const,
+        isRecurring: false,
+        recurringPattern: 'weekly' as const,
+        recurringEndDate: '',
+        tripRate: template.tripRate !== null && template.tripRate !== undefined ? String(template.tripRate) : '',
+        driverPayAmount: template.driverPayAmount !== null && template.driverPayAmount !== undefined ? String(template.driverPayAmount) : '',
+        notes: template.notes || '',
+      };
+    } else {
+      // New trip
+      return {
+        tripType: 'Airport Trip' as const,
+        primaryLocationCategory: '',
+        pickupDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        flightNumber: '',
+        standardTripIdentifier: '',
+        pickupLocation: '',
+        dropoffLocation: '',
+        numberOfPassengers: 1,
+        driverId: '',
+        customerId: '',
+        vehicleIds: [],
+        status: 'Unassigned' as const,
+        isRecurring: false,
+        recurringPattern: 'weekly' as const,
+        recurringEndDate: '',
+        tripRate: '',
+        driverPayAmount: '',
+        notes: '',
+      };
+    }
+  };
+
   // Initialize form with React Hook Form
   const form = useForm<TripFormData>({
     resolver: zodResolver(tripFormSchema) as any,
-    defaultValues: {
-      tripType: initialTripType,
-      primaryLocationCategory: trip?.primaryLocationCategory || trip?.airport || '',
-      pickupDate: trip?.pickupDate ? format(new Date(trip.pickupDate), "yyyy-MM-dd'T'HH:mm") : '',
-      flightNumber: isInitialAirportTrip ? (trip?.flightNumber || '') : '',
-      standardTripIdentifier: !isInitialAirportTrip ? (trip?.flightNumber || '') : '',
-      pickupLocation: trip?.pickupLocation || '',
-      dropoffLocation: trip?.dropoffLocation || '',
-      numberOfPassengers: trip?.numberOfPassengers || 1,
-      driverId: trip?.driverId || '',
-      customerId: trip?.customerId || '',
-      vehicleIds: [],
-      status: (trip?.status as 'Unassigned' | 'Assigned' | 'In Progress' | 'Completed' | 'Cancelled') || 'Unassigned',
-      isRecurring: trip?.isRecurring || !!trip?.parentTripId || false,
-      recurringPattern: (trip?.recurringPattern as 'daily' | 'weekly' | 'monthly') || 'weekly',
-      recurringEndDate: trip?.recurringEndDate ? format(new Date(trip.recurringEndDate), "yyyy-MM-dd'T'HH:mm") : '',
-      tripRate: trip?.tripRate !== null && trip?.tripRate !== undefined ? String(trip.tripRate) : '',
-      driverPayAmount: trip?.driverPayAmount !== null && trip?.driverPayAmount !== undefined ? String(trip.driverPayAmount) : '',
-      notes: trip?.notes || '',
-    },
+    defaultValues: getInitialValues(),
   });
 
   const [loading, setLoading] = useState(false);
@@ -126,9 +188,18 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
   const [loadingPickupAddress, setLoadingPickupAddress] = useState(false);
   const [loadingDropoffAddress, setLoadingDropoffAddress] = useState(false);
 
+  // Trip template state
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
   // Watch trip type to handle conditional fields
   const tripType = form.watch('tripType');
   const isRecurring = form.watch('isRecurring');
+  
+  // Check if user has access to trip templates
+  const hasTripTemplatesAccess = hasFeatureAccess(company?.subscriptionTier, 'trip_templates');
 
   // Initialize location modes based on whether current values match saved locations
   const getInitialLocationMode = (location: string): 'text' | 'location' => {
@@ -392,6 +463,64 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
     }
   };
 
+  // Handle saving trip as template
+  const handleSaveAsTemplate = async () => {
+    if (!templateName.trim()) {
+      showError('Please enter a template name');
+      return;
+    }
+
+    if (!companyId) {
+      showError('Company not found');
+      return;
+    }
+
+    setSavingTemplate(true);
+    try {
+      const values = form.getValues();
+      
+      // Determine primary location category
+      let primaryCategory = '';
+      if (pickupLocationMode === 'location') {
+        const selectedLocation = activeLocations.find(l => l.name === values.pickupLocation);
+        primaryCategory = selectedLocation?.category || '';
+      }
+
+      // Get identifier value based on trip type
+      const identifierValue = values.tripType === 'Airport Trip' 
+        ? (values.flightNumber || '').trim()
+        : (values.standardTripIdentifier || '').trim();
+
+      await client.models.TripTemplate.create({
+        companyId,
+        name: templateName.trim(),
+        description: templateDescription.trim() || undefined,
+        tripType: values.tripType,
+        primaryLocationCategory: primaryCategory || undefined,
+        flightNumber: values.tripType === 'Airport Trip' ? identifierValue : undefined,
+        jobNumber: values.tripType === 'Standard Trip' ? identifierValue : undefined,
+        pickupLocation: values.pickupLocation,
+        dropoffLocation: values.dropoffLocation,
+        numberOfPassengers: values.numberOfPassengers || 1,
+        vehicleType: undefined, // Could be added later if needed
+        customerId: values.customerId || undefined,
+        tripRate: values.tripRate ? parseFloat(values.tripRate) : undefined,
+        driverPayAmount: values.driverPayAmount ? parseFloat(values.driverPayAmount) : undefined,
+        notes: values.notes?.trim() || undefined,
+      });
+
+      showSuccess(`Template "${templateName}" saved successfully!`);
+      setShowTemplateDialog(false);
+      setTemplateName('');
+      setTemplateDescription('');
+    } catch (error) {
+      console.error('Error saving template:', error);
+      showError('Failed to save template. Please try again.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   return (
     <motion.div
       className="modal-overlay"
@@ -409,7 +538,9 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
         transition={{ duration: 0.2, ease: 'easeOut' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3>{trip ? 'Edit Trip' : 'Create New Trip'}</h3>
+        <h3>
+          {trip ? 'Edit Trip' : template ? `Create Trip from Template: ${template.name}` : 'Create New Trip'}
+        </h3>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmitForm)} className="space-y-4">
             <FormField
@@ -1029,23 +1160,97 @@ function TripForm({ trip, drivers, locations = [], vehicles = [], customers = []
               </div>
             )}
 
-            <div className="flex justify-end gap-2 mt-6">
-              <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
-                Cancel
-              </Button>
-              <LoadingButton 
-                type="submit" 
-                isLoading={loading}
-                loadingText="Saving..."
-                disabled={loading}
-              >
-                {trip ? 'Update' : 'Create'} Trip
-              </LoadingButton>
+            <div className="flex justify-between items-center mt-6">
+              {hasTripTemplatesAccess && (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={() => setShowTemplateDialog(true)}
+                  disabled={loading}
+                  className="text-sm"
+                >
+                  💾 Save as Template
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+                  Cancel
+                </Button>
+                <LoadingButton 
+                  type="submit" 
+                  isLoading={loading}
+                  loadingText="Saving..."
+                  disabled={loading}
+                >
+                  {trip ? 'Update' : 'Create'} Trip
+                </LoadingButton>
+              </div>
             </div>
           </form>
         </Form>
       </motion.div>
       {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
+      
+      {/* Save as Template Dialog */}
+      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Trip as Template</DialogTitle>
+            <DialogDescription>
+              Save this trip configuration as a template for quick creation later. Templates save locations, passenger count, and other trip details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label htmlFor="template-name" className="block text-sm font-medium mb-2">
+                Template Name *
+              </label>
+              <Input
+                id="template-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="e.g., Airport to Downtown, Corporate Route"
+                maxLength={100}
+              />
+            </div>
+            <div>
+              <label htmlFor="template-description" className="block text-sm font-medium mb-2">
+                Description (Optional)
+              </label>
+              <Textarea
+                id="template-description"
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                placeholder="Add a description to help identify this template..."
+                rows={3}
+                maxLength={500}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowTemplateDialog(false);
+                setTemplateName('');
+                setTemplateDescription('');
+              }}
+              disabled={savingTemplate}
+            >
+              Cancel
+            </Button>
+            <LoadingButton
+              onClick={handleSaveAsTemplate}
+              isLoading={savingTemplate}
+              loadingText="Saving..."
+              disabled={savingTemplate || !templateName.trim()}
+            >
+              Save Template
+            </LoadingButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

@@ -60,6 +60,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Advanced reports',
       'Flight status API integration',
       'Custom report configurations',
+      'Trip templates',
       'Priority support',
       'Advanced analytics',
     ],
@@ -121,7 +122,7 @@ export function hasFeatureAccess(
   const featureAccess: Record<string, string[]> = {
     free: ['basic_trips', 'driver_management', 'basic_reports'],
     basic: ['basic_trips', 'driver_management', 'basic_reports', 'unlimited_trips', 'custom_fields', 'location_management'],
-    premium: ['basic_trips', 'driver_management', 'basic_reports', 'unlimited_trips', 'custom_fields', 'location_management', 'flight_status_api', 'advanced_reports', 'custom_report_config'],
+    premium: ['basic_trips', 'driver_management', 'basic_reports', 'unlimited_trips', 'custom_fields', 'location_management', 'flight_status_api', 'advanced_reports', 'custom_report_config', 'trip_templates'],
   };
 
   return featureAccess[tier]?.includes(feature) || false;

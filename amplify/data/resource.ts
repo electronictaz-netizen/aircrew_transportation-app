@@ -36,6 +36,7 @@ const schema = a.schema({
       reportConfigurations: a.hasMany('ReportConfiguration', 'companyId'),
       tripVehicles: a.hasMany('TripVehicle', 'companyId'),
       vehicleLocations: a.hasMany('VehicleLocation', 'companyId'),
+      tripTemplates: a.hasMany('TripTemplate', 'companyId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -115,6 +116,31 @@ const schema = a.schema({
       notes: a.string(), // Additional notes for billing/payroll verification
       customFieldValues: a.hasMany('CustomFieldValue', 'tripId'),
       bookingRequests: a.hasMany('BookingRequest', 'tripId'),
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  TripTemplate: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      name: a.string().required(), // Template name (e.g., "Airport to Downtown", "Standard Corporate Route")
+      description: a.string(), // Optional description
+      tripType: a.string(), // 'Airport Trip' | 'Standard Trip'
+      primaryLocationCategory: a.string(), // Primary location category for filtering
+      flightNumber: a.string(), // Flight number pattern or empty for standard trips
+      jobNumber: a.string(), // Job number pattern for standard trips
+      pickupLocation: a.string().required(),
+      dropoffLocation: a.string().required(),
+      numberOfPassengers: a.integer().default(1),
+      vehicleType: a.string(), // Preferred vehicle type
+      customerId: a.id(), // Default customer (optional)
+      customer: a.belongsTo('Customer', 'customerId'),
+      tripRate: a.float(), // Default trip rate
+      driverPayAmount: a.float(), // Default driver pay amount
+      notes: a.string(), // Default notes
+      isActive: a.boolean().default(true),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

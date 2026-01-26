@@ -77,6 +77,9 @@ function ManagementDashboard() {
   const [bookingRequestsError, setBookingRequestsError] = useState<string | null>(null);
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [tripTemplates, setTripTemplates] = useState<Array<Schema['TripTemplate']['type']>>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Schema['TripTemplate']['type'] | null>(null);
 
   // Check for plan parameter from external website sign-up
   useEffect(() => {
@@ -136,6 +139,23 @@ function ManagementDashboard() {
       }
     }
   }, [companyId, userRole, isAdminOverride]);
+
+  // Load trip templates
+  const loadTripTemplates = async () => {
+    if (!companyId) return;
+    
+    try {
+      const { data: templates } = await client.models.TripTemplate.list({
+        filter: {
+          companyId: { eq: companyId },
+          isActive: { eq: true },
+        },
+      });
+      setTripTemplates(templates || []);
+    } catch (error) {
+      console.error('Error loading trip templates:', error);
+    }
+  };
 
   // Load current driver if user is a driver
   const loadCurrentDriver = async () => {
@@ -1805,16 +1825,73 @@ function ManagementDashboard() {
         </div>
         <div className="header-actions">
           {(canManageTrips(userRole) || isAdminOverride) && (
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setEditingTrip(null);
-                setShowTripForm(true);
-              }}
-              aria-label="Create new trip"
-            >
-              + New Trip
-            </button>
+            <>
+              {hasFeatureAccess(company?.subscriptionTier, 'trip_templates') && tripTemplates.length > 0 ? (
+                <div className="dropdown-container">
+                  <button
+                    className="btn btn-primary dropdown-toggle"
+                    onClick={() => setOpenDropdown(openDropdown === 'new-trip' ? null : 'new-trip')}
+                    aria-expanded={openDropdown === 'new-trip'}
+                    aria-haspopup="true"
+                    aria-label="Create new trip"
+                  >
+                    + New Trip
+                  </button>
+                  <AnimatePresence>
+                    {openDropdown === 'new-trip' && (
+                      <motion.div
+                        className="dropdown-menu"
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <button
+                          className="dropdown-item"
+                          onClick={() => {
+                            setEditingTrip(null);
+                            setSelectedTemplate(null);
+                            setShowTripForm(true);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          📝 Create New Trip
+                        </button>
+                        <div className="dropdown-divider"></div>
+                        <div className="dropdown-header">Create from Template</div>
+                        {tripTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            className="dropdown-item"
+                            onClick={() => {
+                              setEditingTrip(null);
+                              setSelectedTemplate(template);
+                              setShowTripForm(true);
+                              setOpenDropdown(null);
+                            }}
+                            title={template.description || undefined}
+                          >
+                            📋 {template.name}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEditingTrip(null);
+                    setSelectedTemplate(null);
+                    setShowTripForm(true);
+                  }}
+                  aria-label="Create new trip"
+                >
+                  + New Trip
+                </button>
+              )}
+            </>
           )}
           
           {/* Data Management Dropdown - Only for managers/admins */}
@@ -2205,6 +2282,7 @@ function ManagementDashboard() {
         {showTripForm && (
           <TripForm
             trip={editingTrip}
+            template={selectedTemplate}
             drivers={drivers}
             locations={locations}
             vehicles={vehicles}
@@ -2213,6 +2291,7 @@ function ManagementDashboard() {
             onCancel={() => {
               setShowTripForm(false);
               setEditingTrip(null);
+              setSelectedTemplate(null);
             }}
           />
         )}
