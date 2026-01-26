@@ -78,7 +78,6 @@ function ManagementDashboard() {
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [tripTemplates, setTripTemplates] = useState<Array<Schema['TripTemplate']['type']>>([]);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Schema['TripTemplate']['type'] | null>(null);
 
   // Check for plan parameter from external website sign-up
@@ -137,8 +136,12 @@ function ManagementDashboard() {
           loadTrips(); // Reload trips after generating recurring ones
         });
       }
+      // Load trip templates if user has premium access
+      if (hasFeatureAccess(company?.subscriptionTier, 'trip_templates')) {
+        loadTripTemplates();
+      }
     }
-  }, [companyId, userRole, isAdminOverride]);
+  }, [companyId, userRole, isAdminOverride, company?.subscriptionTier]);
 
   // Load trip templates
   const loadTripTemplates = async () => {

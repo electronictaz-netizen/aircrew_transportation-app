@@ -52,6 +52,7 @@ const client = generateClient<Schema>();
 
 interface TripFormProps {
   trip?: Schema['Trip']['type'] | null;
+  template?: Schema['TripTemplate']['type'] | null;
   drivers: Array<Schema['Driver']['type']>;
   locations?: Array<Schema['Location']['type']>;
   vehicles?: Array<Schema['Vehicle']['type']>;
@@ -491,23 +492,43 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
         ? (values.flightNumber || '').trim()
         : (values.standardTripIdentifier || '').trim();
 
-      await client.models.TripTemplate.create({
+      const templateData: any = {
         companyId,
         name: templateName.trim(),
-        description: templateDescription.trim() || undefined,
-        tripType: values.tripType,
-        primaryLocationCategory: primaryCategory || undefined,
-        flightNumber: values.tripType === 'Airport Trip' ? identifierValue : undefined,
-        jobNumber: values.tripType === 'Standard Trip' ? identifierValue : undefined,
         pickupLocation: values.pickupLocation,
         dropoffLocation: values.dropoffLocation,
         numberOfPassengers: values.numberOfPassengers || 1,
-        vehicleType: undefined, // Could be added later if needed
-        customerId: values.customerId || undefined,
-        tripRate: values.tripRate ? parseFloat(values.tripRate) : undefined,
-        driverPayAmount: values.driverPayAmount ? parseFloat(values.driverPayAmount) : undefined,
-        notes: values.notes?.trim() || undefined,
-      });
+      };
+      
+      if (templateDescription.trim()) {
+        templateData.description = templateDescription.trim();
+      }
+      if (values.tripType) {
+        templateData.tripType = values.tripType;
+      }
+      if (primaryCategory) {
+        templateData.primaryLocationCategory = primaryCategory;
+      }
+      if (values.tripType === 'Airport Trip' && identifierValue) {
+        templateData.flightNumber = identifierValue;
+      }
+      if (values.tripType === 'Standard Trip' && identifierValue) {
+        templateData.jobNumber = identifierValue;
+      }
+      if (values.customerId) {
+        templateData.customerId = values.customerId;
+      }
+      if (values.tripRate) {
+        templateData.tripRate = parseFloat(values.tripRate);
+      }
+      if (values.driverPayAmount) {
+        templateData.driverPayAmount = parseFloat(values.driverPayAmount);
+      }
+      if (values.notes?.trim()) {
+        templateData.notes = values.notes.trim();
+      }
+
+      await client.models.TripTemplate.create(templateData);
 
       showSuccess(`Template "${templateName}" saved successfully!`);
       setShowTemplateDialog(false);
