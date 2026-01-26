@@ -38,7 +38,7 @@ const schema = a.schema({
       vehicleLocations: a.hasMany('VehicleLocation', 'companyId'),
     })
     .authorization((allow) => [
-      allow.authenticated().to(['read', 'create', 'update']),
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
       // allow.resource(publicBooking) is not a function in this @aws-amplify/backend version.
       // publicBooking Lambda uses IAM-signed listCompanies (Cognito may see more companies).
     ]),
