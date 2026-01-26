@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getBookingCodeFromURL, calculatePrice, type PricingRequest, type PricingResult } from '../utils/bookingUtils';
+import { getBookingCodeFromURL, calculatePrice, type PricingRequest, type PricingResult } from '../utils/bookingPortalHelpers';
 import { getCompanyByBookingCodeWithDetail, createBookingViaAPI, type CompanyData } from '../utils/bookingApi';
 import { logger } from '../utils/logger';
 import './BookingPortal.css';

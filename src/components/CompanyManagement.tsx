@@ -281,6 +281,12 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         return;
       }
       logger.debug('Company.update result', { bookingEnabled: updated?.bookingEnabled, bookingCode: updated?.bookingCode });
+      // Temporary: see what API returns for booking fields (remove after fixing booking portal persistence)
+      console.warn('[Company.update] API returned:', {
+        bookingEnabled: updated?.bookingEnabled,
+        bookingCode: updated?.bookingCode,
+        sent: { bookingEnabled: formData.bookingEnabled, bookingCode: formData.bookingEnabled ? formData.bookingCode.trim() : '(omitted)' },
+      });
 
       await refreshCompany();
       onUpdate();

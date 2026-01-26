@@ -1,4 +1,5 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
+import { publicBooking } from '../functions/publicBooking/resource';
 
 const schema = a.schema({
   Company: a
@@ -39,8 +40,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update']),
-      // Note: Public booking portal access will be handled via Lambda function
-      // to maintain security while allowing unauthenticated access
+      allow.resource(publicBooking).to(['query']), // publicBooking needs listCompanies by bookingCode
     ]),
 
   CompanyUser: a
@@ -198,6 +198,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
+      allow.resource(publicBooking).to(['mutate']), // publicBooking creates Pending requests
     ]),
 
   TripVehicle: a
