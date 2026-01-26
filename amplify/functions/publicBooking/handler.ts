@@ -212,37 +212,45 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
   // DynamoDB fallback: listCompanies (IAM) may not return all companies (e.g. Cognito sees
   // "Company" but IAM does not). Scan the Company table for bookingEnabled=true and
   // match bookingCode case-insensitively in JS (DynamoDB has no case-insensitive filter).
-  if (!match && process.env.COMPANY_TABLE_NAME) {
-    try {
-      const ddb = new DynamoDBClient({ region: getRegion() });
-      const collected: Record<string, unknown>[] = [];
-      let lastKey: Record<string, unknown> | undefined;
-      do {
-        const res = await ddb.send(new ScanCommand({
-          TableName: process.env.COMPANY_TABLE_NAME,
-          FilterExpression: 'bookingEnabled = :enb',
-          ExpressionAttributeValues: { ':enb': { BOOL: true } },
-          ExclusiveStartKey: lastKey,
-        }));
-        const items = (res.Items || []).map((it) => unmarshall(it) as Record<string, unknown>);
-        collected.push(...items);
-        lastKey = res.LastEvaluatedKey;
-      } while (lastKey);
-      const activeList = collected.filter((c) => (c.isActive as boolean) !== false);
-      const ddbMatch = activeList.find((c) => ((c.bookingCode as string) || '').toUpperCase().trim() === normalized);
-      if (ddbMatch && typeof ddbMatch.id === 'string' && typeof ddbMatch.name === 'string') {
-        console.log('getCompanyByCode: found via DynamoDB fallback', { id: ddbMatch.id, bookingCode: ddbMatch.bookingCode });
-        return {
-          id: ddbMatch.id,
-          name: String(ddbMatch.name),
-          displayName: (ddbMatch.displayName as string | null) ?? null,
-          logoUrl: (ddbMatch.logoUrl as string | null) ?? null,
-          bookingCode: (ddbMatch.bookingCode as string | null) ?? null,
-          bookingEnabled: (ddbMatch.bookingEnabled as boolean | null) ?? null,
-        };
+  if (!match) {
+    if (process.env.COMPANY_TABLE_NAME) {
+      console.log('getCompanyByCode: attempting DynamoDB fallback', { tableName: process.env.COMPANY_TABLE_NAME, normalized });
+      try {
+        const ddb = new DynamoDBClient({ region: getRegion() });
+        const collected: Record<string, unknown>[] = [];
+        let lastKey: Record<string, unknown> | undefined;
+        do {
+          const res = await ddb.send(new ScanCommand({
+            TableName: process.env.COMPANY_TABLE_NAME,
+            FilterExpression: 'bookingEnabled = :enb',
+            ExpressionAttributeValues: { ':enb': { BOOL: true } },
+            ExclusiveStartKey: lastKey,
+          }));
+          const items = (res.Items || []).map((it) => unmarshall(it) as Record<string, unknown>);
+          collected.push(...items);
+          lastKey = res.LastEvaluatedKey;
+        } while (lastKey);
+        console.log('getCompanyByCode: DynamoDB scan found', { total: collected.length, codes: collected.map((c) => ({ id: c.id, bookingCode: c.bookingCode, bookingEnabled: c.bookingEnabled, isActive: c.isActive })) });
+        const activeList = collected.filter((c) => (c.isActive as boolean) !== false);
+        const ddbMatch = activeList.find((c) => ((c.bookingCode as string) || '').toUpperCase().trim() === normalized);
+        if (ddbMatch && typeof ddbMatch.id === 'string' && typeof ddbMatch.name === 'string') {
+          console.log('getCompanyByCode: found via DynamoDB fallback', { id: ddbMatch.id, bookingCode: ddbMatch.bookingCode });
+          return {
+            id: ddbMatch.id,
+            name: String(ddbMatch.name),
+            displayName: (ddbMatch.displayName as string | null) ?? null,
+            logoUrl: (ddbMatch.logoUrl as string | null) ?? null,
+            bookingCode: (ddbMatch.bookingCode as string | null) ?? null,
+            bookingEnabled: (ddbMatch.bookingEnabled as boolean | null) ?? null,
+          };
+        } else {
+          console.log('getCompanyByCode: DynamoDB fallback did not find match', { normalized, activeCount: activeList.length });
+        }
+      } catch (e) {
+        console.warn('getCompanyByCode: DynamoDB fallback error', e);
       }
-    } catch (e) {
-      console.warn('getCompanyByCode: DynamoDB fallback error', e);
+    } else {
+      console.log('getCompanyByCode: DynamoDB fallback skipped (COMPANY_TABLE_NAME not set)');
     }
   }
 
