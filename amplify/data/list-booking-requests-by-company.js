@@ -1,20 +1,25 @@
-import * as ddb from '@aws-appsync/utils/dynamodb';
+import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
   const companyId = ctx.args.companyId;
+  const dynamoDbValue = util.dynamodb.toDynamoDB(companyId);
   
-  // Use Query on the GSI instead of Scan with filter
-  // GSI name: gsi-Company.bookingRequests
-  // Partition key: companyId
-  return ddb.query({
-    index: 'gsi-Company.bookingRequests',
-    key: {
-      companyId: companyId
+  // Scan the main table with filter
+  // The GSI exists but Query syntax isn't working, so use Scan for now
+  // Filter should match companyId attribute
+  return {
+    operation: 'Scan',
+    filter: {
+      expression: 'companyId = :cid',
+      expressionValues: {
+        ':cid': dynamoDbValue
+      }
     },
     limit: 100,
-  });
+  };
 }
 
 export function response(ctx) {
-  return ctx.result;
+  const items = ctx.result.Items || [];
+  return items;
 }
