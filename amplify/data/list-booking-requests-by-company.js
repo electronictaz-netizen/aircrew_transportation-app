@@ -2,8 +2,6 @@ import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
   const companyId = ctx.args.companyId;
-  
-  // Convert to DynamoDB format
   const dynamoDbValue = util.dynamodb.toDynamoDB(companyId);
   
   return {
@@ -19,8 +17,11 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
+  const scannedCount = ctx.result.ScannedCount || 0;
+  const count = ctx.result.Count || 0;
   const items = ctx.result.Items || [];
   
-  // Return items - AppSync will automatically unmarshall if return type is a model
+  util.log('Scan result - Scanned:', scannedCount, 'Matched:', count, 'Returned:', items.length);
+  
   return items;
 }
