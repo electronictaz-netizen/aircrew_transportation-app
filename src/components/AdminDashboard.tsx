@@ -753,13 +753,6 @@ function AdminDashboard() {
         <div className="admin-header">
           <h1>Company Management</h1>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => handleRestoreGLS(false)}
-              title="Find or create GLS Transportation company and link your account"
-            >
-              Restore GLS Access
-            </button>
             <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
               + Create New Company
             </button>
@@ -780,21 +773,6 @@ function AdminDashboard() {
               Manage Selected Company
             </Link>
           )}
-          <button 
-            className="btn btn-secondary" 
-            onClick={() => handleRestoreGLS(false)}
-            title="Find or create GLS Transportation company and link your account"
-          >
-            Restore GLS Access
-          </button>
-          <button 
-            className="btn btn-secondary" 
-            onClick={() => handleRestoreGLS(true)}
-            title="Restore GLS Access and move ALL data (locations, trips, drivers) to GLS company"
-            style={{ fontSize: '0.9rem' }}
-          >
-            Restore GLS + Migrate All Data
-          </button>
           <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
             + Create New Company
           </button>
