@@ -512,10 +512,10 @@ export default function BookingPortal() {
                   <span>${pricing.vehicleSurcharge.toFixed(2)}</span>
                 </div>
               )}
-              {(pricing as any).passengerSurcharge > 0 && (
+              {pricing.passengerSurcharge && pricing.passengerSurcharge > 0 && (
                 <div className="pricing-line">
                   <span>Passenger Surcharge:</span>
-                  <span>${((pricing as any).passengerSurcharge || 0).toFixed(2)}</span>
+                  <span>${pricing.passengerSurcharge.toFixed(2)}</span>
                 </div>
               )}
               {pricing.roundTripDiscount > 0 && (
