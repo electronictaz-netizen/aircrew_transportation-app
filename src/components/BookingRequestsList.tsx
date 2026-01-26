@@ -11,6 +11,7 @@ interface BookingRequestsListProps {
   onRefresh: () => void;
   loading?: boolean;
   canManage?: boolean;
+  error?: string | null;
 }
 
 export default function BookingRequestsList({
@@ -20,6 +21,7 @@ export default function BookingRequestsList({
   onRefresh,
   loading = false,
   canManage = true,
+  error = null,
 }: BookingRequestsListProps) {
   const pending = requests.filter((r) => r.status === 'Pending');
   const accepted = requests.filter((r) => r.status === 'Accepted');
@@ -83,6 +85,14 @@ export default function BookingRequestsList({
 
   return (
     <div className="booking-requests-list">
+      {error && (
+        <div className="booking-requests-error">
+          <p>{error}</p>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onRefresh}>
+            Refresh
+          </button>
+        </div>
+      )}
       <div className="booking-requests-header">
         <h3>Booking Requests</h3>
         <p className="booking-requests-desc">

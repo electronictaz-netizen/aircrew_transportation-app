@@ -280,13 +280,35 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         }
         return;
       }
-      logger.debug('Company.update result', { bookingEnabled: updated?.bookingEnabled, bookingCode: updated?.bookingCode });
-      // Temporary: see what API returns for booking fields (remove after fixing booking portal persistence)
-      console.warn('[Company.update] API returned:', {
-        bookingEnabled: updated?.bookingEnabled,
-        bookingCode: updated?.bookingCode,
-        sent: { bookingEnabled: formData.bookingEnabled, bookingCode: formData.bookingEnabled ? formData.bookingCode.trim() : '(omitted)' },
-      });
+
+      // Verify booking fields persisted (UpdateCompany can return input while DynamoDB is not updated)
+      const { data: verify } = await client.models.Company.get({ id: company.id });
+      const expectedCode = formData.bookingEnabled ? formData.bookingCode.trim() : null;
+      const okEnabled = formData.bookingEnabled ? verify?.bookingEnabled === true : (verify?.bookingEnabled === false || verify?.bookingEnabled == null);
+      const okCode = formData.bookingEnabled
+        ? (verify?.bookingCode || '').trim().toUpperCase() === (expectedCode || '').toUpperCase()
+        : true;
+      if (!okEnabled || !okCode) {
+        // Retry with only booking fields in case a large payload causes the resolver to drop them
+        const retryInput = {
+          id: company.id,
+          bookingEnabled: formData.bookingEnabled,
+          ...(formData.bookingEnabled ? { bookingCode: formData.bookingCode.trim() } : {}),
+        };
+        await client.models.Company.update(retryInput);
+        const { data: verify2 } = await client.models.Company.get({ id: company.id });
+        const ok2Enabled = formData.bookingEnabled ? verify2?.bookingEnabled === true : (verify2?.bookingEnabled === false || verify2?.bookingEnabled == null);
+        const ok2Code = formData.bookingEnabled
+          ? ((verify2?.bookingCode || '').trim().toUpperCase() === (expectedCode || '').toUpperCase())
+          : true;
+        if (!ok2Enabled || !ok2Code) {
+          logger.error('Booking fields did not persist', { verify, verify2, sent: { bookingEnabled: formData.bookingEnabled, bookingCode: expectedCode } });
+          toastError(
+            'Booking portal settings did not save. The update may not be applied by the backend. Use /booking/GLS for the working code, or try again after a backend redeploy.'
+          );
+          return;
+        }
+      }
 
       await refreshCompany();
       onUpdate();

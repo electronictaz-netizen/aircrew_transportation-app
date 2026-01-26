@@ -23,6 +23,25 @@
   color: #6b7280;
 }
 
+.booking-requests-error {
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+}
+
+.booking-requests-error p {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.booking-requests-error .btn {
+  flex-shrink: 0;
+}
+
 .booking-requests-loading,
 .booking-requests-empty {
   padding: 2rem;

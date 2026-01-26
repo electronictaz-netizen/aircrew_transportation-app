@@ -164,7 +164,7 @@ If the Lambda creates booking requests (CloudWatch shows "Booking request create
 - `Field 'listBookingRequests' in type 'Query' is undefined`
 - `Unknown type ModelBookingRequestFilterInput`
 
-then the **deployed AppSync (Data) API does not include the BookingRequest model’s list/filter**. That usually happens when the backend deploy that added BookingRequest **rolled back** (e.g. due to the addFunctionUrl error). The Lambda uses the `createBookingRequest` mutation, which can exist even if the list was never deployed successfully.
+then the **deployed AppSync (Data) API does not include the BookingRequest model’s list/filter**. That usually happens when the backend deploy that added BookingRequest **rolled back** (e.g. due to the addFunctionUrl error). The Lambda uses the `createBookingRequest` mutation, which can exist even if the list was never deployed successfully. The Management **Booking Requests** view now shows an inline error when this happens; portal bookings are still saved.
 
 **Fix:**
 1. Ensure `amplify/backend.ts` does **not** use `addFunctionUrl` for publicBooking (it was removed to avoid CloudFormation "Properties validation failed").

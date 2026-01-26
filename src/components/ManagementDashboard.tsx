@@ -73,6 +73,7 @@ function ManagementDashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map' | 'requests'>('list');
   const [bookingRequests, setBookingRequests] = useState<Array<Schema['BookingRequest']['type']>>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [bookingRequestsError, setBookingRequestsError] = useState<string | null>(null);
   const [selectedDateTrips, setSelectedDateTrips] = useState<{ date: Date; trips: Array<Schema['Trip']['type']> } | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -265,6 +266,7 @@ function ManagementDashboard() {
 
   const loadBookingRequests = async () => {
     if (!companyId) return;
+    setBookingRequestsError(null);
     try {
       setRequestsLoading(true);
       // @ts-expect-error TS2590 - Amplify BookingRequest.list return type is too complex
@@ -276,7 +278,19 @@ function ManagementDashboard() {
         const msgs = errors.map((e) =>
           (e && typeof e === 'object' && 'message' in e ? (e as { message?: string }).message : null) || (typeof e === 'string' ? e : JSON.stringify(e))
         ).filter(Boolean);
-        console.error('Error loading booking requests:', msgs.length ? msgs.join('; ') : JSON.stringify(errors));
+        const joined = msgs.join('; ');
+        const isListNotDeployed = /listBookingRequests|ModelBookingRequestFilterInput/i.test(joined);
+        if (isListNotDeployed) {
+          setBookingRequests([]);
+          setBookingRequestsError(
+            "Booking requests can't be loaded: the API is missing listBookingRequests. Redeploy the backend (push to trigger Amplify build or run npx ampx pipeline-deploy) to add it. Portal bookings are still being saved."
+          );
+        } else {
+          setBookingRequests([]);
+          console.error('Error loading booking requests:', joined || JSON.stringify(errors));
+          setBookingRequestsError('Failed to load booking requests.');
+        }
+        return;
       }
       setBookingRequests(data ?? []);
     } catch (e: unknown) {
@@ -284,12 +298,12 @@ function ManagementDashboard() {
       const isListNotDeployed = /listBookingRequests|ModelBookingRequestFilterInput/i.test(msg);
       if (isListNotDeployed) {
         setBookingRequests([]);
-        if (!(window as { __bookingRequestsWarned?: boolean }).__bookingRequestsWarned) {
-          (window as { __bookingRequestsWarned?: boolean }).__bookingRequestsWarned = true;
-          console.warn('Booking Requests: listBookingRequests is not in the deployed API. Redeploy the backend to add it. Hiding requests for now.');
-        }
+        setBookingRequestsError(
+          "Booking requests can't be loaded: the API is missing listBookingRequests. Redeploy the backend (push to trigger Amplify build or run npx ampx pipeline-deploy) to add it. Portal bookings are still being saved."
+        );
       } else {
         console.error('Error loading booking requests:', e);
+        setBookingRequestsError('Failed to load booking requests.');
       }
     } finally {
       setRequestsLoading(false);
@@ -2226,6 +2240,7 @@ function ManagementDashboard() {
             onRefresh={loadBookingRequests}
             loading={requestsLoading}
             canManage={canManageTrips(userRole) || isAdminOverride}
+            error={bookingRequestsError}
           />
         ) : viewMode === 'list' ? (
           <TripList
