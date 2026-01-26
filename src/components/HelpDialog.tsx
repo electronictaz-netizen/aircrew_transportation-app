@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { BookOpen, FileText, Users, CreditCard } from 'lucide-react';
+import { BookOpen, FileText, Users, CreditCard, Globe } from 'lucide-react';
 import './HelpDialog.css';
 
 interface HelpDialogProps {
@@ -211,6 +211,12 @@ function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
       icon: <Users className="w-5 h-5" />,
       content: '',
     },
+    {
+      id: 'booking-portal',
+      title: 'Booking Portal & Pricing Guide',
+      icon: <Globe className="w-5 h-5" />,
+      content: '',
+    },
   ];
 
   useEffect(() => {
@@ -232,6 +238,9 @@ function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
           break;
         case 'manager':
           filePath = '/docs/MANAGER_USER_GUIDE.md';
+          break;
+        case 'booking-portal':
+          filePath = '/docs/BOOKING_PORTAL_GUIDE.md';
           break;
         default:
           return;
