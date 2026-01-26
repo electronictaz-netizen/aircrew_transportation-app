@@ -96,11 +96,11 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
   const isInitialAirportTrip = initialTripType === 'Airport Trip';
 
   // Determine initial values from trip, template, or defaults
-  const getInitialValues = () => {
+  const getInitialValues = (): TripFormData => {
     if (trip) {
       // Editing existing trip
       return {
-        tripType: initialTripType,
+        tripType: initialTripType as 'Airport Trip' | 'Standard Trip',
         primaryLocationCategory: trip.primaryLocationCategory || trip.airport || '',
         pickupDate: format(new Date(trip.pickupDate), "yyyy-MM-dd'T'HH:mm"),
         flightNumber: isInitialAirportTrip ? (trip.flightNumber || '') : '',
@@ -121,7 +121,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
       };
     } else if (template) {
       // Creating from template
-      const templateTripType = template.tripType || 'Airport Trip';
+      const templateTripType = (template.tripType || 'Airport Trip') as 'Airport Trip' | 'Standard Trip';
       return {
         tripType: templateTripType,
         primaryLocationCategory: template.primaryLocationCategory || '',
@@ -170,7 +170,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
   // Initialize form with React Hook Form
   const form = useForm<TripFormData>({
     resolver: zodResolver(tripFormSchema) as any,
-    defaultValues: getInitialValues(),
+    defaultValues: getInitialValues() as any,
   });
 
   const [loading, setLoading] = useState(false);
@@ -528,6 +528,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
         templateData.notes = values.notes.trim();
       }
 
+      // @ts-expect-error - Complex union type from Amplify Data
       await client.models.TripTemplate.create(templateData);
 
       showSuccess(`Template "${templateName}" saved successfully!`);
@@ -563,9 +564,9 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
           {trip ? 'Edit Trip' : template ? `Create Trip from Template: ${template.name}` : 'Create New Trip'}
         </h3>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmitForm)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmitForm as any)} className="space-y-4">
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="pickupDate"
               render={({ field }) => (
                 <FormItem>
@@ -579,7 +580,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             />
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="tripType"
               render={({ field }) => (
                 <FormItem>
@@ -628,7 +629,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
               />
             ) : (
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="standardTripIdentifier"
                 render={({ field }) => (
                   <FormItem>
@@ -647,7 +648,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             )}
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="pickupLocation"
               render={({ field }) => (
                 <FormItem>
@@ -713,7 +714,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             />
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="dropoffLocation"
               render={({ field }) => (
                 <FormItem>
@@ -802,7 +803,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             />
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="driverId"
               render={({ field }) => (
                 <FormItem>
@@ -835,7 +836,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             />
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="customerId"
               render={({ field }) => (
                 <FormItem>
@@ -867,7 +868,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             />
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="vehicleIds"
               render={({ field }) => (
                 <FormItem>
@@ -964,7 +965,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             {isRecurring && (
               <>
                 <FormField
-                  control={form.control}
+                  control={form.control as any}
                   name="recurringPattern"
                   render={({ field }) => (
                     <FormItem>
@@ -990,7 +991,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
                 />
 
                 <FormField
-                  control={form.control}
+                  control={form.control as any}
                   name="recurringEndDate"
                   render={({ field }) => (
                     <FormItem>
@@ -1036,7 +1037,7 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
               />
 
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="driverPayAmount"
                 render={({ field }) => (
                   <FormItem>
