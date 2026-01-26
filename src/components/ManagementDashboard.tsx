@@ -292,7 +292,7 @@ function ManagementDashboard() {
       }
       
       if (errors?.length) {
-        const joined = errors.map((e) => (e?.message ?? JSON.stringify(e))).join('; ');
+        const joined = errors.map((e: any) => (e?.message ?? JSON.stringify(e))).join('; ');
         console.error('[ManagementDashboard] Query errors:', errors);
         setBookingRequests([]);
         setBookingRequestsError(joined || 'Failed to load booking requests.');
