@@ -2,16 +2,19 @@ import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
   const companyId = ctx.args.companyId;
+  const dynamoDbValue = util.dynamodb.toDynamoDB(companyId);
   
-  // Use the transform utility to create the filter expression
-  // This should properly format the DynamoDB filter
-  const filter = util.transform.toDynamoDBFilterExpression({
-    companyId: { eq: companyId }
-  });
-  
+  // Try Query on GSI with the simplest possible syntax
+  // GSI: gsi-Company.bookingRequests
+  // Partition key: companyId
+  // Based on AppSync resolver docs, Query should use keyConditionExpression
   return {
-    operation: 'Scan',
-    filter: JSON.parse(filter),
+    operation: 'Query',
+    index: 'gsi-Company.bookingRequests',
+    keyConditionExpression: 'companyId = :cid',
+    expressionAttributeValues: {
+      ':cid': dynamoDbValue
+    },
     limit: 100,
   };
 }
