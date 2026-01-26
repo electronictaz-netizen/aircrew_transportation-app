@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getBookingCodeFromURL, calculatePrice, type PricingRequest, type PricingResult } from '../utils/bookingPortalHelpers';
+import { getBookingCodeFromURL, calculatePrice, parsePricingSettings, type PricingRequest, type PricingResult } from '../utils/bookingPortalHelpers';
 import { getCompanyByBookingCodeWithDetail, createBookingViaAPI, type CompanyData } from '../utils/bookingApi';
 import { logger } from '../utils/logger';
 import './BookingPortal.css';
@@ -112,7 +112,9 @@ export default function BookingPortal() {
         pickupDate: new Date(`${formData.pickupDate}T${formData.pickupTime}`),
       };
 
-      const calculatedPrice = calculatePrice(pricingRequest);
+      // Parse pricing settings from company bookingSettings
+      const pricingSettings = company ? parsePricingSettings(company.bookingSettings) : null;
+      const calculatedPrice = calculatePrice(pricingRequest, pricingSettings);
       setPricing(calculatedPrice);
     }
   }, [
@@ -123,6 +125,7 @@ export default function BookingPortal() {
     formData.isRoundTrip,
     formData.pickupDate,
     formData.pickupTime,
+    company,
   ]);
 
   const handleInputChange = (field: keyof BookingFormData, value: any) => {
@@ -507,6 +510,12 @@ export default function BookingPortal() {
                 <div className="pricing-line">
                   <span>Vehicle Surcharge:</span>
                   <span>${pricing.vehicleSurcharge.toFixed(2)}</span>
+                </div>
+              )}
+              {(pricing as any).passengerSurcharge > 0 && (
+                <div className="pricing-line">
+                  <span>Passenger Surcharge:</span>
+                  <span>${((pricing as any).passengerSurcharge || 0).toFixed(2)}</span>
                 </div>
               )}
               {pricing.roundTripDiscount > 0 && (

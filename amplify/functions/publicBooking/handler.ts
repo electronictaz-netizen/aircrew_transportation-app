@@ -148,13 +148,13 @@ async function executeGraphQL(query: string, variables: Record<string, unknown> 
  * Matching is case-insensitive: "TEST", "test", and "Test" all match the same stored value.
  * Paginates through listCompanies so we don't miss companies on later pages.
  */
-async function getCompanyByCode(code: string): Promise<{ id: string; name: string; displayName?: string | null; logoUrl?: string | null; bookingCode?: string | null; bookingEnabled?: boolean | null } | null> {
+async function getCompanyByCode(code: string): Promise<{ id: string; name: string; displayName?: string | null; logoUrl?: string | null; bookingCode?: string | null; bookingEnabled?: boolean | null; bookingSettings?: string | null } | null> {
   const normalized = (code || '').toUpperCase().trim();
   if (!normalized) return null;
   const query = `
     query ListCompanies($filter: ModelCompanyFilterInput, $limit: Int, $nextToken: String) {
       listCompanies(filter: $filter, limit: $limit, nextToken: $nextToken) {
-        items { id name displayName logoUrl bookingCode bookingEnabled isActive }
+        items { id name displayName logoUrl bookingCode bookingEnabled bookingSettings isActive }
         nextToken
       }
     }
@@ -242,6 +242,7 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
             logoUrl: (ddbMatch.logoUrl as string | null) ?? null,
             bookingCode: (ddbMatch.bookingCode as string | null) ?? null,
             bookingEnabled: (ddbMatch.bookingEnabled as boolean | null) ?? null,
+            bookingSettings: (ddbMatch.bookingSettings as string | null) ?? null,
           };
         } else {
           console.log('getCompanyByCode: DynamoDB fallback did not find match', { normalized, activeCount: activeList.length });

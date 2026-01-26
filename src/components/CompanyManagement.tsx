@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 import { sendInvitationEmailViaLambda } from '../utils/sendInvitationEmail';
 import { sendInvitationEmail } from '../utils/invitationEmail';
 import { getBookingUrl } from '../utils/bookingUrl';
+import { DEFAULT_PRICING_SETTINGS, type BookingPricingSettings, parsePricingSettings } from '../utils/bookingPortalHelpers';
 import './CompanyManagement.css';
 
 const client = generateClient<Schema>();
@@ -32,6 +33,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
     subscriptionTier: 'premium' as 'free' | 'basic' | 'premium',
     subscriptionStatus: 'active' as 'active' | 'suspended' | 'cancelled',
   });
+  const [pricingSettings, setPricingSettings] = useState<BookingPricingSettings>(DEFAULT_PRICING_SETTINGS);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
@@ -55,6 +57,15 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         subscriptionTier: (company.subscriptionTier as 'free' | 'basic' | 'premium') || 'premium',
         subscriptionStatus: (company.subscriptionStatus as 'active' | 'suspended' | 'cancelled') || 'active',
       });
+      
+      // Load pricing settings from bookingSettings JSON
+      const parsed = parsePricingSettings(company.bookingSettings);
+      if (parsed) {
+        setPricingSettings(parsed);
+      } else {
+        setPricingSettings(DEFAULT_PRICING_SETTINGS);
+      }
+      
       if (showUserManagement) {
         loadCompanyUsers();
       }
@@ -299,7 +310,12 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         }
       }
       
-      // Now update the rest of the company fields
+      // Prepare bookingSettings JSON with pricing configuration
+      const bookingSettingsJson = JSON.stringify({
+        pricing: pricingSettings,
+      });
+      
+      // Now update the rest of the company fields, including bookingSettings
       const updateInput = {
         id: company.id,
         name: sanitizedName,
@@ -308,6 +324,7 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
         subdomain: formData.subdomain,
         subscriptionTier: formData.subscriptionTier,
         subscriptionStatus: formData.subscriptionStatus,
+        bookingSettings: bookingSettingsJson,
       };
       logger.debug('Company.update (other fields)', updateInput);
 
@@ -645,6 +662,173 @@ function CompanyManagement({ onClose, onUpdate }: CompanyManagementProps) {
                     <strong>Where do portal bookings appear?</strong> Trips from /booking/<code>{formData.bookingCode}</code> are created for <strong>this company</strong> and show in the Management dashboard. Use the booking URL with this exact code. If you use Admin mode, make sure this company is selected.
                   </div>
                 )}
+
+                {/* Pricing Settings */}
+                <div className="form-section-divider" style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+                  <h4 style={{ marginBottom: '1rem', color: '#333' }}>Pricing Configuration</h4>
+                  <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+                    Configure pricing rules for your booking portal. These settings determine how prices are calculated for customer bookings.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div className="form-group">
+                      <label htmlFor="basePricePerMile">Base Price Per Mile ($)</label>
+                      <input
+                        type="number"
+                        id="basePricePerMile"
+                        step="0.01"
+                        min="0"
+                        value={pricingSettings.basePricePerMile}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, basePricePerMile: parseFloat(e.target.value) || 0 })}
+                        style={{ width: '100%' }}
+                      />
+                      <small>Base rate charged per mile</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="estimatedMiles">Default Estimated Miles</label>
+                      <input
+                        type="number"
+                        id="estimatedMiles"
+                        step="1"
+                        min="1"
+                        value={pricingSettings.estimatedMiles}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, estimatedMiles: parseInt(e.target.value) || 15 })}
+                        style={{ width: '100%' }}
+                      />
+                      <small>Default distance used when actual distance is unknown</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="minimumPrice">Minimum Price ($)</label>
+                      <input
+                        type="number"
+                        id="minimumPrice"
+                        step="0.01"
+                        min="0"
+                        value={pricingSettings.minimumPrice}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, minimumPrice: parseFloat(e.target.value) || 0 })}
+                        style={{ width: '100%' }}
+                      />
+                      <small>Minimum charge regardless of distance</small>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h5 style={{ marginBottom: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>Vehicle Surcharges ($)</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label htmlFor="surchargeSUV">SUV</label>
+                        <input
+                          type="number"
+                          id="surchargeSUV"
+                          step="0.01"
+                          min="0"
+                          value={pricingSettings.vehicleSurcharges?.SUV || 0}
+                          onChange={(e) => setPricingSettings({
+                            ...pricingSettings,
+                            vehicleSurcharges: { ...pricingSettings.vehicleSurcharges, SUV: parseFloat(e.target.value) || 0 }
+                          })}
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="surchargeLimo">Limo</label>
+                        <input
+                          type="number"
+                          id="surchargeLimo"
+                          step="0.01"
+                          min="0"
+                          value={pricingSettings.vehicleSurcharges?.Limo || 0}
+                          onChange={(e) => setPricingSettings({
+                            ...pricingSettings,
+                            vehicleSurcharges: { ...pricingSettings.vehicleSurcharges, Limo: parseFloat(e.target.value) || 0 }
+                          })}
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="surchargeVan">Van</label>
+                        <input
+                          type="number"
+                          id="surchargeVan"
+                          step="0.01"
+                          min="0"
+                          value={pricingSettings.vehicleSurcharges?.Van || 0}
+                          onChange={(e) => setPricingSettings({
+                            ...pricingSettings,
+                            vehicleSurcharges: { ...pricingSettings.vehicleSurcharges, Van: parseFloat(e.target.value) || 0 }
+                          })}
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="surchargeSedan">Sedan</label>
+                        <input
+                          type="number"
+                          id="surchargeSedan"
+                          step="0.01"
+                          min="0"
+                          value={pricingSettings.vehicleSurcharges?.Sedan || 0}
+                          onChange={(e) => setPricingSettings({
+                            ...pricingSettings,
+                            vehicleSurcharges: { ...pricingSettings.vehicleSurcharges, Sedan: parseFloat(e.target.value) || 0 }
+                          })}
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div className="form-group">
+                      <label htmlFor="roundTripDiscount">Round Trip Discount (%)</label>
+                      <input
+                        type="number"
+                        id="roundTripDiscount"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={pricingSettings.roundTripDiscountPercent}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, roundTripDiscountPercent: parseFloat(e.target.value) || 0 })}
+                        style={{ width: '100%' }}
+                      />
+                      <small>Percentage discount applied to base price for round trips</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="passengerSurcharge">Passenger Surcharge ($)</label>
+                      <input
+                        type="number"
+                        id="passengerSurcharge"
+                        step="0.01"
+                        min="0"
+                        value={pricingSettings.passengerSurcharge || 0}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, passengerSurcharge: parseFloat(e.target.value) || 0 })}
+                        style={{ width: '100%' }}
+                      />
+                      <small>Additional charge per passenger over base capacity</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="basePassengerCapacity">Base Passenger Capacity</label>
+                      <input
+                        type="number"
+                        id="basePassengerCapacity"
+                        step="1"
+                        min="1"
+                        value={pricingSettings.basePassengerCapacity || 1}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, basePassengerCapacity: parseInt(e.target.value) || 1 })}
+                        style={{ width: '100%' }}
+                      />
+                      <small>Number of passengers included in base price</small>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '0.75rem', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd', fontSize: '0.875rem', color: '#0c4a6e', marginTop: '1rem' }}>
+                    <strong>💡 Pricing Calculation:</strong> Base price = (Estimated Miles × Price Per Mile) or Minimum Price (whichever is higher). Vehicle surcharges and passenger fees are added. Round trip discount is applied as a percentage of the base price.
+                  </div>
+                </div>
               </>
             )}
 

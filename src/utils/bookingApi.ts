@@ -14,6 +14,7 @@ export interface CompanyData {
   logoUrl?: string | null;
   bookingCode?: string | null;
   bookingEnabled?: boolean | null;
+  bookingSettings?: string | null;
 }
 
 export interface BookingResponse {
