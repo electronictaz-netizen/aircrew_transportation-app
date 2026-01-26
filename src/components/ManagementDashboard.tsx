@@ -304,7 +304,10 @@ function ManagementDashboard() {
     });
 
     if (emailResult && !emailResult.success) {
-      console.warn('Failed to send booking status email:', emailResult.error);
+      // Only log in development - email failures are non-critical
+      if (import.meta.env.DEV) {
+        console.warn('Failed to send booking status email (non-critical):', emailResult.error);
+      }
     }
   };
 

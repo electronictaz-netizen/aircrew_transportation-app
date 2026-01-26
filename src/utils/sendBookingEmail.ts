@@ -123,11 +123,29 @@ export async function sendBookingEmailViaLambda(
     };
   } catch (error: any) {
     const functionUrl = getBookingEmailUrl() || 'not configured';
-    console.error('[Send Booking Email] Network error:', error);
-    console.error('[Send Booking Email] Function URL:', functionUrl);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to send booking email';
+    if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+      errorMessage = 'Network error: Unable to reach email service. Check CORS configuration on Lambda Function URL.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // Only log errors in development or if explicitly debugging
+    if (import.meta.env.DEV) {
+      console.error('[Send Booking Email] Network error:', error);
+      console.error('[Send Booking Email] Function URL:', functionUrl);
+      console.error('[Send Booking Email] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+    
     return {
       success: false,
-      error: error.message || 'Failed to send booking email',
+      error: errorMessage,
     };
   }
 }
