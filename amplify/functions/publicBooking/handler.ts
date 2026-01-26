@@ -258,6 +258,83 @@ async function getCompanyByCode(code: string): Promise<{ id: string; name: strin
 }
 
 /**
+ * Get Function URL for sendBookingEmail Lambda
+ * Set BOOKING_EMAIL_FUNCTION_URL environment variable in Lambda console
+ */
+function getBookingEmailFunctionUrl(): string | null {
+  return process.env.BOOKING_EMAIL_FUNCTION_URL || null;
+}
+
+/**
+ * Send booking confirmation emails (customer and manager)
+ * This is non-blocking - failures won't prevent booking creation
+ */
+async function sendBookingEmails(
+  bookingRequest: CreateBookingRequest,
+  company: { id: string; name: string; displayName?: string | null },
+  bookingId: string
+): Promise<void> {
+  const functionUrl = getBookingEmailFunctionUrl();
+  if (!functionUrl) {
+    console.log('sendBookingEmails: BOOKING_EMAIL_FUNCTION_URL not configured, skipping email sending');
+    return;
+  }
+
+  const companyName = company.displayName || company.name;
+
+  // Prepare email data
+  const emailData = {
+    customerName: bookingRequest.customerName,
+    customerEmail: bookingRequest.customerEmail,
+    customerPhone: bookingRequest.customerPhone,
+    companyName: companyName,
+    bookingId: bookingId,
+    pickupDate: bookingRequest.pickupDate,
+    pickupLocation: bookingRequest.pickupLocation,
+    dropoffLocation: bookingRequest.dropoffLocation,
+    numberOfPassengers: bookingRequest.numberOfPassengers,
+    tripType: bookingRequest.tripType,
+    flightNumber: bookingRequest.flightNumber,
+    vehicleType: bookingRequest.vehicleType,
+    isRoundTrip: bookingRequest.isRoundTrip,
+    returnDate: bookingRequest.returnDate,
+    specialInstructions: bookingRequest.specialInstructions,
+  };
+
+  // Send customer confirmation email
+  try {
+    const customerEmailResponse = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'customer_confirmation',
+        to: bookingRequest.customerEmail,
+        ...emailData,
+      }),
+    });
+
+    if (customerEmailResponse.ok) {
+      const result = await customerEmailResponse.json();
+      console.log('Customer confirmation email sent successfully:', {
+        to: bookingRequest.customerEmail,
+        messageId: result.messageId,
+      });
+    } else {
+      const errorData = await customerEmailResponse.json().catch(() => ({ error: 'Unknown error' }));
+      console.warn('Failed to send customer confirmation email:', errorData);
+    }
+  } catch (error) {
+    console.error('Error sending customer confirmation email:', error);
+  }
+
+  // Note: Manager notification emails would require fetching manager emails from the company
+  // For now, we'll skip this. It can be added later by querying CompanyUser records with role='manager' or 'admin'
+  // TODO: Add manager notification email functionality
+}
+
+/**
  * Create a BookingRequest (Pending). A manager accepts it in the Management
  * "Booking Requests" view to create the Trip and Customer.
  */
@@ -447,6 +524,12 @@ export const handler = async (event: { body?: string | object; queryStringParame
         companyId: company.id,
         requestId: result.requestId,
         bookingCode: company.bookingCode,
+      });
+
+      // Send confirmation emails (non-blocking - failures won't break booking creation)
+      sendBookingEmails(bookingRequest, company, result.requestId).catch((emailError) => {
+        // Log error but don't fail the booking creation
+        console.error('Error sending booking confirmation emails (non-critical):', emailError);
       });
 
       return {

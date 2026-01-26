@@ -7,6 +7,7 @@ import { stripeWebhook } from './functions/stripeWebhook/resource';
 import { stripeCheckout } from './functions/stripeCheckout/resource';
 import { stripePortal } from './functions/stripePortal/resource';
 import { sendInvitationEmail } from './functions/sendInvitationEmail/resource';
+import { sendBookingEmail } from './functions/sendBookingEmail/resource';
 import { publicBooking } from './functions/publicBooking/resource';
 import { sendSms } from './functions/sendSms/resource';
 
@@ -17,6 +18,7 @@ export const backend = defineBackend({
   stripeCheckout,
   stripePortal,
   sendInvitationEmail,
+  sendBookingEmail,
   publicBooking,
   sendSms,
 });
