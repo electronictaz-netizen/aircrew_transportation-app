@@ -27,7 +27,10 @@ export default defineConfig({
         runtimeCaching: [
           // Static assets - cache first for performance
           {
-            urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*\.(js|css|woff2|woff|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico)$/i,
+            urlPattern: ({ url }) => {
+              return url.origin.includes('amazonaws.com') && 
+                     /\.(js|css|woff2|woff|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico)$/i.test(url.pathname);
+            },
             handler: 'CacheFirst',
             options: {
               cacheName: 'static-assets-cache',
@@ -42,7 +45,7 @@ export default defineConfig({
           },
           // API calls - network first with fallback
           {
-            urlPattern: /^https:\/\/api\.aviationstack\.com\/.*/i,
+            urlPattern: ({ url }) => url.origin.includes('aviationstack.com'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'aviationstack-api-cache',
@@ -58,7 +61,9 @@ export default defineConfig({
           },
           // AWS Amplify API - network first with offline fallback
           {
-            urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*\/graphql/i,
+            urlPattern: ({ url }) => {
+              return url.origin.includes('amazonaws.com') && url.pathname.includes('/graphql');
+            },
             handler: 'NetworkFirst',
             options: {
               cacheName: 'amplify-graphql-cache',
@@ -69,14 +74,12 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200]
               },
-              networkTimeoutSeconds: 10,
-              // Fallback to cache when offline
-              fallbackToCache: true
+              networkTimeoutSeconds: 10
             }
           },
           // AWS Amplify assets - stale while revalidate
           {
-            urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*/i,
+            urlPattern: ({ url }) => url.origin.includes('amazonaws.com'),
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'aws-amplify-cache',
