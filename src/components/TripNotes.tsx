@@ -6,7 +6,6 @@ import { useCompany } from '../contexts/CompanyContext';
 import { getCurrentUser } from 'aws-amplify/auth';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Input } from './ui/input';
 import {
   Select,
   SelectContent,
@@ -30,7 +29,7 @@ interface TripNotesProps {
 }
 
 function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
-  const { companyId, company } = useCompany();
+  const { companyId } = useCompany();
   const { notification, showError, hideNotification } = useNotification();
   const [notes, setNotes] = useState<Array<Schema['TripNote']['type']>>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +80,7 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
     
     try {
       setLoading(true);
+      // @ts-expect-error TS2590 - Amplify Data list return type is too complex
       const { data: notesData, errors } = await client.models.TripNote.list({
         filter: { 
           companyId: { eq: companyId },
