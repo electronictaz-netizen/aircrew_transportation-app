@@ -44,6 +44,13 @@ import('./utils/flightStatusDebug');
 import('./utils/recurringTripsDebug');
 import('./utils/deleteAllTrips');
 
+// Initialize offline storage
+import('./utils/offlineStorage').then(({ initOfflineStorage }) => {
+  initOfflineStorage().catch((error) => {
+    console.warn('[OfflineStorage] Failed to initialize:', error);
+  });
+});
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>

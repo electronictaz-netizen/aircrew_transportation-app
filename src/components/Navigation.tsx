@@ -7,7 +7,8 @@ import { canAccessManagement } from '../utils/rolePermissions';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ThemeToggle';
 import HelpDialog from './HelpDialog';
-import { HelpCircle } from 'lucide-react';
+import PushNotificationSetup from './PushNotificationSetup';
+import { HelpCircle, Bell } from 'lucide-react';
 import './Navigation.css';
 
 interface NavigationProps {
@@ -20,6 +21,7 @@ function Navigation({ signOut, user }: NavigationProps) {
   const hasAdminAccess = useAdminAccess();
   const { company, userRole } = useCompany();
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showPushNotificationSetup, setShowPushNotificationSetup] = useState(false);
   const canAccessManagementView = canAccessManagement(userRole);
 
   const handleSignOut = async () => {
@@ -77,6 +79,17 @@ function Navigation({ signOut, user }: NavigationProps) {
         </div>
         <div className="nav-user" aria-label="User menu">
           <Button
+            onClick={() => setShowPushNotificationSetup(true)}
+            variant="ghost"
+            size="sm"
+            className="help-btn"
+            aria-label="Push notifications"
+            title="Push Notifications"
+          >
+            <Bell className="w-4 h-4" />
+            <span className="help-btn-text">Notifications</span>
+          </Button>
+          <Button
             onClick={() => setShowHelpDialog(true)}
             variant="ghost"
             size="sm"
@@ -100,6 +113,10 @@ function Navigation({ signOut, user }: NavigationProps) {
           </Button>
         </div>
         <HelpDialog open={showHelpDialog} onOpenChange={setShowHelpDialog} />
+        <PushNotificationSetup 
+          open={showPushNotificationSetup} 
+          onOpenChange={setShowPushNotificationSetup}
+        />
       </div>
     </nav>
   );

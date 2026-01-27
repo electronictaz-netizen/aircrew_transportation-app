@@ -117,6 +117,8 @@ const schema = a.schema({
       tripRate: a.float(), // Rate charged to customer/airline for this trip
       driverPayAmount: a.float(), // Amount paid to driver for this trip (calculated or fixed)
       notes: a.string(), // Additional notes for billing/payroll verification
+      proofOfDeliveryPhoto: a.string(), // URL to proof of delivery photo
+      proofOfDeliveryPhotoTimestamp: a.datetime(), // When photo was taken
       customFieldValues: a.hasMany('CustomFieldValue', 'tripId'),
       bookingRequests: a.hasMany('BookingRequest', 'tripId'),
       tripNotes: a.hasMany('TripNote', 'tripId'),
@@ -376,6 +378,9 @@ const schema = a.schema({
       authorRole: a.string(), // Role of the author (admin, manager, driver)
       isInternal: a.boolean().default(false), // Internal comments (manager-to-manager)
       mentions: a.string(), // JSON array of mentioned user IDs/emails
+      photoUrl: a.string(), // URL to photo attachment (if any)
+      voiceNoteUrl: a.string(), // URL to voice note audio file (if any)
+      voiceNoteDuration: a.float(), // Duration of voice note in seconds
       createdAt: a.datetime().required(), // When note was created
       updatedAt: a.datetime(), // When note was last updated
     })

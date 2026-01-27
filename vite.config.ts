@@ -56,20 +56,22 @@ export default defineConfig({
               networkTimeoutSeconds: 10
             }
           },
-          // AWS Amplify API - network first
+          // AWS Amplify API - network first with offline fallback
           {
             urlPattern: /^https:\/\/.*\.amazonaws\.com\/.*\/graphql/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'amplify-graphql-cache',
               expiration: {
-                maxEntries: 100,
+                maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24 // 24 hours
               },
               cacheableResponse: {
                 statuses: [0, 200]
               },
-              networkTimeoutSeconds: 10
+              networkTimeoutSeconds: 10,
+              // Fallback to cache when offline
+              fallbackToCache: true
             }
           },
           // AWS Amplify assets - stale while revalidate

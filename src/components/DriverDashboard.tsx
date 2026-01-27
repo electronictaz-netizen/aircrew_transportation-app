@@ -10,6 +10,7 @@ import { startGPSTracking, stopGPSTracking, isTrackingActive, getCurrentTracking
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
 import { logger } from '../utils/logger';
+import CameraCapture from './CameraCapture';
 import './DriverDashboard.css';
 
 const client = generateClient<Schema>();
@@ -25,6 +26,10 @@ function DriverDashboard() {
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
   const [gpsLoading, setGpsLoading] = useState<Record<string, boolean>>({});
   const [changingVehicle, setChangingVehicle] = useState<Record<string, boolean>>({});
+  const [showProofOfDeliveryCamera, setShowProofOfDeliveryCamera] = useState(false);
+  const [tripForProofOfDelivery, setTripForProofOfDelivery] = useState<string | null>(null);
+  const [showProofOfDeliveryCamera, setShowProofOfDeliveryCamera] = useState(false);
+  const [tripForProofOfDelivery, setTripForProofOfDelivery] = useState<string | null>(null);
 
   useEffect(() => {
     if (companyId) {
@@ -263,7 +268,19 @@ function DriverDashboard() {
     }
   };
 
-  const handleDropoff = async (tripId: string) => {
+  const handleDropoff = async (tripId: string, skipPhoto: boolean = false) => {
+    // If not skipping photo, show camera first
+    if (!skipPhoto) {
+      setTripForProofOfDelivery(tripId);
+      setShowProofOfDeliveryCamera(true);
+      return;
+    }
+
+    // Proceed with dropoff (called after photo is captured or skipped)
+    await completeDropoff(tripId, null);
+  };
+
+  const completeDropoff = async (tripId: string, proofOfDeliveryPhoto: string | null) => {
     setGpsLoading(prev => ({ ...prev, [tripId]: true }));
     
     try {
@@ -308,26 +325,51 @@ function DriverDashboard() {
         stopGPSTracking();
       }
 
-      // Update trip with dropoff time and GPS (if available)
-      await client.models.Trip.update({
+      // Update trip with dropoff time, GPS, and proof of delivery photo (if available)
+      const updateData: any = {
         id: tripId,
         actualDropoffTime: now,
         status: 'Completed',
         ...gpsData,
-      });
+      };
+
+      if (proofOfDeliveryPhoto) {
+        updateData.proofOfDeliveryPhoto = proofOfDeliveryPhoto;
+        updateData.proofOfDeliveryPhotoTimestamp = now;
+      }
+
+      await client.models.Trip.update(updateData);
       
       await loadDriverAndTrips();
       
+      let successMessage = 'Dropoff recorded successfully. Tracking stopped.';
       if (gpsData.completeLocationLat && gpsData.completeLocationLng) {
-        showSuccess(`Dropoff recorded with GPS location: ${formatCoordinates(gpsData.completeLocationLat, gpsData.completeLocationLng)}. Tracking stopped.`);
-      } else {
-        showSuccess('Dropoff recorded successfully. Tracking stopped.');
+        successMessage = `Dropoff recorded with GPS location: ${formatCoordinates(gpsData.completeLocationLat, gpsData.completeLocationLng)}. Tracking stopped.`;
       }
+      if (proofOfDeliveryPhoto) {
+        successMessage += ' Proof of delivery photo attached.';
+      }
+      showSuccess(successMessage);
     } catch (error) {
       logger.error('Error recording dropoff:', error);
       showError('Failed to record dropoff time. Please try again.');
     } finally {
       setGpsLoading(prev => ({ ...prev, [tripId]: false }));
+      setShowProofOfDeliveryCamera(false);
+      setTripForProofOfDelivery(null);
+    }
+  };
+
+  const handleProofOfDeliveryCapture = async (file: File, dataUrl: string) => {
+    if (tripForProofOfDelivery) {
+      // Store photo as data URL (in production, upload to S3 and store URL)
+      await completeDropoff(tripForProofOfDelivery, dataUrl);
+    }
+  };
+
+  const handleSkipProofOfDelivery = () => {
+    if (tripForProofOfDelivery) {
+      completeDropoff(tripForProofOfDelivery, null);
     }
   };
 
@@ -741,6 +783,23 @@ function DriverDashboard() {
         ))}
       </div>
       {notification && <NotificationComponent notification={notification} onClose={hideNotification} />}
+
+      {/* Proof of Delivery Camera */}
+      <CameraCapture
+        open={showProofOfDeliveryCamera}
+        onOpenChange={(open) => {
+          setShowProofOfDeliveryCamera(open);
+          if (!open && tripForProofOfDelivery) {
+            // If cancelled, complete dropoff without photo
+            handleSkipProofOfDelivery();
+          }
+        }}
+        onCapture={handleProofOfDeliveryCapture}
+        onCancel={handleSkipProofOfDelivery}
+        title="Proof of Delivery Photo"
+        description="Take a photo as proof of delivery"
+        facingMode="environment"
+      />
     </div>
   );
 }

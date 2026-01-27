@@ -18,6 +18,8 @@ import LoadingButton from './LoadingButton';
 import { showSuccess } from '../utils/toast';
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
+import CameraCapture from './CameraCapture';
+import VoiceNoteRecorder from './VoiceNoteRecorder';
 import './TripNotes.css';
 
 const client = generateClient<Schema>();
@@ -39,6 +41,10 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
   const [isInternal, setIsInternal] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ userId: string; email?: string; name?: string } | null>(null);
   const [userRole, setUserRole] = useState<string>('');
+  const [showCamera, setShowCamera] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [attachedPhoto, setAttachedPhoto] = useState<string | null>(null);
+  const [attachedVoiceNote, setAttachedVoiceNote] = useState<{ dataUrl: string; duration: number } | null>(null);
 
   useEffect(() => {
     loadCurrentUser();
@@ -138,6 +144,9 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
         authorRole: userRole || 'manager',
         isInternal: isInternal || noteType === 'internal',
         mentions: mentions.length > 0 ? JSON.stringify(mentions) : undefined,
+        photoUrl: attachedPhoto || undefined,
+        voiceNoteUrl: attachedVoiceNote?.dataUrl || undefined,
+        voiceNoteDuration: attachedVoiceNote?.duration || undefined,
         createdAt: new Date().toISOString(),
       };
 
@@ -147,6 +156,8 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
       setNewNote('');
       setIsInternal(false);
       setNoteType('manager');
+      setAttachedPhoto(null);
+      setAttachedVoiceNote(null);
       loadNotes();
     } catch (error) {
       console.error('Error adding note:', error);
@@ -236,6 +247,55 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
             rows={4}
             maxLength={2000}
           />
+
+          {/* Attachments */}
+          <div className="note-attachments">
+            {attachedPhoto && (
+              <div className="attachment-preview">
+                <img src={attachedPhoto} alt="Attached photo" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAttachedPhoto(null)}
+                >
+                  Remove
+                </Button>
+              </div>
+            )}
+            {attachedVoiceNote && (
+              <div className="attachment-preview">
+                <audio src={attachedVoiceNote.dataUrl} controls />
+                <span>Duration: {Math.round(attachedVoiceNote.duration)}s</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAttachedVoiceNote(null)}
+                >
+                  Remove
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Attachment buttons */}
+          <div className="note-attachment-buttons">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCamera(true)}
+            >
+              📷 Add Photo
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowVoiceRecorder(true)}
+            >
+              🎤 Add Voice Note
+            </Button>
+          </div>
           
           <div className="note-actions">
             <div className="note-hint">
@@ -244,7 +304,7 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
             <LoadingButton
               onClick={handleAddNote}
               isLoading={saving}
-              disabled={saving || !newNote.trim()}
+              disabled={saving || (!newNote.trim() && !attachedPhoto && !attachedVoiceNote)}
             >
               Add Note
             </LoadingButton>
@@ -306,10 +366,49 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
                   {note.noteType === 'driver' ? '🚗 Driver' : note.noteType === 'internal' ? '🔒 Internal' : '👤 Manager'}
                 </div>
               )}
+              {note.photoUrl && (
+                <div className="note-attachment">
+                  <img src={note.photoUrl} alt="Note attachment" className="note-photo" />
+                </div>
+              )}
+              {note.voiceNoteUrl && (
+                <div className="note-attachment">
+                  <audio src={note.voiceNoteUrl} controls />
+                  {note.voiceNoteDuration && (
+                    <span className="voice-note-duration">
+                      Duration: {Math.round(note.voiceNoteDuration)}s
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
+
+      {/* Camera Capture Dialog */}
+      <CameraCapture
+        open={showCamera}
+        onOpenChange={setShowCamera}
+        onCapture={(file, dataUrl) => {
+          setAttachedPhoto(dataUrl);
+          setShowCamera(false);
+        }}
+        title="Add Photo to Note"
+        description="Capture or select a photo to attach to this note"
+      />
+
+      {/* Voice Note Recorder Dialog */}
+      <VoiceNoteRecorder
+        open={showVoiceRecorder}
+        onOpenChange={setShowVoiceRecorder}
+        onRecord={(file, dataUrl, duration) => {
+          setAttachedVoiceNote({ dataUrl, duration });
+          setShowVoiceRecorder(false);
+        }}
+        title="Record Voice Note"
+        description="Record a voice note to attach to this note"
+      />
     </div>
   );
 }

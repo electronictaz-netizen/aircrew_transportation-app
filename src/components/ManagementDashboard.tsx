@@ -208,6 +208,19 @@ function ManagementDashboard() {
     
     try {
       console.log('Loading trips...', forceRefresh ? '(force refresh)' : '');
+      
+      // Check if offline and load from cache
+      const { isOnline, getCachedTrips, cacheTrips } = await import('../utils/offlineStorage');
+      if (!isOnline() && !forceRefresh) {
+        console.log('[OfflineStorage] Loading trips from cache (offline mode)');
+        const cachedTrips = await getCachedTrips(companyId);
+        if (cachedTrips.length > 0) {
+          setTrips(cachedTrips);
+          setLoading(false);
+          return;
+        }
+      }
+      
       // Add a small delay to ensure database consistency
       if (forceRefresh) {
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -230,9 +243,27 @@ function ManagementDashboard() {
 
       // Debug: portal trips use companyId from getCompanyByCode(bookingCode). Must match this companyId.
       console.log('Loaded trips:', tripsData?.length || 0, 'companyId:', companyId);
-      setTrips(tripsData as Array<Schema['Trip']['type']>);
+      const tripsArray = tripsData as Array<Schema['Trip']['type']>;
+      setTrips(tripsArray);
+      
+      // Cache trips for offline access
+      if (isOnline() && tripsArray.length > 0) {
+        await cacheTrips(tripsArray, companyId);
+      }
     } catch (error) {
       console.error('Error loading trips:', error);
+      
+      // Try to load from cache on error
+      try {
+        const { getCachedTrips } = await import('../utils/offlineStorage');
+        const cachedTrips = await getCachedTrips(companyId);
+        if (cachedTrips.length > 0) {
+          console.log('[OfflineStorage] Loaded trips from cache after error');
+          setTrips(cachedTrips);
+        }
+      } catch (cacheError) {
+        console.error('Error loading from cache:', cacheError);
+      }
     } finally {
       setLoading(false);
     }
@@ -242,12 +273,39 @@ function ManagementDashboard() {
     if (!companyId) return;
     
     try {
+      // Check if offline and load from cache
+      const { isOnline, getCachedDrivers, cacheDrivers } = await import('../utils/offlineStorage');
+      if (!isOnline()) {
+        const cachedDrivers = await getCachedDrivers(companyId);
+        if (cachedDrivers.length > 0) {
+          setDrivers(cachedDrivers);
+          return;
+        }
+      }
+      
       const { data: driversData } = await client.models.Driver.list({
         filter: { companyId: { eq: companyId! } }
       });
-      setDrivers(driversData as Array<Schema['Driver']['type']>);
+      const driversArray = driversData as Array<Schema['Driver']['type']>;
+      setDrivers(driversArray);
+      
+      // Cache drivers for offline access
+      if (isOnline() && driversArray.length > 0) {
+        await cacheDrivers(driversArray, companyId);
+      }
     } catch (error) {
       console.error('Error loading drivers:', error);
+      
+      // Try to load from cache on error
+      try {
+        const { getCachedDrivers } = await import('../utils/offlineStorage');
+        const cachedDrivers = await getCachedDrivers(companyId);
+        if (cachedDrivers.length > 0) {
+          setDrivers(cachedDrivers);
+        }
+      } catch (cacheError) {
+        console.error('Error loading drivers from cache:', cacheError);
+      }
     }
   };
 
