@@ -407,7 +407,7 @@ export const handler = async (event: {
             }
           `;
           const customerResponse = await graphqlRequest(customerQuery);
-          const customer = customerResponse?.getCustomer;
+          const customer = customerResponse.data?.getCustomer;
           
           if (!customer || customer.companyId !== companyId) {
             return {
@@ -423,10 +423,10 @@ export const handler = async (event: {
                 companyId: "${companyId}"
                 tripId: "${tripId}"
                 customerId: "${customerId}"
-                requestType: ${requestType}
+                requestType: "${requestType}"
                 requestedChanges: ${JSON.stringify(JSON.stringify(requestedChanges))}
                 reason: ${JSON.stringify(reason)}
-                status: pending
+                status: "pending"
                 createdAt: "${new Date().toISOString()}"
               }) {
                 id
@@ -476,7 +476,7 @@ export const handler = async (event: {
             }
           `;
           const customerResponse = await graphqlRequest(customerQuery);
-          const customer = customerResponse?.getCustomer;
+          const customer = customerResponse.data?.getCustomer;
           
           if (!customer || customer.companyId !== companyId) {
             return {
@@ -486,18 +486,32 @@ export const handler = async (event: {
             };
           }
 
+          // Build mutation input with optional fields
+          const ratingInput: string[] = [
+            `companyId: "${companyId}"`,
+            `tripId: "${tripId}"`,
+            `customerId: "${customerId}"`,
+            `rating: ${rating}`,
+            `createdAt: "${new Date().toISOString()}"`,
+          ];
+          
+          if (driverRating !== undefined && driverRating !== null) {
+            ratingInput.push(`driverRating: ${driverRating}`);
+          }
+          if (vehicleRating !== undefined && vehicleRating !== null) {
+            ratingInput.push(`vehicleRating: ${vehicleRating}`);
+          }
+          if (review && review.trim()) {
+            ratingInput.push(`review: ${JSON.stringify(review)}`);
+          }
+          if (wouldRecommend !== undefined && wouldRecommend !== null) {
+            ratingInput.push(`wouldRecommend: ${wouldRecommend}`);
+          }
+
           const mutation = `
             mutation CreateRating {
               createTripRating(input: {
-                companyId: "${companyId}"
-                tripId: "${tripId}"
-                customerId: "${customerId}"
-                rating: ${rating}
-                ${driverRating ? `driverRating: ${driverRating}` : ''}
-                ${vehicleRating ? `vehicleRating: ${vehicleRating}` : ''}
-                ${review ? `review: ${JSON.stringify(review)}` : ''}
-                ${wouldRecommend !== undefined ? `wouldRecommend: ${wouldRecommend}` : ''}
-                createdAt: "${new Date().toISOString()}"
+                ${ratingInput.join('\n                ')}
               }) {
                 id
               }
