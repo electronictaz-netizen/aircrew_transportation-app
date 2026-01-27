@@ -118,6 +118,8 @@ const schema = a.schema({
       customFieldValues: a.hasMany('CustomFieldValue', 'tripId'),
       bookingRequests: a.hasMany('BookingRequest', 'tripId'),
       tripNotes: a.hasMany('TripNote', 'tripId'),
+      modificationRequests: a.hasMany('TripModificationRequest', 'tripId'),
+      ratings: a.hasMany('TripRating', 'tripId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -195,9 +197,16 @@ const schema = a.schema({
       smsOptIn: a.boolean().default(false), // Whether customer has opted in to SMS
       smsOptInAt: a.datetime(), // When customer opted in
       smsOptOutAt: a.datetime(), // When customer opted out
+      // Customer Portal fields
+      portalEnabled: a.boolean().default(false), // Whether customer can access portal
+      portalPasswordHash: a.string(), // Hashed password for portal access (optional, can use email verification instead)
+      portalAccessCode: a.string(), // Unique access code for passwordless login
+      lastPortalLogin: a.datetime(), // Last time customer logged into portal
       trips: a.hasMany('Trip', 'customerId'),
       bookingRequests: a.hasMany('BookingRequest', 'customerId'),
       tripTemplates: a.hasMany('TripTemplate', 'customerId'),
+      tripModificationRequests: a.hasMany('TripModificationRequest', 'customerId'),
+      tripRatings: a.hasMany('TripRating', 'customerId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -367,6 +376,47 @@ const schema = a.schema({
       mentions: a.string(), // JSON array of mentioned user IDs/emails
       createdAt: a.datetime().required(), // When note was created
       updatedAt: a.datetime(), // When note was last updated
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  TripModificationRequest: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      tripId: a.id().required(),
+      trip: a.belongsTo('Trip', 'tripId'),
+      customerId: a.id().required(),
+      customer: a.belongsTo('Customer', 'customerId'),
+      requestType: a.enum(['date', 'time', 'location', 'passengers', 'other']), // Type of modification
+      requestedChanges: a.string().required(), // JSON string with requested changes
+      reason: a.string(), // Customer's reason for request
+      status: a.enum(['pending', 'approved', 'rejected', 'completed']).default('pending'),
+      managerNotes: a.string(), // Manager's notes on the request
+      createdAt: a.datetime().required(),
+      updatedAt: a.datetime(),
+      respondedAt: a.datetime(), // When manager responded
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  TripRating: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      tripId: a.id().required(),
+      trip: a.belongsTo('Trip', 'tripId'),
+      customerId: a.id().required(),
+      customer: a.belongsTo('Customer', 'customerId'),
+      rating: a.integer().required(), // 1-5 stars
+      review: a.string(), // Optional text review
+      driverRating: a.integer(), // Separate rating for driver (1-5)
+      vehicleRating: a.integer(), // Separate rating for vehicle (1-5)
+      wouldRecommend: a.boolean(), // Would recommend to others
+      createdAt: a.datetime().required(),
+      updatedAt: a.datetime(),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

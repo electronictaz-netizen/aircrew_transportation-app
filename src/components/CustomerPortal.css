@@ -1,0 +1,268 @@
+.customer-portal {
+  min-height: 100vh;
+  background: var(--background, #f9fafb);
+  padding: 2rem;
+}
+
+.portal-login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.portal-login-card {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  max-width: 450px;
+  width: 100%;
+}
+
+.portal-login-card h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--foreground, #1f2937);
+}
+
+.portal-login-card > p {
+  color: var(--muted-foreground, #6b7280);
+  margin-bottom: 2rem;
+}
+
+.login-form,
+.verify-code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground, #374151);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.portal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.portal-header h1 {
+  margin: 0 0 0.25rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--foreground, #1f2937);
+}
+
+.portal-header p {
+  margin: 0;
+  color: var(--muted-foreground, #6b7280);
+}
+
+.portal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--border-color, #e5e7eb);
+}
+
+.portal-tabs .tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted-foreground, #6b7280);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.portal-tabs .tab:hover {
+  color: var(--foreground, #1f2937);
+}
+
+.portal-tabs .tab.active {
+  color: var(--primary, #3b82f6);
+  border-bottom-color: var(--primary, #3b82f6);
+}
+
+.trips-list {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.trip-card {
+  background: white;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.trip-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.trip-card-header {
+  margin-bottom: 1rem;
+}
+
+.trip-card-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.trip-date {
+  margin: 0;
+  color: var(--muted-foreground, #6b7280);
+  font-size: 0.875rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.status-unassigned {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.status-assigned {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.status-inprogress {
+  background: #fce7f3;
+  color: #9f1239;
+}
+
+.status-badge.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.trip-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: var(--muted-foreground, #6b7280);
+  min-width: 100px;
+}
+
+.detail-value {
+  color: var(--foreground, #374151);
+}
+
+.trip-card-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--muted-foreground, #6b7280);
+}
+
+.empty-state p {
+  font-size: 1.125rem;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rating-stars .star {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s;
+}
+
+.rating-stars .star:hover {
+  transform: scale(1.2);
+}
+
+.rating-stars .star.active {
+  filter: none;
+}
+
+.rating-stars .star:not(.active) {
+  opacity: 0.3;
+}
+
+@media (max-width: 768px) {
+  .customer-portal {
+    padding: 1rem;
+  }
+
+  .portal-login-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .portal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .trips-list {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-card-actions {
+    flex-direction: column;
+  }
+
+  .trip-card-actions button {
+    width: 100%;
+  }
+}

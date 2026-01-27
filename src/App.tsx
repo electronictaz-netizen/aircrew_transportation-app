@@ -19,6 +19,7 @@ const DriverDashboard = lazy(() => import('./components/DriverDashboard'));
 const DriverManagement = lazy(() => import('./components/DriverManagement'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const BookingPortal = lazy(() => import('./components/BookingPortal'));
+const CustomerPortalWrapper = lazy(() => import('./components/CustomerPortalWrapper'));
 
 import { PageSkeleton } from './components/ui/skeleton-loaders';
 import { SkipLinks } from './components/SkipLinks';
@@ -47,6 +48,10 @@ function App() {
           {/* Public booking portal routes - no authentication required */}
           <Route path="/booking/:code" element={<BookingPortal />} />
           <Route path="/booking" element={<BookingPortal />} />
+          
+          {/* Public customer portal routes - no authentication required */}
+          <Route path="/portal/:code" element={<CustomerPortalWrapper />} />
+          <Route path="/portal" element={<CustomerPortalWrapper />} />
           
           {/* Authenticated routes */}
           <Route

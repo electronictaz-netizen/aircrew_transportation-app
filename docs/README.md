@@ -8,6 +8,7 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 - **[COMPANY_QUICK_START.md](./COMPANY_QUICK_START.md)** - Get up and running in 5 minutes
 - **[SUBSCRIPTION_AND_TRIAL_GUIDE.md](./SUBSCRIPTION_AND_TRIAL_GUIDE.md)** - Understand subscriptions and free trials
 - **[WHATS_NEW_JANUARY_2026.md](./WHATS_NEW_JANUARY_2026.md)** - See what's new! ✨
+- **[CUSTOMER_PORTAL_SETUP.md](./CUSTOMER_PORTAL_SETUP.md)** - Customer Portal setup after deployment
 
 ## User Guides by Role
 
@@ -47,6 +48,9 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 - **[BULK_OPERATIONS_USER_GUIDE.md](./BULK_OPERATIONS_USER_GUIDE.md)** - Bulk Trip Operations
 - **[TRIP_NOTES_USER_GUIDE.md](./TRIP_NOTES_USER_GUIDE.md)** - Trip Notes & Internal Comments
 - **[ADVANCED_FILTERING_USER_GUIDE.md](./ADVANCED_FILTERING_USER_GUIDE.md)** - Advanced Filtering & Search
+- **[CUSTOMER_PORTAL_USER_GUIDE.md](./CUSTOMER_PORTAL_USER_GUIDE.md)** - Customer Portal / Trip History
+- **[CUSTOMER_PORTAL_ADMIN_GUIDE.md](./CUSTOMER_PORTAL_ADMIN_GUIDE.md)** - Customer Portal Admin Guide
+- **[CUSTOMER_PORTAL_SETUP.md](./CUSTOMER_PORTAL_SETUP.md)** - Customer Portal Setup Instructions
 
 ### For Administrators
 

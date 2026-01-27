@@ -12,6 +12,7 @@ import { publicBooking } from './functions/publicBooking/resource';
 import { sendSms } from './functions/sendSms/resource';
 import { sendTelnyxSms } from './functions/sendTelnyxSms/resource';
 import { telnyxWebhook } from './functions/telnyxWebhook/resource';
+import { customerPortal } from './functions/customerPortal/resource';
 
 export const backend = defineBackend({
   auth,
@@ -25,6 +26,7 @@ export const backend = defineBackend({
   sendSms,
   sendTelnyxSms,
   telnyxWebhook,
+  customerPortal,
 });
 
 // Pass GraphQL endpoint to publicBooking function. Use the L1 CfnGraphqlApi.attrGraphQlUrl
@@ -129,6 +131,20 @@ backend.telnyxWebhook.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEnd
 backend.telnyxWebhook.addEnvironment('AMPLIFY_DATA_REGION', region);
 // Grant AppSync permissions to telnyxWebhook
 backend.telnyxWebhook.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    sid: 'AllowAppSyncGraphQL',
+    effect: iam.Effect.ALLOW,
+    actions: ['appsync:GraphQL'],
+    resources: [`${cfn.cfnGraphqlApi.attrArn}/*`],
+  })
+);
+
+// Customer Portal: Pass GraphQL endpoint and region
+backend.customerPortal.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
+backend.customerPortal.addEnvironment('AMPLIFY_DATA_REGION', region);
+
+// Grant AppSync permissions to customerPortal
+backend.customerPortal.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     sid: 'AllowAppSyncGraphQL',
     effect: iam.Effect.ALLOW,
