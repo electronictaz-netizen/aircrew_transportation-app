@@ -51,6 +51,8 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 - **[CUSTOMER_PORTAL_USER_GUIDE.md](./CUSTOMER_PORTAL_USER_GUIDE.md)** - Customer Portal / Trip History
 - **[CUSTOMER_PORTAL_ADMIN_GUIDE.md](./CUSTOMER_PORTAL_ADMIN_GUIDE.md)** - Customer Portal Admin Guide
 - **[CUSTOMER_PORTAL_SETUP.md](./CUSTOMER_PORTAL_SETUP.md)** - Customer Portal Setup Instructions
+- **[PWA_ENHANCEMENTS_SETUP.md](./PWA_ENHANCEMENTS_SETUP.md)** - PWA Mobile Enhancements Setup (Offline, Push Notifications, Camera, Voice Notes)
+- **[PWA_MOBILE_ENHANCEMENTS.md](./PWA_MOBILE_ENHANCEMENTS.md)** - PWA Mobile Enhancements Implementation Summary
 
 ### For Administrators
 
