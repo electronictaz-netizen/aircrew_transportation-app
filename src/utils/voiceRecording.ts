@@ -91,8 +91,13 @@ export async function stopVoiceRecording(): Promise<VoiceRecordingResult> {
     }
 
     mediaRecorder.onstop = () => {
+      if (!mediaRecorder) {
+        reject(new Error('MediaRecorder is null'));
+        return;
+      }
+
       const duration = (Date.now() - recordingStartTime) / 1000; // Duration in seconds
-      const blob = new Blob(audioChunks, { type: mediaRecorder?.mimeType || 'audio/webm' });
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
 
       // Stop all tracks
       if (mediaRecorder.stream) {
@@ -105,7 +110,8 @@ export async function stopVoiceRecording(): Promise<VoiceRecordingResult> {
         const dataUrl = reader.result as string;
 
         // Create file object
-        const extension = mediaRecorder?.mimeType?.includes('mp4') ? 'm4a' : 'webm';
+        const mimeType = mediaRecorder?.mimeType || 'audio/webm';
+        const extension = mimeType.includes('mp4') ? 'm4a' : 'webm';
         const file = new File([blob], `voice-note-${Date.now()}.${extension}`, {
           type: blob.type,
           lastModified: Date.now(),
@@ -127,7 +133,7 @@ export async function stopVoiceRecording(): Promise<VoiceRecordingResult> {
       reader.readAsDataURL(blob);
     };
 
-    mediaRecorder.onerror = (event) => {
+    mediaRecorder.onerror = () => {
       reject(new Error('Recording error occurred'));
     };
 

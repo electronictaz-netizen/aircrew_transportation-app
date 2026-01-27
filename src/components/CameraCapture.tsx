@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { capturePhoto, isCameraAvailable, CameraOptions } from '../utils/cameraCapture';
+import { capturePhoto, isCameraAvailable } from '../utils/cameraCapture';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import './CameraCapture.css';

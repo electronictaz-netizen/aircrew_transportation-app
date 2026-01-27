@@ -91,7 +91,7 @@ export async function subscribeToPushNotifications(
     // Subscribe to push
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
     });
 
     console.log('[PushNotifications] Subscribed to push notifications');
@@ -149,7 +149,8 @@ export function showLocalNotification(payload: PushNotificationPayload): void {
     body: payload.body,
     icon: payload.icon || '/icon-192x192.png',
     badge: payload.badge || '/icon-192x192.png',
-    image: payload.image,
+    // image is not in standard NotificationOptions but some browsers support it
+    ...(payload.image && { image: payload.image } as any),
     data: payload.data,
     tag: payload.tag,
     requireInteraction: payload.requireInteraction || false,
@@ -160,65 +161,35 @@ export function showLocalNotification(payload: PushNotificationPayload): void {
 
 /**
  * Listen for push notifications
+ * Note: Push events are handled in the service worker itself
+ * This function sets up message listeners to receive notifications from the service worker
  */
 export function setupPushNotificationListener(
-  registration: ServiceWorkerRegistration,
+  _registration: ServiceWorkerRegistration,
   onNotification: (payload: PushNotificationPayload) => void
 ): void {
-  // Listen for push events
-  registration.addEventListener('push', (event) => {
-    console.log('[PushNotifications] Push event received');
-
-    let payload: PushNotificationPayload = {
-      title: 'New Notification',
-      body: 'You have a new notification',
-    };
-
-    if (event.data) {
-      try {
-        payload = event.data.json();
-      } catch (error) {
-        payload.body = event.data.text();
+  // Note: Event listeners on ServiceWorkerRegistration are limited
+  // Push events are handled in the service worker itself
+  // This function sets up message listeners to receive notifications from the service worker
+  
+  // For now, we'll set up a message listener to receive notifications from the service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'PUSH_NOTIFICATION') {
+        onNotification(event.data.payload);
       }
-    }
+    });
+  }
 
-    // Show notification
-    event.waitUntil(
-      registration.showNotification(payload.title, {
-        body: payload.body,
-        icon: payload.icon || '/icon-192x192.png',
-        badge: payload.badge || '/icon-192x192.png',
-        image: payload.image,
-        data: payload.data,
-        tag: payload.tag,
-        requireInteraction: payload.requireInteraction || false,
-      })
-    );
-
-    // Call callback
-    onNotification(payload);
-  });
-
-  // Listen for notification clicks
-  registration.addEventListener('notificationclick', (event) => {
-    console.log('[PushNotifications] Notification clicked');
-
-    event.notification.close();
-
-    // Handle notification click
-    if (event.notification.data && event.notification.data.url) {
-      event.waitUntil(
-        clients.openWindow(event.notification.data.url)
-      );
-    } else {
-      event.waitUntil(
-        clients.matchAll().then((clientList) => {
-          if (clientList.length > 0) {
-            return clientList[0].focus();
-          }
-          return clients.openWindow('/');
-        })
-      );
+  // Listen for notification clicks (this works from main thread)
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+      // Handle notification click
+      if (event.data.url) {
+        window.open(event.data.url, '_blank');
+      } else {
+        window.focus();
+      }
     }
   });
 }

@@ -390,7 +390,7 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
       <CameraCapture
         open={showCamera}
         onOpenChange={setShowCamera}
-        onCapture={(file, dataUrl) => {
+        onCapture={(_file, dataUrl) => {
           setAttachedPhoto(dataUrl);
           setShowCamera(false);
         }}
@@ -402,7 +402,7 @@ function TripNotes({ tripId, onClose, readOnly = false }: TripNotesProps) {
       <VoiceNoteRecorder
         open={showVoiceRecorder}
         onOpenChange={setShowVoiceRecorder}
-        onRecord={(file, dataUrl, duration) => {
+        onRecord={(_file, dataUrl, duration) => {
           setAttachedVoiceNote({ dataUrl, duration });
           setShowVoiceRecorder(false);
         }}

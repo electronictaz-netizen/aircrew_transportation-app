@@ -28,8 +28,6 @@ function DriverDashboard() {
   const [changingVehicle, setChangingVehicle] = useState<Record<string, boolean>>({});
   const [showProofOfDeliveryCamera, setShowProofOfDeliveryCamera] = useState(false);
   const [tripForProofOfDelivery, setTripForProofOfDelivery] = useState<string | null>(null);
-  const [showProofOfDeliveryCamera, setShowProofOfDeliveryCamera] = useState(false);
-  const [tripForProofOfDelivery, setTripForProofOfDelivery] = useState<string | null>(null);
 
   useEffect(() => {
     if (companyId) {
@@ -360,7 +358,7 @@ function DriverDashboard() {
     }
   };
 
-  const handleProofOfDeliveryCapture = async (file: File, dataUrl: string) => {
+  const handleProofOfDeliveryCapture = async (_file: File, dataUrl: string) => {
     if (tripForProofOfDelivery) {
       // Store photo as data URL (in production, upload to S3 and store URL)
       await completeDropoff(tripForProofOfDelivery, dataUrl);
