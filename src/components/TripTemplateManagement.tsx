@@ -9,14 +9,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -38,7 +30,7 @@ interface TripTemplateManagementProps {
 }
 
 function TripTemplateManagement({ onClose, onTemplateSelect }: TripTemplateManagementProps) {
-  const { companyId, company } = useCompany();
+  const { companyId } = useCompany();
   const { notification, showError, hideNotification } = useNotification();
   const [templates, setTemplates] = useState<Array<Schema['TripTemplate']['type']>>([]);
   const [loading, setLoading] = useState(true);
@@ -450,7 +442,7 @@ function TripTemplateManagement({ onClose, onTemplateSelect }: TripTemplateManag
           
           {templates.length === 0 ? (
             <EmptyState
-              icon="file-text"
+              icon="file"
               title="No Templates"
               description="Create your first template to save time when creating trips."
             />
@@ -532,7 +524,10 @@ function TripTemplateManagement({ onClose, onTemplateSelect }: TripTemplateManag
         onOpenChange={setShowDeleteConfirm}
         onConfirm={handleDelete}
         title="Delete Template"
-        message="Are you sure you want to delete this template? This action cannot be undone."
+        description="Are you sure you want to delete this template? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
       />
     </div>
   );
