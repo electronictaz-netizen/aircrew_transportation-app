@@ -1,0 +1,8 @@
+{
+  "name": "send-telnyx-sms",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Lambda function to send SMS via Telnyx",
+  "main": "handler.ts",
+  "dependencies": {}
+}

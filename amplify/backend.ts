@@ -10,6 +10,8 @@ import { sendInvitationEmail } from './functions/sendInvitationEmail/resource';
 import { sendBookingEmail } from './functions/sendBookingEmail/resource';
 import { publicBooking } from './functions/publicBooking/resource';
 import { sendSms } from './functions/sendSms/resource';
+import { sendTelnyxSms } from './functions/sendTelnyxSms/resource';
+import { telnyxWebhook } from './functions/telnyxWebhook/resource';
 
 export const backend = defineBackend({
   auth,
@@ -21,6 +23,8 @@ export const backend = defineBackend({
   sendBookingEmail,
   publicBooking,
   sendSms,
+  sendTelnyxSms,
+  telnyxWebhook,
 });
 
 // Pass GraphQL endpoint to publicBooking function. Use the L1 CfnGraphqlApi.attrGraphQlUrl
@@ -105,6 +109,15 @@ backend.sendSms.resources.lambda.addToRolePolicy(
 backend.sendSms.addEnvironment('ORIGINATION_IDENTITY', process.env.SMS_ORIGINATION_IDENTITY || '');
 backend.sendSms.addEnvironment('CONFIGURATION_SET_NAME', process.env.SMS_CONFIGURATION_SET_NAME || '');
 backend.sendSms.addEnvironment('PROTECT_CONFIGURATION_ID', process.env.SMS_PROTECT_CONFIGURATION_ID || '');
+
+// Telnyx SMS: Set environment variables in Amplify Console → App Settings → Environment Variables
+// TELNYX_API_KEY, TELNYX_MESSAGING_PROFILE_ID, TELNYX_PHONE_NUMBER
+backend.sendTelnyxSms.addEnvironment('TELNYX_API_KEY', process.env.TELNYX_API_KEY || '');
+backend.sendTelnyxSms.addEnvironment('TELNYX_MESSAGING_PROFILE_ID', process.env.TELNYX_MESSAGING_PROFILE_ID || '');
+backend.sendTelnyxSms.addEnvironment('TELNYX_PHONE_NUMBER', process.env.TELNYX_PHONE_NUMBER || '');
+
+// Telnyx Webhook: Optional webhook secret for signature verification
+backend.telnyxWebhook.addEnvironment('TELNYX_WEBHOOK_SECRET', process.env.TELNYX_WEBHOOK_SECRET || '');
 
 // Note: In Amplify Gen 2, functions defined in the backend automatically get
 // IAM permissions to access the data resource. No additional configuration needed.

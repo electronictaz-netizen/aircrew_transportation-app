@@ -1,0 +1,8 @@
+{
+  "name": "telnyx-webhook",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Lambda function to handle Telnyx webhooks",
+  "main": "handler.ts",
+  "dependencies": {}
+}
