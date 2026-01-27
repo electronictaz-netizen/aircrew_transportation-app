@@ -45,8 +45,8 @@ This guide provides step-by-step instructions for setting up the Customer Portal
        - **Allow origin**: 
          - For development: `*` (allows all origins)
          - For production: Your app domain(s), e.g.:
-           - `https://your-app.amplifyapp.com`
-           - `https://*.yourdomain.com` (if using custom domains)
+           - `https://onyxdispatch.us`
+           - `https://*.onyxdispatch.us` (if using subdomains)
            - Add each company's custom domain if applicable
        - **Allow methods**: `POST`, `OPTIONS`
        - **Allow headers**: `Content-Type`
@@ -128,8 +128,8 @@ If the UI field doesn't exist yet, you can enable it directly:
    - Note the **Booking Code** (e.g., "ACME")
 
 2. **Access Customer Portal**
-   - Navigate to: `https://your-app.amplifyapp.com/portal/{BOOKING_CODE}`
-   - Or: `https://your-app.amplifyapp.com/portal?code={BOOKING_CODE}`
+   - Navigate to: `https://onyxdispatch.us/portal/{BOOKING_CODE}`
+   - Or: `https://onyxdispatch.us/portal?code={BOOKING_CODE}`
 
 3. **Test Login Flow**
    - Enter a customer's email or phone number
@@ -169,8 +169,8 @@ If the UI field doesn't exist yet, you can enable it directly:
 ## Step 7: Share Portal Links with Customers
 
 1. **Generate Portal URLs**
-   - Format: `https://your-app.amplifyapp.com/portal/{BOOKING_CODE}`
-   - Or use query parameter: `https://your-app.amplifyapp.com/portal?code={BOOKING_CODE}`
+   - Format: `https://onyxdispatch.us/portal/{BOOKING_CODE}`
+   - Or use query parameter: `https://onyxdispatch.us/portal?code={BOOKING_CODE}`
 
 2. **Share with Customers**
    - Include in welcome emails

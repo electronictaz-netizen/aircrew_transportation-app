@@ -29,7 +29,7 @@ The Customer Portal is a secure, self-service website where you can:
 
 1. **Get Your Portal Link**
    - Your transportation provider will send you a link
-   - Or visit: `https://[your-provider].com/portal/[CODE]`
+   - Or visit: `https://onyxdispatch.us/portal/[CODE]`
    - Replace `[CODE]` with your provider's booking code
 
 2. **Bookmark the Link**
@@ -287,9 +287,10 @@ Your receipt includes:
 ### Contact Your Transportation Provider
 
 If you need assistance:
-- 📧 Email: [Provider Email]
-- 📞 Phone: [Provider Phone]
-- 🌐 Website: [Provider Website]
+- 📧 Email: Contact your provider's support email
+- 📞 Phone: Call your provider's customer service line
+- 🌐 Website: Visit your provider's website for support
+- 💬 Portal: Access the portal at https://onyxdispatch.us/portal/{BOOKING_CODE}
 
 ### Common Questions
 

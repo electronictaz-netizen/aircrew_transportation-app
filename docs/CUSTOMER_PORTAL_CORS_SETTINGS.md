@@ -10,8 +10,8 @@ When creating the Lambda Function URL for the `customerPortal` function, configu
 
 ### Production
 - **Allow origin**: Specify your app domain(s):
-  - `https://your-app.amplifyapp.com`
-  - `https://*.yourdomain.com` (if using custom domains)
+  - `https://onyxdispatch.us`
+  - `https://*.onyxdispatch.us` (if using subdomains)
   - Add each company's custom domain if they host the portal on their own domain
   - Example: `https://portal.company1.com,https://portal.company2.com`
 
