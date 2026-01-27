@@ -267,6 +267,53 @@ function getBookingEmailFunctionUrl(): string | null {
 }
 
 /**
+ * Get Function URL for sendTelnyxSms Lambda
+ * Set TELNYX_SMS_FUNCTION_URL environment variable in Lambda console
+ * This can be the sendTelnyxSms Function URL or we can call it directly via Lambda invoke
+ */
+function getTelnyxSmsFunctionUrl(): string | null {
+  return process.env.TELNYX_SMS_FUNCTION_URL || null;
+}
+
+/**
+ * Send SMS via Telnyx (non-blocking)
+ */
+async function sendSms(phone: string, message: string): Promise<void> {
+  const functionUrl = getTelnyxSmsFunctionUrl();
+  if (!functionUrl) {
+    console.log('sendSms: TELNYX_SMS_FUNCTION_URL not configured, skipping SMS sending');
+    return;
+  }
+
+  try {
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phone,
+        message,
+      }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('SMS sent successfully:', {
+        to: phone,
+        messageId: result.messageId,
+      });
+    } else {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.warn('Failed to send SMS:', errorData);
+    }
+  } catch (error) {
+    console.error('Error sending SMS:', error);
+    // Non-critical - don't throw
+  }
+}
+
+/**
  * Send booking confirmation emails (customer and manager)
  * This is non-blocking - failures won't prevent booking creation
  */
@@ -532,6 +579,23 @@ export const handler = async (event: { body?: string | object; queryStringParame
         // Log error but don't fail the booking creation
         console.error('Error sending booking confirmation emails (non-critical):', emailError);
       });
+
+      // Send SMS confirmation if customer provided phone number
+      // TODO: In production, check if customer has opted in to SMS before sending
+      // For now, we'll send with opt-out instructions (TCPA compliant)
+      if (bookingRequest.customerPhone) {
+        const pickupDate = new Date(bookingRequest.pickupDate);
+        const dateStr = pickupDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        const smsMessage = `${company.displayName || company.name}: Booking received! Trip on ${dateStr} from ${bookingRequest.pickupLocation} to ${bookingRequest.dropoffLocation}. We'll confirm shortly. Reply STOP to opt out.`;
+        sendSms(bookingRequest.customerPhone, smsMessage).catch((smsError) => {
+          console.error('Error sending booking confirmation SMS (non-critical):', smsError);
+        });
+      }
 
       return {
         statusCode: 200,

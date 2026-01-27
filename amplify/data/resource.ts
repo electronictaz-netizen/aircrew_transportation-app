@@ -189,6 +189,10 @@ const schema = a.schema({
       companyName: a.string(), // If customer is a company/organization
       notes: a.string(), // Additional notes about the customer
       isActive: a.boolean().default(true),
+      // SMS preferences for TCPA compliance
+      smsOptIn: a.boolean().default(false), // Whether customer has opted in to SMS
+      smsOptInAt: a.datetime(), // When customer opted in
+      smsOptOutAt: a.datetime(), // When customer opted out
       trips: a.hasMany('Trip', 'customerId'),
       bookingRequests: a.hasMany('BookingRequest', 'customerId'),
       tripTemplates: a.hasMany('TripTemplate', 'customerId'),

@@ -2,13 +2,16 @@
  * Driver Notification Utility
  * 
  * Handles sending notifications to drivers when they are assigned or reassigned to trips.
- * Supports email notifications (via mailto).
+ * Supports email notifications (via mailto) and SMS notifications (via Telnyx).
  */
 
 import type { Schema } from '../../amplify/data/resource';
+import { sendTelnyxSms } from './telnyxSms';
+import { SMS_TEMPLATES } from './smsTemplates';
 
 export interface NotificationOptions {
   email?: boolean;
+  sms?: boolean;
   inApp?: boolean;
 }
 
@@ -144,7 +147,7 @@ export async function sendInAppNotification(
  */
 export async function notifyDriver(
   data: TripNotificationData,
-  options: NotificationOptions = { email: true, inApp: true }
+  options: NotificationOptions = { email: true, sms: true, inApp: true }
 ): Promise<void> {
   const { trip, driver, isReassignment = false } = data;
 
@@ -158,6 +161,37 @@ export async function notifyDriver(
     // - Driver has email address
     if (options.email && (preference === 'email' || preference === 'both') && driver.email) {
       sendEmailNotification(driver, trip, isReassignment);
+    }
+
+    // Send SMS notification if:
+    // - SMS is enabled in options AND
+    // - Driver wants SMS (preference is 'sms' or 'both') AND
+    // - Driver has phone number
+    if (options.sms && (preference === 'sms' || preference === 'both') && driver.phone) {
+      try {
+        const message = isReassignment
+          ? SMS_TEMPLATES.DRIVER_REASSIGNMENT(trip)
+          : SMS_TEMPLATES.DRIVER_ASSIGNMENT(trip);
+        
+        const result = await sendTelnyxSms({
+          phone: driver.phone,
+          message,
+        });
+
+        if (result.success) {
+          console.log(`SMS notification sent to driver ${driver.name} (${driver.phone})`);
+        } else {
+          console.warn(`Failed to send SMS to driver ${driver.name}:`, result.error);
+          // Fall back to email if SMS fails and email is available
+          if (options.email && driver.email && (preference === 'sms' || preference === 'both')) {
+            console.log(`Falling back to email notification for driver ${driver.name}`);
+            sendEmailNotification(driver, trip, isReassignment);
+          }
+        }
+      } catch (smsError) {
+        console.error('Error sending SMS notification:', smsError);
+        // Don't fail the whole notification process if SMS fails
+      }
     }
 
     // Send in-app notification (always send if enabled, doesn't depend on preference)
@@ -195,5 +229,24 @@ export async function notifyPreviousDriver(
     const mailtoLink = `mailto:${previousDriver.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink, '_blank');
     console.log(`Email notification sent to previous driver ${previousDriver.name}`);
+  }
+
+  // Send SMS if driver prefers SMS or both
+  if ((preference === 'sms' || preference === 'both') && previousDriver.phone) {
+    try {
+      const result = await sendTelnyxSms({
+        phone: previousDriver.phone,
+        message: SMS_TEMPLATES.DRIVER_UNASSIGNMENT(trip),
+      });
+
+      if (result.success) {
+        console.log(`SMS notification sent to previous driver ${previousDriver.name} (${previousDriver.phone})`);
+      } else {
+        console.warn(`Failed to send SMS to previous driver ${previousDriver.name}:`, result.error);
+      }
+    } catch (smsError) {
+      console.error('Error sending SMS to previous driver:', smsError);
+      // Don't fail if SMS fails
+    }
   }
 }

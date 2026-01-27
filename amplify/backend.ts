@@ -116,8 +116,26 @@ backend.sendTelnyxSms.addEnvironment('TELNYX_API_KEY', process.env.TELNYX_API_KE
 backend.sendTelnyxSms.addEnvironment('TELNYX_MESSAGING_PROFILE_ID', process.env.TELNYX_MESSAGING_PROFILE_ID || '');
 backend.sendTelnyxSms.addEnvironment('TELNYX_PHONE_NUMBER', process.env.TELNYX_PHONE_NUMBER || '');
 
+// Pass sendTelnyxSms Function URL to publicBooking and telnyxWebhook for SMS sending
+// Note: This will be set after Function URL is created - set TELNYX_SMS_FUNCTION_URL in Amplify env
+// For now, we'll use a placeholder that can be updated after deployment
+backend.publicBooking.addEnvironment('TELNYX_SMS_FUNCTION_URL', process.env.TELNYX_SMS_FUNCTION_URL || '');
+backend.telnyxWebhook.addEnvironment('TELNYX_SMS_FUNCTION_URL', process.env.TELNYX_SMS_FUNCTION_URL || '');
+
 // Telnyx Webhook: Optional webhook secret for signature verification
 backend.telnyxWebhook.addEnvironment('TELNYX_WEBHOOK_SECRET', process.env.TELNYX_WEBHOOK_SECRET || '');
+// Pass GraphQL endpoint to telnyxWebhook for database access
+backend.telnyxWebhook.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
+backend.telnyxWebhook.addEnvironment('AMPLIFY_DATA_REGION', region);
+// Grant AppSync permissions to telnyxWebhook
+backend.telnyxWebhook.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    sid: 'AllowAppSyncGraphQL',
+    effect: iam.Effect.ALLOW,
+    actions: ['appsync:GraphQL'],
+    resources: [`${cfn.cfnGraphqlApi.attrArn}/*`],
+  })
+);
 
 // Note: In Amplify Gen 2, functions defined in the backend automatically get
 // IAM permissions to access the data resource. No additional configuration needed.
