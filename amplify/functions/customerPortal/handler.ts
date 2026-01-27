@@ -74,7 +74,11 @@ async function graphqlRequest(query: string, variables: Record<string, any> = {}
     const text = await res.text();
     throw new Error(`GraphQL error: ${res.status} ${text}`);
   }
-  return res.json();
+  const json = await res.json();
+  if (json.errors?.length) {
+    throw new Error(`GraphQL errors: ${JSON.stringify(json.errors)}`);
+  }
+  return json.data;
 }
 
 const responseHeaders = {
@@ -168,7 +172,7 @@ export const handler = async (event: {
           `;
 
           const response = await graphqlRequest(query);
-          const customer = response.data?.listCustomers?.items?.[0];
+          const customer = response?.listCustomers?.items?.[0];
 
           if (!customer) {
             return {
@@ -243,7 +247,7 @@ export const handler = async (event: {
           `;
 
           const response = await graphqlRequest(query);
-          const customer = response.data?.getCustomer;
+          const customer = response?.getCustomer;
           
           if (!customer || customer.companyId !== companyId) {
             return {
@@ -319,7 +323,7 @@ export const handler = async (event: {
             }
           `;
           const customerResponse = await graphqlRequest(customerQuery);
-          const customer = customerResponse.data?.getCustomer;
+          const customer = customerResponse?.getCustomer;
           
           if (!customer || customer.companyId !== companyId) {
             return {
@@ -365,7 +369,7 @@ export const handler = async (event: {
           `;
 
           const tripsResponse = await graphqlRequest(tripsQuery);
-          const trips = tripsResponse.data?.listTrips?.items || [];
+          const trips = tripsResponse?.listTrips?.items || [];
 
           return {
             statusCode: 200,
@@ -407,7 +411,7 @@ export const handler = async (event: {
             }
           `;
           const customerResponse = await graphqlRequest(customerQuery);
-          const customer = customerResponse.data?.getCustomer;
+          const customer = customerResponse?.getCustomer;
           
           if (!customer || customer.companyId !== companyId) {
             return {
@@ -476,7 +480,7 @@ export const handler = async (event: {
             }
           `;
           const customerResponse = await graphqlRequest(customerQuery);
-          const customer = customerResponse.data?.getCustomer;
+          const customer = customerResponse?.getCustomer;
           
           if (!customer || customer.companyId !== companyId) {
             return {
