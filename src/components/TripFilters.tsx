@@ -3,6 +3,19 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
+import { showSuccess } from '../utils/toast';
+import { useNotification } from './Notification';
+import NotificationComponent from './Notification';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 import './TripFilters.css';
 
 const client = generateClient<Schema>();
@@ -22,6 +35,7 @@ type QuickDateFilter = 'all' | 'today' | 'thisWeek' | 'nextWeek' | 'custom';
 
 function TripFilters({ trips, drivers, locations = [], customers = [], onFilterChange, onRefresh }: TripFiltersProps) {
   const { companyId } = useCompany();
+  const { notification, showError, hideNotification } = useNotification();
   
   // Create a map of location names to categories for quick lookup
   const locationCategoryMap = new Map<string, string>();
@@ -43,11 +57,16 @@ function TripFilters({ trips, drivers, locations = [], customers = [], onFilterC
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [filterCategories, setFilterCategories] = useState<Array<Schema['FilterCategory']['type']>>([]);
+  const [savedPresets, setSavedPresets] = useState<Array<{ name: string; filters: any }>>([]);
+  const [showPresetDialog, setShowPresetDialog] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const [showLoadPreset, setShowLoadPreset] = useState(false);
 
-  // Load filter categories
+  // Load filter categories and saved presets
   useEffect(() => {
     if (companyId) {
       loadFilterCategories();
+      loadSavedPresets();
     }
   }, [companyId]);
 
@@ -64,6 +83,87 @@ function TripFilters({ trips, drivers, locations = [], customers = [], onFilterC
       setFilterCategories((data || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
     } catch (error) {
       console.error('Error loading filter categories:', error);
+    }
+  };
+
+  const loadSavedPresets = () => {
+    if (!companyId) return;
+    try {
+      const key = `tripFilterPresets_${companyId}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setSavedPresets(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Error loading saved presets:', error);
+    }
+  };
+
+  const saveCurrentPreset = () => {
+    if (!presetName.trim() || !companyId) {
+      showError('Please enter a preset name');
+      return;
+    }
+
+    const preset = {
+      name: presetName.trim(),
+      filters: {
+        statusFilter,
+        driverFilter,
+        customerFilter,
+        recurringFilter,
+        customFilters: { ...customFilters },
+        quickDateFilter,
+        dateFrom,
+        dateTo,
+        searchTerm,
+        sortField,
+        sortDirection,
+      },
+    };
+
+    const updatedPresets = [...savedPresets, preset];
+    setSavedPresets(updatedPresets);
+    
+    try {
+      const key = `tripFilterPresets_${companyId}`;
+      localStorage.setItem(key, JSON.stringify(updatedPresets));
+      showSuccess(`Filter preset "${presetName}" saved!`);
+      setPresetName('');
+      setShowPresetDialog(false);
+    } catch (error) {
+      console.error('Error saving preset:', error);
+      showError('Failed to save preset');
+    }
+  };
+
+  const loadPreset = (preset: { name: string; filters: any }) => {
+    setStatusFilter(preset.filters.statusFilter || 'all');
+    setDriverFilter(preset.filters.driverFilter || 'all');
+    setCustomerFilter(preset.filters.customerFilter || 'all');
+    setRecurringFilter(preset.filters.recurringFilter || 'all');
+    setCustomFilters(preset.filters.customFilters || {});
+    setQuickDateFilter(preset.filters.quickDateFilter || 'all');
+    setDateFrom(preset.filters.dateFrom || '');
+    setDateTo(preset.filters.dateTo || '');
+    setSearchTerm(preset.filters.searchTerm || '');
+    setSortField(preset.filters.sortField || 'pickupDate');
+    setSortDirection(preset.filters.sortDirection || 'asc');
+    setShowLoadPreset(false);
+  };
+
+  const deletePreset = (index: number) => {
+    if (!confirm('Delete this filter preset?')) return;
+    
+    const updated = savedPresets.filter((_, i) => i !== index);
+    setSavedPresets(updated);
+    
+    try {
+      const key = `tripFilterPresets_${companyId}`;
+      localStorage.setItem(key, JSON.stringify(updated));
+      showSuccess('Preset deleted');
+    } catch (error) {
+      console.error('Error deleting preset:', error);
     }
   };
 
@@ -259,7 +359,7 @@ function TripFilters({ trips, drivers, locations = [], customers = [], onFilterC
     // If quickDateFilter is 'all', show all trips (no date filtering)
     console.log('TripFilters: After date filtering:', filtered.length);
 
-    // Search filter (flight number, locations, customer)
+    // Search filter (flight number, locations, customer, notes)
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -269,6 +369,7 @@ function TripFilters({ trips, drivers, locations = [], customers = [], onFilterC
           return trip.flightNumber?.toLowerCase().includes(search) ||
             trip.pickupLocation?.toLowerCase().includes(search) ||
             trip.dropoffLocation?.toLowerCase().includes(search) ||
+            trip.notes?.toLowerCase().includes(search) ||
             customer?.name?.toLowerCase().includes(search) ||
             customer?.companyName?.toLowerCase().includes(search);
         }
@@ -472,7 +573,7 @@ function TripFilters({ trips, drivers, locations = [], customers = [], onFilterC
         <div className="filters-search">
           <input
             type="text"
-            placeholder="Search by flight number, pickup, or dropoff location..."
+            placeholder="Search by flight number, location, customer, or notes..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -482,6 +583,53 @@ function TripFilters({ trips, drivers, locations = [], customers = [], onFilterC
           />
         </div>
         <div className="filters-actions">
+          {savedPresets.length > 0 && (
+            <div className="preset-dropdown-container">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowLoadPreset(!showLoadPreset)}
+                title="Load saved filter preset"
+              >
+                📋 Load Preset
+              </button>
+              {showLoadPreset && savedPresets.length > 0 && (
+                <div className="preset-dropdown">
+                  <div className="preset-dropdown-header">
+                    <strong>Saved Filter Presets</strong>
+                    <button onClick={() => setShowLoadPreset(false)}>×</button>
+                  </div>
+                  <div className="preset-list">
+                    {savedPresets.map((preset, index) => (
+                      <div key={index} className="preset-item">
+                        <button
+                          className="preset-load-btn"
+                          onClick={() => loadPreset(preset)}
+                        >
+                          📋 {preset.name}
+                        </button>
+                        <button
+                          className="preset-delete-btn"
+                          onClick={() => deletePreset(index)}
+                          title="Delete preset"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {hasActiveFilters && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPresetDialog(true)}
+              title="Save current filters as preset"
+            >
+              💾 Save Preset
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={() => setShowFilters(!showFilters)}
@@ -818,6 +966,52 @@ function TripFilters({ trips, drivers, locations = [], customers = [], onFilterC
           </div>
         </div>
       )}
+
+      {/* Save Preset Dialog */}
+      <Dialog open={showPresetDialog} onOpenChange={setShowPresetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Filter Preset</DialogTitle>
+            <DialogDescription>
+              Save your current filter settings for quick access later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label htmlFor="preset-name" className="block text-sm font-medium mb-2">
+                Preset Name *
+              </label>
+              <Input
+                id="preset-name"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="e.g., This Week Unassigned, Completed Trips"
+                maxLength={50}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowPresetDialog(false);
+                setPresetName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveCurrentPreset}
+              disabled={!presetName.trim()}
+            >
+              Save Preset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <NotificationComponent notification={notification} onClose={hideNotification} />
     </div>
   );
 }

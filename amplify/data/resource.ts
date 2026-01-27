@@ -116,6 +116,7 @@ const schema = a.schema({
       notes: a.string(), // Additional notes for billing/payroll verification
       customFieldValues: a.hasMany('CustomFieldValue', 'tripId'),
       bookingRequests: a.hasMany('BookingRequest', 'tripId'),
+      tripNotes: a.hasMany('TripNote', 'tripId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
@@ -344,6 +345,27 @@ const schema = a.schema({
       speed: a.float(), // Speed in meters per second (if available)
       heading: a.float(), // Heading/bearing in degrees (0-360, if available)
       timestamp: a.datetime().required(), // When this location was recorded
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
+
+  TripNote: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      tripId: a.id().required(),
+      trip: a.belongsTo('Trip', 'tripId'),
+      noteType: a.enum(['manager', 'driver', 'internal']), // Type of note
+      content: a.string().required(), // Note content
+      authorId: a.string().required(), // Cognito User ID of the author
+      authorName: a.string().required(), // Display name of the author
+      authorEmail: a.string(), // Email of the author (for @mentions)
+      authorRole: a.string(), // Role of the author (admin, manager, driver)
+      isInternal: a.boolean().default(false), // Internal comments (manager-to-manager)
+      mentions: a.string(), // JSON array of mentioned user IDs/emails
+      createdAt: a.datetime().required(), // When note was created
+      updatedAt: a.datetime(), // When note was last updated
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

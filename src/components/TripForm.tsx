@@ -46,6 +46,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { showSuccess } from '../utils/toast';
+import TripNotes from './TripNotes';
 import './TripForm.css';
 
 const client = generateClient<Schema>();
@@ -194,6 +195,9 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  
+  // Trip notes state
+  const [showNotes, setShowNotes] = useState(false);
 
   // Watch trip type to handle conditional fields
   const tripType = form.watch('tripType');
@@ -1107,6 +1111,28 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
                       </div>
                     );
                   })
+                )}
+              </div>
+            )}
+
+            {/* Trip Notes Section */}
+            {trip && (
+              <div className="mt-6 pt-6 border-t">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-base font-semibold text-foreground">Trip Notes & Comments</h4>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowNotes(!showNotes)}
+                  >
+                    {showNotes ? 'Hide Notes' : 'View Notes'}
+                  </Button>
+                </div>
+                {showNotes && trip.id && (
+                  <div className="mt-4">
+                    <TripNotes tripId={trip.id} readOnly={false} />
+                  </div>
                 )}
               </div>
             )}
