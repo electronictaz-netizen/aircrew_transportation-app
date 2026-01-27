@@ -7,6 +7,7 @@ This folder contains all user-facing documentation for the Onyx Transportation A
 **New to the system?** Start here:
 - **[COMPANY_QUICK_START.md](./COMPANY_QUICK_START.md)** - Get up and running in 5 minutes
 - **[SUBSCRIPTION_AND_TRIAL_GUIDE.md](./SUBSCRIPTION_AND_TRIAL_GUIDE.md)** - Understand subscriptions and free trials
+- **[WHATS_NEW_JANUARY_2026.md](./WHATS_NEW_JANUARY_2026.md)** - See what's new! ✨
 
 ## User Guides by Role
 
@@ -39,6 +40,13 @@ This folder contains all user-facing documentation for the Onyx Transportation A
   - Common tasks and workflows
   - Quick action steps
   - Troubleshooting tips
+
+### New Features (January 2026) ✨
+
+- **[TRIP_TEMPLATES_USER_GUIDE.md](./TRIP_TEMPLATES_USER_GUIDE.md)** - Trip Templates & Quick Actions
+- **[BULK_OPERATIONS_USER_GUIDE.md](./BULK_OPERATIONS_USER_GUIDE.md)** - Bulk Trip Operations
+- **[TRIP_NOTES_USER_GUIDE.md](./TRIP_NOTES_USER_GUIDE.md)** - Trip Notes & Internal Comments
+- **[ADVANCED_FILTERING_USER_GUIDE.md](./ADVANCED_FILTERING_USER_GUIDE.md)** - Advanced Filtering & Search
 
 ### For Administrators
 
