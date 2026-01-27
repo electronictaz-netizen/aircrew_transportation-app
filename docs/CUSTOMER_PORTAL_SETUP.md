@@ -41,7 +41,17 @@ This guide provides step-by-step instructions for setting up the Customer Portal
    - Click **Create function URL**
    - Configure:
      - **Auth type**: `NONE` (public access)
-     - **CORS**: Enable CORS (or configure manually)
+     - **CORS**: Configure manually with the following settings:
+       - **Allow origin**: 
+         - For development: `*` (allows all origins)
+         - For production: Your app domain(s), e.g.:
+           - `https://your-app.amplifyapp.com`
+           - `https://*.yourdomain.com` (if using custom domains)
+           - Add each company's custom domain if applicable
+       - **Allow methods**: `POST`, `OPTIONS`
+       - **Allow headers**: `Content-Type`
+       - **Expose headers**: (leave empty or add specific headers if needed)
+       - **Max age**: `86400` (24 hours, optional - for preflight caching)
    - Click **Save**
 
 4. **Copy the Function URL**

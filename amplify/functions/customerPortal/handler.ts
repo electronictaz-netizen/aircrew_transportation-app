@@ -81,6 +81,8 @@ async function graphqlRequest(query: string, variables: Record<string, any> = {}
   return json.data;
 }
 
+// Note: CORS headers are handled by Lambda Function URL configuration
+// Do not set CORS headers here to avoid duplicate headers
 const responseHeaders = {
   'Content-Type': 'application/json',
 };
@@ -94,26 +96,13 @@ export const handler = async (event: {
   headers: Record<string, string>;
   body: string;
 }> => {
-  const headers = {
-    ...responseHeaders,
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-
-  // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: '',
-    };
-  }
+  // Note: CORS preflight (OPTIONS) is handled automatically by Lambda Function URL
+  // when CORS is enabled in Function URL settings
 
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers,
+      headers: responseHeaders,
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
@@ -125,7 +114,7 @@ export const handler = async (event: {
     if (!companyId) {
       return {
         statusCode: 400,
-        headers,
+        headers: responseHeaders,
         body: JSON.stringify({ error: 'Company ID is required' }),
       };
     }
@@ -175,14 +164,14 @@ export const handler = async (event: {
           const customer = response?.listCustomers?.items?.[0];
 
           if (!customer) {
-            return {
-              statusCode: 404,
-              headers,
-              body: JSON.stringify({ 
-                error: 'No account found',
-                hint: 'Please contact your transportation provider to enable portal access.',
-              }),
-            };
+          return {
+            statusCode: 404,
+            headers: responseHeaders,
+            body: JSON.stringify({ 
+              error: 'No account found',
+              hint: 'Please contact your transportation provider to enable portal access.',
+            }),
+          };
           }
 
           // Generate access code
@@ -204,7 +193,7 @@ export const handler = async (event: {
           // In production, send code via email/SMS
           return {
             statusCode: 200,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({
               success: true,
               customerId: customer.id,
@@ -216,7 +205,7 @@ export const handler = async (event: {
           console.error('Error finding customer:', error);
           return {
             statusCode: 500,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Failed to process request' }),
           };
         }
@@ -226,7 +215,7 @@ export const handler = async (event: {
         if (!customerId || !accessCode) {
           return {
             statusCode: 400,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Customer ID and access code are required' }),
           };
         }
@@ -252,7 +241,7 @@ export const handler = async (event: {
           if (!customer || customer.companyId !== companyId) {
             return {
               statusCode: 404,
-              headers,
+              headers: responseHeaders,
               body: JSON.stringify({ error: 'Customer not found' }),
             };
           }
@@ -260,7 +249,7 @@ export const handler = async (event: {
           if (customer.portalAccessCode !== accessCode.toUpperCase()) {
             return {
               statusCode: 401,
-              headers,
+              headers: responseHeaders,
               body: JSON.stringify({ error: 'Invalid access code' }),
             };
           }
@@ -281,7 +270,7 @@ export const handler = async (event: {
 
           return {
             statusCode: 200,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({
               success: true,
               customer: {
@@ -297,7 +286,7 @@ export const handler = async (event: {
           console.error('Error verifying code:', error);
           return {
             statusCode: 500,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Failed to verify code' }),
           };
         }
@@ -307,7 +296,7 @@ export const handler = async (event: {
         if (!customerId) {
           return {
             statusCode: 400,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Customer ID is required' }),
           };
         }
@@ -328,7 +317,7 @@ export const handler = async (event: {
           if (!customer || customer.companyId !== companyId) {
             return {
               statusCode: 403,
-              headers,
+              headers: responseHeaders,
               body: JSON.stringify({ error: 'Access denied' }),
             };
           }
@@ -373,7 +362,7 @@ export const handler = async (event: {
 
           return {
             statusCode: 200,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({
               success: true,
               trips,
@@ -383,7 +372,7 @@ export const handler = async (event: {
           console.error('Error loading trips:', error);
           return {
             statusCode: 500,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Failed to load trips' }),
           };
         }
@@ -395,7 +384,7 @@ export const handler = async (event: {
         if (!customerId || !tripId || !requestType || !reason) {
           return {
             statusCode: 400,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Missing required fields' }),
           };
         }
@@ -416,7 +405,7 @@ export const handler = async (event: {
           if (!customer || customer.companyId !== companyId) {
             return {
               statusCode: 403,
-              headers,
+              headers: responseHeaders,
               body: JSON.stringify({ error: 'Access denied' }),
             };
           }
@@ -442,7 +431,7 @@ export const handler = async (event: {
 
           return {
             statusCode: 200,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({
               success: true,
               requestId: result?.createTripModificationRequest?.id,
@@ -452,7 +441,7 @@ export const handler = async (event: {
           console.error('Error creating modification request:', error);
           return {
             statusCode: 500,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Failed to create modification request' }),
           };
         }
@@ -464,7 +453,7 @@ export const handler = async (event: {
         if (!customerId || !tripId || !rating) {
           return {
             statusCode: 400,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Missing required fields' }),
           };
         }
@@ -485,7 +474,7 @@ export const handler = async (event: {
           if (!customer || customer.companyId !== companyId) {
             return {
               statusCode: 403,
-              headers,
+              headers: responseHeaders,
               body: JSON.stringify({ error: 'Access denied' }),
             };
           }
@@ -526,7 +515,7 @@ export const handler = async (event: {
 
           return {
             statusCode: 200,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({
               success: true,
               ratingId: result?.createTripRating?.id,
@@ -536,7 +525,7 @@ export const handler = async (event: {
           console.error('Error creating rating:', error);
           return {
             statusCode: 500,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Failed to create rating' }),
           };
         }
@@ -545,7 +534,7 @@ export const handler = async (event: {
       default:
         return {
           statusCode: 400,
-          headers,
+          headers: responseHeaders,
           body: JSON.stringify({ error: 'Invalid action' }),
         };
     }
@@ -553,7 +542,7 @@ export const handler = async (event: {
     console.error('Error in customer portal handler:', error);
     return {
       statusCode: 500,
-      headers,
+      headers: responseHeaders,
       body: JSON.stringify({ error: 'Internal server error' }),
     };
   }
