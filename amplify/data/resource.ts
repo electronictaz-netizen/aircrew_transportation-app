@@ -394,7 +394,7 @@ const schema = a.schema({
       requestType: a.enum(['date', 'time', 'location', 'passengers', 'other']), // Type of modification
       requestedChanges: a.string().required(), // JSON string with requested changes
       reason: a.string(), // Customer's reason for request
-      status: a.enum(['pending', 'approved', 'rejected', 'completed']).default('pending'),
+      status: a.enum(['pending', 'approved', 'rejected', 'completed']), // Default 'pending' handled in application code
       managerNotes: a.string(), // Manager's notes on the request
       createdAt: a.datetime().required(),
       updatedAt: a.datetime(),
