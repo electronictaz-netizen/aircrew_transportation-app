@@ -1183,17 +1183,46 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
             )}
 
             <div className="flex justify-between items-center mt-6">
-              {hasTripTemplatesAccess && (
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  onClick={() => setShowTemplateDialog(true)}
-                  disabled={loading}
-                  className="text-sm"
-                >
-                  💾 Save as Template
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {hasTripTemplatesAccess && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => setShowTemplateDialog(true)}
+                    disabled={loading}
+                    className="text-sm"
+                  >
+                    💾 Save as Template
+                  </Button>
+                )}
+                {trip && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => {
+                      // Duplicate trip by resetting form with same data but new date and unassigned status
+                      const values = form.getValues();
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      tomorrow.setHours(12, 0, 0, 0);
+                      
+                      // Reset form with duplicated values
+                      form.reset({
+                        ...values,
+                        pickupDate: format(tomorrow, "yyyy-MM-dd'T'HH:mm"),
+                        driverId: '',
+                        status: 'Unassigned',
+                      });
+                      
+                      showSuccess('Trip duplicated! Update the date and save to create a new trip.');
+                    }}
+                    disabled={loading}
+                    className="text-sm"
+                  >
+                    📋 Duplicate Trip
+                  </Button>
+                )}
+              </div>
               <div className="flex gap-2 ml-auto">
                 <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
                   Cancel

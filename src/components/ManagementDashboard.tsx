@@ -27,6 +27,7 @@ const BookingRequestsList = lazy(() => import('./BookingRequestsList'));
 const DriverReports = lazy(() => import('./DriverReports'));
 const TripReports = lazy(() => import('./TripReports'));
 const VehicleTrackingMap = lazy(() => import('./VehicleTrackingMap'));
+const TripTemplateManagement = lazy(() => import('./TripTemplateManagement'));
 
 import { PageSkeleton, TripListSkeleton, TripCalendarSkeleton } from './ui/skeleton-loaders';
 
@@ -79,6 +80,7 @@ function ManagementDashboard() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [tripTemplates, setTripTemplates] = useState<Array<Schema['TripTemplate']['type']>>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Schema['TripTemplate']['type'] | null>(null);
+  const [showTemplateManagement, setShowTemplateManagement] = useState(false);
 
   // Check for plan parameter from external website sign-up
   useEffect(() => {
@@ -1349,6 +1351,58 @@ function ManagementDashboard() {
     setShowDriverDialog(true);
   };
 
+  const handleBulkStatusUpdate = async (tripIds: string[], newStatus: string) => {
+    if (tripIds.length === 0) return;
+    
+    try {
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const tripId of tripIds) {
+        try {
+          await client.models.Trip.update({
+            id: tripId,
+            status: newStatus as 'Unassigned' | 'Assigned' | 'InProgress' | 'Completed',
+          });
+          successCount++;
+        } catch (error) {
+          console.error(`Error updating trip ${tripId}:`, error);
+          failCount++;
+        }
+      }
+      
+      // Wait for database sync
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await loadTrips(true);
+      
+      if (failCount > 0) {
+        alert(`Updated ${successCount} trip${successCount > 1 ? 's' : ''} to ${newStatus}. ${failCount} failed.`);
+      } else {
+        alert(`Successfully updated ${successCount} trip${successCount > 1 ? 's' : ''} to ${newStatus}.`);
+      }
+    } catch (error: any) {
+      console.error('Error updating trip statuses:', error);
+      alert('Failed to update trip statuses. Please try again.');
+    }
+  };
+
+  const handleExportTrips = (tripIds?: string[]) => {
+    import('../utils/exportTrips').then(({ exportTripsToCSV }) => {
+      const tripsToExport = tripIds 
+        ? trips.filter(t => tripIds.includes(t.id))
+        : trips;
+      
+      const filename = tripIds 
+        ? `trips-export-${new Date().toISOString().split('T')[0]}.csv`
+        : `all-trips-export-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      exportTripsToCSV(tripsToExport, drivers, customers, filename);
+    }).catch((error) => {
+      console.error('Error loading export utility:', error);
+      alert('Failed to export trips. Please try again.');
+    });
+  };
+
   const handleConfirmAssignment = async () => {
     if (tripsToAssign.length === 0) {
       setShowDriverDialog(false);
@@ -2015,6 +2069,29 @@ function ManagementDashboard() {
                 <button
                   className="dropdown-item"
                   onClick={() => {
+                    if (!hasFeatureAccess(company?.subscriptionTier, 'trip_templates')) {
+                      const upgradeMessage = 
+                        `⚠️ Feature Not Available\n\n` +
+                        `Trip Templates are available on Premium plan.\n\n` +
+                        `Would you like to upgrade?`;
+                      if (confirm(upgradeMessage)) {
+                        setShowSubscriptionManagement(true);
+                      }
+                      setOpenDropdown(null);
+                      return;
+                    }
+                    setShowTemplateManagement(true);
+                    setOpenDropdown(null);
+                  }}
+                  disabled={!hasFeatureAccess(company?.subscriptionTier, 'trip_templates')}
+                  title={!hasFeatureAccess(company?.subscriptionTier, 'trip_templates') ? 'Upgrade to Premium to access Trip Templates' : ''}
+                >
+                  Trip Templates
+                  {!hasFeatureAccess(company?.subscriptionTier, 'trip_templates') && ' 🔒'}
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
                     if (!hasFeatureAccess(company?.subscriptionTier, 'custom_fields')) {
                       const upgradeMessage = 
                         `⚠️ Feature Not Available\n\n` +
@@ -2391,6 +2468,18 @@ function ManagementDashboard() {
             }}
           />
         )}
+
+        {showTemplateManagement && (
+          <TripTemplateManagement
+            onClose={() => setShowTemplateManagement(false)}
+            onTemplateSelect={(template) => {
+              setSelectedTemplate(template);
+              setShowTemplateManagement(false);
+              setShowTripForm(true);
+              setEditingTrip(null);
+            }}
+          />
+        )}
       </Suspense>
 
       <Suspense fallback={ComponentLoadingFallback}>
@@ -2415,6 +2504,8 @@ function ManagementDashboard() {
             onDelete={canManageTrips(userRole) || isAdminOverride ? handleDeleteTrip : undefined}
             onDeleteMultiple={canManageTrips(userRole) || isAdminOverride ? handleDeleteMultipleTrips : undefined}
             onAssignMultiple={canManageTrips(userRole) || isAdminOverride ? handleAssignMultipleTrips : undefined}
+            onBulkStatusUpdate={canManageTrips(userRole) || isAdminOverride ? handleBulkStatusUpdate : undefined}
+            onExport={canManageTrips(userRole) || isAdminOverride ? handleExportTrips : undefined}
             onUpdate={loadTrips}
           />
         ) : viewMode === 'calendar' ? (

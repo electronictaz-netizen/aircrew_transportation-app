@@ -8,6 +8,13 @@ import TripFilters from './TripFilters';
 import ConfirmationDialog from './ConfirmationDialog';
 import AlertDialog from './AlertDialog';
 import EmptyState from './EmptyState';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import './TripList.css';
 
 interface TripListProps {
@@ -19,18 +26,22 @@ interface TripListProps {
   onDelete?: (tripId: string) => void;
   onDeleteMultiple?: (tripIds: string[]) => void;
   onAssignMultiple?: (tripIds: string[]) => void;
+  onBulkStatusUpdate?: (tripIds: string[], status: string) => void;
+  onExport?: (tripIds?: string[]) => void;
   onUpdate: () => void;
 }
 
-function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onUpdate }: TripListProps) {
+function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDelete, onDeleteMultiple, onAssignMultiple, onBulkStatusUpdate, onExport, onUpdate }: TripListProps) {
   const { company } = useCompany();
   const [displayedTrips, setDisplayedTrips] = useState<Array<Schema['Trip']['type']>>([]);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
   const [flightStatuses, setFlightStatuses] = useState<Record<string, { status: string; loading: boolean }>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showStatusUpdateDialog, setShowStatusUpdateDialog] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{ title: string; message: string; type: 'info' | 'success' | 'warning' | 'error' }>({ title: '', message: '', type: 'info' });
   const [tripsToDelete, setTripsToDelete] = useState<string[]>([]);
+  const [newStatus, setNewStatus] = useState<string>('Completed');
 
   // Log when trips prop changes (TripFilters will handle sorting via handleFilterChange)
   useEffect(() => {
@@ -245,7 +256,7 @@ function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDe
         <p className="trip-count">
           Showing {displayedTrips.length} of {trips.length} trips
         </p>
-        {(onDeleteMultiple || onAssignMultiple) && (
+        {(onDeleteMultiple || onAssignMultiple || onBulkStatusUpdate || onExport) && (
           <div className="bulk-actions">
             {selectedTrips.size > 0 && (
               <>
@@ -259,6 +270,26 @@ function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDe
                     Assign ({selectedTrips.size})
                   </button>
                 )}
+                {onBulkStatusUpdate && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowStatusUpdateDialog(true)}
+                    title={`Update status for ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''}`}
+                    aria-label={`Update status for ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''}`}
+                  >
+                    Update Status ({selectedTrips.size})
+                  </button>
+                )}
+                {onExport && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => onExport(Array.from(selectedTrips))}
+                    title={`Export ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''} to CSV`}
+                    aria-label={`Export ${selectedTrips.size} selected trip${selectedTrips.size > 1 ? 's' : ''} to CSV`}
+                  >
+                    📥 Export ({selectedTrips.size})
+                  </button>
+                )}
                 {onDeleteMultiple && (
                   <button
                     className="btn btn-danger"
@@ -270,6 +301,16 @@ function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDe
                   </button>
                 )}
               </>
+            )}
+            {onExport && selectedTrips.size === 0 && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => onExport()}
+                title="Export all trips to CSV"
+                aria-label="Export all trips to CSV"
+              >
+                📥 Export All
+              </button>
             )}
           </div>
         )}
@@ -604,6 +645,54 @@ function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDe
         cancelText="Cancel"
         variant="destructive"
       />
+
+      {/* Status Update Dialog */}
+      {showStatusUpdateDialog && (
+        <div className="modal-overlay" onClick={() => setShowStatusUpdateDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>Update Status for {selectedTrips.size} Trip{selectedTrips.size > 1 ? 's' : ''}</h3>
+              <button className="close-btn" onClick={() => setShowStatusUpdateDialog(false)}>×</button>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem' }}>
+                Select new status for {selectedTrips.size} selected trip{selectedTrips.size > 1 ? 's' : ''}:
+              </p>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger style={{ width: '100%', marginBottom: '1.5rem' }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Unassigned">Unassigned</SelectItem>
+                  <SelectItem value="Assigned">Assigned</SelectItem>
+                  <SelectItem value="InProgress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setShowStatusUpdateDialog(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    if (onBulkStatusUpdate && selectedTrips.size > 0) {
+                      onBulkStatusUpdate(Array.from(selectedTrips), newStatus);
+                      setSelectedTrips(new Set());
+                      setShowStatusUpdateDialog(false);
+                    }
+                  }}
+                >
+                  Update Status
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Alert Dialog */}
       <AlertDialog
