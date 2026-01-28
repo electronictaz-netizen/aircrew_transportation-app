@@ -81,6 +81,23 @@ function ManagementDashboard() {
   const [tripTemplates, setTripTemplates] = useState<Array<Schema['TripTemplate']['type']>>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Schema['TripTemplate']['type'] | null>(null);
   const [showTemplateManagement, setShowTemplateManagement] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+
+  // Loading timeout: if trips don't load within 15s, show error and allow retry
+  const LOADING_TIMEOUT_MS = 15000;
+  useEffect(() => {
+    if (!companyId || !loading) return;
+    const t = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          setLoadingError('Taking longer than usual. Check your connection or try again.');
+          return false;
+        }
+        return prev;
+      });
+    }, LOADING_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [companyId, loading]);
 
   // Check for plan parameter from external website sign-up
   useEffect(() => {
@@ -205,6 +222,7 @@ function ManagementDashboard() {
 
       const loadTrips = async (forceRefresh: boolean = false) => {
     if (!companyId) return;
+    setLoadingError(null);
     
     try {
       console.log('Loading trips...', forceRefresh ? '(force refresh)' : '');
@@ -214,11 +232,9 @@ function ManagementDashboard() {
       if (!isOnline() && !forceRefresh) {
         console.log('[OfflineStorage] Loading trips from cache (offline mode)');
         const cachedTrips = await getCachedTrips(companyId);
-        if (cachedTrips.length > 0) {
-          setTrips(cachedTrips);
-          setLoading(false);
-          return;
-        }
+        setTrips(cachedTrips.length > 0 ? cachedTrips : []);
+        setLoading(false);
+        return;
       }
       
       // Add a small delay to ensure database consistency
@@ -1893,6 +1909,41 @@ function ManagementDashboard() {
               </div>
             </>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadingError) {
+    return (
+      <div className="management-dashboard">
+        <div className="dashboard-header">
+          <h2>Management Dashboard</h2>
+        </div>
+        <div className="error-state" style={{ padding: '2rem', textAlign: 'center' }}>
+          <p>{loadingError}</p>
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setLoadingError(null);
+                setLoading(true);
+                loadTrips(true);
+              }}
+            >
+              Retry
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setLoadingError(null);
+                setLoading(false);
+                setTrips([]);
+              }}
+            >
+              Continue with empty list
+            </button>
+          </div>
         </div>
       </div>
     );

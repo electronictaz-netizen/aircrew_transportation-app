@@ -22,7 +22,7 @@ The Customer Portal requires:
 - ✅ Access to AWS Lambda Console
 - ✅ Access to AWS Amplify Console
 
----
+--- npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a 
 
 ## Step 1: Create Customer Portal Function URL
 
@@ -55,7 +55,7 @@ The Customer Portal requires:
 
 5. **Create and Copy URL**
    - Click **Save**
-   - Copy the **Function URL** (format: `https://[function-id].lambda-url.[region].on.aws/`)
+   - Copy the **Function URL** (format: `https://[function-id].lambda-url.[region].on.aws/`) https://3ins323su2pcc2kqqbb5dz554q0tlklu.lambda-url.us-east-1.on.aws/
    - Example: `https://abc123def456.lambda-url.us-east-1.on.aws/`
 
 ### Method 2: AWS CLI

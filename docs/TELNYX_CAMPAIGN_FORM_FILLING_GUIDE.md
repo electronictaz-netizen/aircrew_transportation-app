@@ -57,7 +57,6 @@ The opt-in form clearly states:
 Once the customer submits the booking form with the SMS opt-in checkbox checked, their phone number is recorded in the database with a timestamp, and a confirmation SMS is sent:
 "Onyx Transportation: Thanks for subscribing to trip notifications! Reply HELP for help. Message frequency may vary. Msg&data rates may apply. Consent is not a condition of purchase. Reply STOP to opt out."
 
-Screenshot of booking form: [Link to screenshot of booking form showing opt-in checkbox]
 
 2. DIGITAL CONSENT (In-App Settings - Secondary Method):
 Existing customers can enable SMS notifications by navigating to their account settings at https://onyxdispatch.us/account/settings and toggling the SMS notifications switch to "ON".
@@ -68,15 +67,14 @@ The settings page includes the following disclaimer:
 Once the customer toggles SMS notifications ON, the system records the opt-in with a timestamp, and a confirmation SMS is sent:
 "Onyx Transportation: Thanks for subscribing to trip notifications! Reply HELP for help. Message frequency may vary. Msg&data rates may apply. Consent is not a condition of purchase. Reply STOP to opt out."
 
-Screenshot of settings page: [Link to screenshot of account settings page showing SMS toggle]
 
 3. OPT-IN BY KEYWORD (Tertiary Method):
-Onyx Transportation provides keywords (START, YES, SUBSCRIBE, OPTIN) and the designated number [YOUR_TELNYX_NUMBER] via the booking portal at https://onyxdispatch.us/booking and customer support communications.
+Onyx Transportation provides keywords (START, YES, SUBSCRIBE, OPTIN) and the designated number +19293808106 via the booking portal at https://onyxdispatch.us/booking and customer support communications.
 
 The keyword opt-in process includes a disclaimer on the website:
-"Text START, YES, SUBSCRIBE, or OPTIN to [YOUR_TELNYX_NUMBER] to receive SMS notifications about your trips. By texting a keyword, you agree to receive SMS updates from Onyx Transportation. Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help. Your mobile information will not be sold or shared with third parties for promotional or marketing purposes."
+"Text START, YES, SUBSCRIBE, or OPTIN to +19293808106 to receive SMS notifications about your trips. By texting a keyword, you agree to receive SMS updates from Onyx Transportation. Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help. Your mobile information will not be sold or shared with third parties for promotional or marketing purposes."
 
-When the user texts "START", "YES", "SUBSCRIBE", or "OPTIN" to [YOUR_TELNYX_NUMBER], the system processes this via webhook, updates the customer record with opt-in timestamp, and responds with:
+When the user texts "START", "YES", "SUBSCRIBE", or "OPTIN" to +19293808106, the system processes this via webhook, updates the customer record with opt-in timestamp, and responds with:
 "Onyx Transportation: Thanks for subscribing to trip notifications! Reply HELP for help. Message frequency may vary. Msg&data rates may apply. Consent is not a condition of purchase. Reply STOP to opt out."
 
 Link to where keywords are advertised: https://onyxdispatch.us/booking
