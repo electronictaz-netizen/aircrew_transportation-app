@@ -5,6 +5,7 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { useCompany } from '../contexts/CompanyContext';
 import { getActiveVehicleLocations } from '../utils/gpsTracking';
+import { fetchEtaToDropoff } from '../utils/tripEta';
 import { logger } from '../utils/logger';
 import 'leaflet/dist/leaflet.css';
 import './VehicleTrackingMap.css';
@@ -69,6 +70,7 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
   const [trips, setTrips] = useState<Record<string, Schema['Trip']['type']>>({});
   const [drivers, setDrivers] = useState<Record<string, Schema['Driver']['type']>>({});
   const [vehicles, setVehicles] = useState<Record<string, Schema['Vehicle']['type']>>({});
+  const [etaByTripId, setEtaByTripId] = useState<Record<string, number>>({});
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load trips, drivers, and vehicles data
@@ -203,6 +205,28 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
     };
   }, [companyId, activeTripIds, trips, drivers, vehicles]);
 
+  // Fetch ETA to dropoff for each vehicle location that has dropoff coords
+  useEffect(() => {
+    const withCoords = vehicleLocations.filter(
+      (loc) =>
+        loc.latitude != null &&
+        loc.longitude != null &&
+        loc.trip?.dropoffLat != null &&
+        loc.trip?.dropoffLng != null
+    );
+    withCoords.forEach((loc) => {
+      const lat = loc.latitude as number;
+      const lng = loc.longitude as number;
+      const destLat = loc.trip!.dropoffLat as number;
+      const destLng = loc.trip!.dropoffLng as number;
+      fetchEtaToDropoff(lat, lng, destLat, destLng).then((result) => {
+        if (result) {
+          setEtaByTripId((prev) => ({ ...prev, [loc.tripId]: result.durationMinutes }));
+        }
+      });
+    });
+  }, [vehicleLocations]);
+
   const handleMarkerClick = (tripId: string) => {
     if (onTripSelect) {
       onTripSelect(tripId);
@@ -306,6 +330,11 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
                     {vehicle && (
                       <p>
                         <strong>Vehicle:</strong> {vehicle.name}
+                      </p>
+                    )}
+                    {etaByTripId[loc.tripId] != null && (
+                      <p className="location-eta">
+                        <strong>ETA to dropoff:</strong> ~{etaByTripId[loc.tripId]} min
                       </p>
                     )}
                     {loc.timestamp && (

@@ -120,6 +120,8 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 3. Call routing API: origin = latest vehicle lat/lng, destination = dropoff; get duration.
 4. Store or stream ETA (e.g. “ETA 14 min”) and display in VehicleTrackingMap and trip detail.
 
+**Implemented (Step 4):** getTripEta Lambda calls OSRM (router.project-osrm.org) for driving duration/distance from origin to destination; returns `{ durationMinutes, distanceKm }` with CORS. Frontend: `src/utils/tripEta.ts` exposes `fetchEtaToDropoff(originLat, originLng, destLat, destLng)` (2-minute cache). VehicleTrackingMap fetches ETA when a vehicle location has trip dropoff coords and shows "ETA to dropoff: ~X min" in the marker popup. Set `VITE_ETA_FUNCTION_URL` to the getTripEta Function URL for ETA to appear; see `docs/ETA_FUNCTION_URL_SETUP.md`.
+
 ---
 
 ### 5. Data retention and cost (medium)
@@ -181,7 +183,7 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 | Dispatcher map | Done (10s poll) | Add Amplify subscription for real-time updates |
 | Background tracking | Partial (foreground only) | Document; optional watchPosition; native app for true background |
 | Geofencing | Missing | Add coordinates to trip + check on each update; trigger “arrived” |
-| Live ETA | Missing | Add routing API (server-side); compute on location update |
+| Live ETA | Done (Step 4) | Set VITE_ETA_FUNCTION_URL; see docs/ETA_FUNCTION_URL_SETUP.md |
 | Retention | Missing | Add TTL or scheduled Lambda delete |
 | Passenger live map | Missing | Authz + UI after dispatcher real-time is in place |
 

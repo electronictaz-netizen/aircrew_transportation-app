@@ -14,6 +14,7 @@ import { sendTelnyxSms } from './functions/sendTelnyxSms/resource';
 import { telnyxWebhook } from './functions/telnyxWebhook/resource';
 import { customerPortal } from './functions/customerPortal/resource';
 import { pushNotifications } from './functions/pushNotifications/resource';
+import { getTripEta } from './functions/getTripEta/resource';
 
 export const backend = defineBackend({
   auth,
@@ -29,6 +30,7 @@ export const backend = defineBackend({
   telnyxWebhook,
   customerPortal,
   pushNotifications,
+  getTripEta,
 });
 
 // Pass GraphQL endpoint to publicBooking function. Use the L1 CfnGraphqlApi.attrGraphQlUrl
