@@ -13,6 +13,7 @@ import { validateFlightNumber, validateLocation, validatePassengers, MAX_LENGTHS
 import { logger } from '../utils/logger';
 import { formatCoordinates } from '../utils/gpsLocation';
 import { reverseGeocode } from '../utils/reverseGeocoding';
+import { geocodeAddress } from '../utils/addressAutocomplete';
 import { renderCustomFieldInput, validateCustomFieldValue } from '../utils/customFields.tsx';
 import { tripFormSchema, type TripFormData } from '../schemas/tripSchema';
 import {
@@ -432,6 +433,23 @@ function TripForm({ trip, template, drivers, locations = [], vehicles = [], cust
 
       // Add custom field values to submit data
       submitData.customFieldValues = customFieldValues;
+
+      // Geocode pickup/dropoff for geofencing (optional; failures don't block save)
+      try {
+        const pickupCoords = await geocodeAddress(pickupValidation.sanitized);
+        if (pickupCoords) {
+          submitData.pickupLat = pickupCoords.lat;
+          submitData.pickupLng = pickupCoords.lng;
+        }
+        await new Promise((r) => setTimeout(r, 1100)); // Nominatim: 1 req/sec
+        const dropoffCoords = await geocodeAddress(dropoffValidation.sanitized);
+        if (dropoffCoords) {
+          submitData.dropoffLat = dropoffCoords.lat;
+          submitData.dropoffLng = dropoffCoords.lng;
+        }
+      } catch (geoErr) {
+        logger.warn('Geocoding for geofencing skipped', geoErr);
+      }
       
       logger.debug('TripForm submitting data:', submitData);
       await onSubmit(submitData);

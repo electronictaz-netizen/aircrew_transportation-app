@@ -787,6 +787,10 @@ function ManagementDashboard() {
       if (tripData.driverId) {
         tripWithStatus.driverId = tripData.driverId;
       }
+      if (tripData.pickupLat != null) tripWithStatus.pickupLat = tripData.pickupLat;
+      if (tripData.pickupLng != null) tripWithStatus.pickupLng = tripData.pickupLng;
+      if (tripData.dropoffLat != null) tripWithStatus.dropoffLat = tripData.dropoffLat;
+      if (tripData.dropoffLng != null) tripWithStatus.dropoffLng = tripData.dropoffLng;
       
       if (tripData.isRecurring) {
         tripWithStatus.isRecurring = true;

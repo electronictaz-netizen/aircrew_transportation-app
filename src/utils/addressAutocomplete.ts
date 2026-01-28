@@ -227,3 +227,45 @@ export function clearSuggestionCache(): void {
   suggestionCache.clear();
   logger.debug('Address autocomplete cache cleared');
 }
+
+// Cache for geocoded coordinates (address -> { lat, lng })
+const geocodeCache = new Map<string, { lat: number; lng: number; timestamp: number }>();
+const GEOCODE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Geocode an address to latitude/longitude (for geofencing).
+ * Uses Nominatim. Rate limit: 1 req/sec. Results cached 24h.
+ * @returns { lat, lng } or null if not found
+ */
+export async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  if (!address || address.trim().length === 0) return null;
+
+  const normalized = address.trim();
+  const cached = geocodeCache.get(normalized);
+  if (cached && Date.now() - cached.timestamp < GEOCODE_CACHE_DURATION) {
+    return { lat: cached.lat, lng: cached.lng };
+  }
+
+  try {
+    await new Promise((r) => setTimeout(r, 1100)); // Nominatim: 1 req/sec
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(normalized)}&limit=1`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'AircrewTransportationApp/1.0 (Transportation Management System)',
+        Accept: 'application/json',
+      },
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const item = data[0];
+    const lat = parseFloat(item.lat);
+    const lng = parseFloat(item.lon);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    geocodeCache.set(normalized, { lat, lng, timestamp: Date.now() });
+    return { lat, lng };
+  } catch (error) {
+    logger.error('Geocode address error', { address: normalized, error });
+    return null;
+  }
+}

@@ -101,6 +101,8 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 
 ---
 
+**Implemented (Step 2):** Trip schema has optional pickupLat, pickupLng, dropoffLat, dropoffLng. geocodeAddress() in addressAutocomplete.ts geocodes via Nominatim. TripForm geocodes on save; ManagementDashboard passes coords into Trip.create. After each VehicleLocation.create, checkGeofenceAndUpdateTrip() runs: if within 150 m of pickup/dropoff and time not set, sets actualPickupTime/actualDropoffTime.
+
 ### 4. Live ETA (medium impact)
 
 **Current:** No ETA from current position to destination.

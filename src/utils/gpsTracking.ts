@@ -5,9 +5,12 @@
 
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
-import { getCurrentLocation } from './gpsLocation';
+import { getCurrentLocation, calculateDistance } from './gpsLocation';
 
 const client = generateClient<Schema>();
+
+/** Geofence radius in km (150 meters) */
+const GEOFENCE_RADIUS_KM = 0.15;
 
 export interface TrackingConfig {
   tripId: string;
@@ -112,6 +115,11 @@ async function sendLocationUpdate(config: TrackingConfig): Promise<void> {
     // @ts-ignore - Complex union type from Amplify Data
     await client.models.VehicleLocation.create(vehicleLocationData);
 
+    // Geofence check: update actualPickupTime/actualDropoffTime when driver is within radius
+    checkGeofenceAndUpdateTrip(config.tripId, location.latitude, location.longitude).catch((err) =>
+      console.warn('Geofence check failed:', err)
+    );
+
     if (config.onSuccess) {
       config.onSuccess();
     }
@@ -120,6 +128,44 @@ async function sendLocationUpdate(config: TrackingConfig): Promise<void> {
     if (config.onError) {
       config.onError(error instanceof Error ? error : new Error('Failed to send location update'));
     }
+  }
+}
+
+/**
+ * Check if driver is within geofence of pickup/dropoff and update trip times.
+ * Called after each location send; runs in background (errors logged, not thrown).
+ */
+async function checkGeofenceAndUpdateTrip(tripId: string, lat: number, lng: number): Promise<void> {
+  try {
+    const { data: trip } = await client.models.Trip.get({ id: tripId });
+    if (!trip) return;
+
+    const now = new Date().toISOString();
+    const updates: Partial<Schema['Trip']['type']> = {};
+
+    if (
+      trip.pickupLat != null &&
+      trip.pickupLng != null &&
+      trip.actualPickupTime == null &&
+      calculateDistance(lat, lng, trip.pickupLat, trip.pickupLng) <= GEOFENCE_RADIUS_KM
+    ) {
+      updates.actualPickupTime = now;
+    }
+
+    if (
+      trip.dropoffLat != null &&
+      trip.dropoffLng != null &&
+      trip.actualDropoffTime == null &&
+      calculateDistance(lat, lng, trip.dropoffLat, trip.dropoffLng) <= GEOFENCE_RADIUS_KM
+    ) {
+      updates.actualDropoffTime = now;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await client.models.Trip.update({ id: tripId, ...updates });
+    }
+  } catch (err) {
+    throw err;
   }
 }
 

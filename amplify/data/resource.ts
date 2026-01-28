@@ -91,6 +91,10 @@ const schema = a.schema({
       flightNumber: a.string().required(),
       pickupLocation: a.string().required(),
       dropoffLocation: a.string().required(),
+      pickupLat: a.float(), // Geocoded latitude for pickup (geofencing)
+      pickupLng: a.float(), // Geocoded longitude for pickup (geofencing)
+      dropoffLat: a.float(), // Geocoded latitude for dropoff (geofencing)
+      dropoffLng: a.float(), // Geocoded longitude for dropoff (geofencing)
       numberOfPassengers: a.integer().default(1),
       status: a.enum(['Unassigned', 'Assigned', 'InProgress', 'Completed']),
       driverId: a.id(),
