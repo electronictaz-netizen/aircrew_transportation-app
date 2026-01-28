@@ -140,6 +140,8 @@ function ManagementDashboard() {
 
   useEffect(() => {
     if (companyId) {
+      setLoading(true);
+      setLoadingError(null);
       // If user is a driver, find their driver record to filter trips
       if (userRole === 'driver' && !isAdminOverride) {
         loadCurrentDriver();
@@ -1949,17 +1951,7 @@ function ManagementDashboard() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="management-dashboard">
-        <div className="dashboard-header">
-          <h2>Management Dashboard</h2>
-        </div>
-        {(viewMode === 'list' || viewMode === 'requests') ? <TripListSkeleton /> : <TripCalendarSkeleton />}
-      </div>
-    );
-  }
-
+  // Don't return early for loading - show full dashboard (header + buttons) and skeleton only in content area
   // Trial status check
   const trialActive = company ? isTrialActive(company.isTrialActive, company.trialEndDate) : false;
   const trialExpired = company ? isTrialExpired(company.isTrialActive, company.trialEndDate) : false;
@@ -2592,7 +2584,9 @@ function ManagementDashboard() {
       </Suspense>
 
       <Suspense fallback={ComponentLoadingFallback}>
-        {viewMode === 'requests' ? (
+        {loading ? (
+          (viewMode === 'list' || viewMode === 'requests') ? <TripListSkeleton /> : <TripCalendarSkeleton />
+        ) : viewMode === 'requests' ? (
           <BookingRequestsList
             requests={bookingRequests}
             onAccept={handleAcceptBookingRequest}
