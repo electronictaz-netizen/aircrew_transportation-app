@@ -14,18 +14,16 @@
 }
 
 .trips-table-wrapper {
-  overflow-x: auto;
   width: 100%;
   max-width: 100%;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden; /* No horizontal scroll; table fits or we use card view */
 }
 
 .trips-table {
   width: 100%;
-  min-width: max-content; /* Let table grow so columns are not cut off */
   border-collapse: collapse;
   display: table;
-  table-layout: auto; /* Size columns to content; wrapper scrolls horizontally when needed */
+  table-layout: fixed; /* Fit viewport; content wraps inside cells */
 }
 
 .trips-table th {
@@ -65,45 +63,42 @@
   border-bottom-color: hsl(var(--border));
 }
 
-/* Column min-widths so content is not cut off; table scrolls horizontally when needed */
+/* Column widths (percentages) so table fits viewport; no horizontal scroll */
 /* Checkbox column */
 .trips-table th:first-child,
 .trips-table td:first-child {
-  width: 1%;
-  min-width: 2.25rem;
+  width: 3%;
   text-align: center;
 }
 
 /* Category */
 .trips-table th:nth-child(2),
 .trips-table td:nth-child(2) {
-  min-width: 4rem;
+  width: 7%;
 }
 
-/* Pickup Date - e.g. "Jan 26, 2026" */
+/* Pickup Date */
 .trips-table th:nth-child(3),
 .trips-table td:nth-child(3) {
-  min-width: 6.5rem;
-  white-space: nowrap;
+  width: 6%;
 }
 
 /* Pickup Time */
 .trips-table th:nth-child(4),
 .trips-table td:nth-child(4) {
-  min-width: 4rem;
-  white-space: nowrap;
+  width: 4%;
 }
 
 /* Flight Number */
 .trips-table th:nth-child(5),
 .trips-table td:nth-child(5) {
-  min-width: 4rem;
+  width: 5%;
 }
 
-/* Flight Status - "Check Status" button */
+/* Flight Status */
 .trips-table th:nth-child(6),
 .trips-table td:nth-child(6) {
-  min-width: 6.5rem;
+  width: 8%;
 }
 
 /* Flight Status button styling */
@@ -114,9 +109,9 @@
 .trips-table td:nth-child(6) button,
 .trips-table td:nth-child(6) .flight-status-btn {
   white-space: nowrap;
-  font-size: 0.75rem;
-  padding: 0.375rem 0.625rem;
-  min-width: fit-content;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  max-width: 100%;
   display: inline-block;
   box-sizing: border-box;
 }
@@ -129,21 +124,20 @@
 /* Pickup Location */
 .trips-table th:nth-child(7),
 .trips-table td:nth-child(7) {
-  min-width: 5rem;
+  width: 10%;
 }
 
 /* Dropoff Location */
 .trips-table th:nth-child(8),
 .trips-table td:nth-child(8) {
-  min-width: 5rem;
+  width: 10%;
 }
 
 /* Passengers */
 .trips-table th:nth-child(9),
 .trips-table td:nth-child(9) {
-  min-width: 4.5rem;
+  width: 5%;
   text-align: center;
-  white-space: nowrap;
 }
 
 .passengers-cell {
@@ -165,42 +159,49 @@
 /* Customer */
 .trips-table th:nth-child(10),
 .trips-table td:nth-child(10) {
-  min-width: 5rem;
+  width: 9%;
 }
 
-/* Driver - "Unassigned" */
+/* Driver */
 .trips-table th:nth-child(11),
 .trips-table td:nth-child(11) {
-  min-width: 5.5rem;
+  width: 9%;
 }
 
-/* Status - "UNASSIGNED", "In Progress", "Completed" etc. */
+/* Status */
 .trips-table th:nth-child(12),
 .trips-table td:nth-child(12) {
-  min-width: 8rem;
-  white-space: nowrap;
-  overflow: visible;
+  width: 9%;
 }
 
 /* Actual Pickup */
 .trips-table th:nth-child(13),
 .trips-table td:nth-child(13) {
-  min-width: 4rem;
-  white-space: nowrap;
+  width: 6%;
   text-align: center;
 }
 
 /* Actual Dropoff */
 .trips-table th:last-child,
 .trips-table td:last-child {
-  min-width: 5rem;
-  white-space: nowrap;
+  width: 9%;
   text-align: center;
 }
 
-/* Mobile: Card view instead of table */
+/* Card view: shown when viewport is not wide enough for a comfortable table (no horizontal scroll) */
 .trips-table-mobile {
   display: none;
+}
+
+/* Below 1200px: use card view so all fields are visible without horizontal scroll */
+@media (max-width: 1200px) {
+  .trips-table-wrapper {
+    display: none;
+  }
+
+  .trips-table-mobile {
+    display: block;
+  }
 }
 
 .trip-card-mobile {

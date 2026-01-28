@@ -599,6 +599,11 @@ function TripList({ trips, drivers, locations = [], customers = [], onEdit, onDe
               </div>
               
               <div className="trip-card-field">
+                <span className="trip-card-label">Customer</span>
+                <span className="trip-card-value">{getCustomerName(trip.customerId) || '-'}</span>
+              </div>
+              
+              <div className="trip-card-field">
                 <span className="trip-card-label">Driver</span>
                 <span className="trip-card-value">{getDriverName(trip.driverId)}</span>
               </div>
