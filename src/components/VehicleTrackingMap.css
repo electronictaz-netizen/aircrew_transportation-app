@@ -23,6 +23,25 @@
   color: #333;
 }
 
+.map-realtime-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0d9488;
+  background: #ccfbf1;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+.dark .map-realtime-label {
+  color: #5eead4;
+  background: rgba(94, 234, 212, 0.15);
+}
+
 .map-stats {
   font-size: 14px;
   color: #666;

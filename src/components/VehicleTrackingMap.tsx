@@ -132,7 +132,7 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
     loadData();
   }, [companyId]);
 
-  // Load and refresh vehicle locations
+  // Load vehicle locations (initial load and fallback refresh)
   const loadVehicleLocations = async () => {
     if (!companyId) return;
 
@@ -140,14 +140,12 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
       setError(null);
       const locations = await getActiveVehicleLocations(companyId, activeTripIds);
 
-      // Enrich locations with trip, driver, and vehicle data
       const enrichedLocations: VehicleLocationWithTrip[] = locations.map((loc) => ({
         ...loc,
         trip: trips[loc.tripId],
         driver: drivers[loc.driverId],
         vehicle: loc.vehicleId ? vehicles[loc.vehicleId] : undefined,
       }));
-
       setVehicleLocations(enrichedLocations);
       setLoading(false);
     } catch (err) {
@@ -164,13 +162,39 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
     }
   }, [companyId, activeTripIds, trips, drivers, vehicles]);
 
-  // Set up auto-refresh every 10 seconds
+  // Real-time: subscribe to new VehicleLocation records for this company
+  useEffect(() => {
+    if (!companyId) return;
+
+    const sub = client.models.VehicleLocation.onCreate({
+      filter: { companyId: { eq: companyId } },
+    }).subscribe({
+      next: (data) => {
+        const newLoc = data as Schema['VehicleLocation']['type'];
+        setVehicleLocations((prev) => {
+          const enriched: VehicleLocationWithTrip = {
+            ...newLoc,
+            trip: trips[newLoc.tripId],
+            driver: drivers[newLoc.driverId],
+            vehicle: newLoc.vehicleId ? vehicles[newLoc.vehicleId] : undefined,
+          };
+          const others = prev.filter((l) => l.tripId !== newLoc.tripId);
+          return [...others, enriched];
+        });
+      },
+      error: (err) => logger.error('VehicleLocation subscription error:', err),
+    });
+
+    return () => sub.unsubscribe();
+  }, [companyId, trips, drivers, vehicles]);
+
+  // Fallback refresh every 60s if subscription misses (e.g. reconnection)
   useEffect(() => {
     if (!companyId) return;
 
     refreshIntervalRef.current = setInterval(() => {
       loadVehicleLocations();
-    }, 10000); // Refresh every 10 seconds
+    }, 60000);
 
     return () => {
       if (refreshIntervalRef.current) {
@@ -219,6 +243,7 @@ export default function VehicleTrackingMap({ activeTripIds, onTripSelect, height
     <div className="vehicle-tracking-map-container" style={{ height }}>
       <div className="map-header">
         <h3>Real-Time Vehicle Tracking</h3>
+        <span className="map-realtime-label" title="Map updates live when drivers send location">Live</span>
         <div className="map-stats">
           {vehicleLocations.length} active vehicle{vehicleLocations.length !== 1 ? 's' : ''}
         </div>
