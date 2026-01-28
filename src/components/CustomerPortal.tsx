@@ -441,7 +441,7 @@ function CustomerPortal({ companyId, customerId: initialCustomerId }: CustomerPo
                 )}
               </div>
 
-              {(trip.status === 'InProgress' || trip.status === 'In Progress') && customer && (
+              {trip.status === 'InProgress' && customer && (
                 <PassengerLiveTracking
                   companyId={companyId}
                   customerId={customer.id}
