@@ -1,138 +1,154 @@
 /**
  * Real-Time GPS Tracking Utility
- * Handles continuous GPS tracking during active trips
+ * Handles continuous GPS tracking during active trips.
+ * Uses watchPosition (throttled) for better responsiveness; tracking works best with app in foreground.
  */
 
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
-import { getCurrentLocation, calculateDistance } from './gpsLocation';
+import { calculateDistance } from './gpsLocation';
 
 const client = generateClient<Schema>();
 
 /** Geofence radius in km (150 meters) */
 const GEOFENCE_RADIUS_KM = 0.15;
 
+const WATCH_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 15000,
+  maximumAge: 5000,
+};
+
 export interface TrackingConfig {
   tripId: string;
   driverId: string;
   vehicleId?: string;
   companyId: string;
-  updateInterval?: number; // Milliseconds between updates (default: 30000 = 30 seconds)
+  updateInterval?: number; // Min ms between updates (default: 30000 = 30 seconds)
   onError?: (error: Error) => void;
   onSuccess?: () => void;
 }
 
-let activeTrackingInterval: NodeJS.Timeout | null = null;
+let watchId: number | null = null;
 let currentTrackingConfig: TrackingConfig | null = null;
 let isTracking = false;
+let lastSentTime = 0;
 
 /**
- * Start continuous GPS tracking for an active trip
- * Sends location updates at regular intervals
+ * Start continuous GPS tracking for an active trip.
+ * Uses watchPosition with throttle; tracking works best with app in foreground (background may be throttled by browser).
  */
 export async function startGPSTracking(config: TrackingConfig): Promise<void> {
-  // Stop any existing tracking
   stopGPSTracking();
 
+  if (!navigator.geolocation) {
+    const err = new Error('Geolocation is not supported by this browser.');
+    config.onError?.(err);
+    return;
+  }
+
   currentTrackingConfig = config;
-  const updateInterval = config.updateInterval || 30000; // Default: 30 seconds
-
-  // Send initial location immediately
-  await sendLocationUpdate(config);
-
-  // Set up interval for continuous updates
-  activeTrackingInterval = setInterval(async () => {
-    if (currentTrackingConfig && isTracking) {
-      await sendLocationUpdate(currentTrackingConfig);
-    }
-  }, updateInterval);
-
   isTracking = true;
+  const updateInterval = config.updateInterval ?? 30000;
+
+  // Send initial location, then start watchPosition
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      sendLocationFromPosition(config, position).catch((e) => {
+        console.error('Initial GPS send failed:', e);
+        config.onError?.(e instanceof Error ? e : new Error('Initial send failed'));
+      });
+      lastSentTime = Date.now();
+
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          if (!currentTrackingConfig || !isTracking) return;
+          if (Date.now() - lastSentTime < updateInterval) return;
+          lastSentTime = Date.now();
+          sendLocationFromPosition(currentTrackingConfig, pos).catch((e) => {
+            console.warn('GPS update failed:', e);
+            currentTrackingConfig?.onError?.(e instanceof Error ? e : new Error('Location update failed'));
+          });
+        },
+        (err) => {
+          console.warn('GPS watch error:', err.message);
+          config.onError?.(new Error(err.message));
+        },
+        WATCH_OPTIONS
+      );
+    },
+    (err) => {
+      console.warn('Initial GPS get failed:', err.message);
+      config.onError?.(new Error(err.message));
+      // Still start watch so we recover when fix is available
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          if (!currentTrackingConfig || !isTracking) return;
+          if (Date.now() - lastSentTime < updateInterval) return;
+          lastSentTime = Date.now();
+          sendLocationFromPosition(currentTrackingConfig, pos).catch((e) =>
+            console.warn('GPS update failed:', e)
+          );
+        },
+        (e) => config.onError?.(new Error(e.message)),
+        WATCH_OPTIONS
+      );
+    },
+    WATCH_OPTIONS
+  );
 }
 
 /**
  * Stop GPS tracking
  */
 export function stopGPSTracking(): void {
-  if (activeTrackingInterval) {
-    clearInterval(activeTrackingInterval);
-    activeTrackingInterval = null;
+  if (watchId != null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
   }
   isTracking = false;
   currentTrackingConfig = null;
 }
 
 /**
- * Send a single location update to the server
+ * Send one location update from a GeolocationPosition (used by watchPosition callback and initial getCurrentPosition).
  */
-async function sendLocationUpdate(config: TrackingConfig): Promise<void> {
-  try {
-    // Get current GPS location
-    const location = await getCurrentLocation({
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 5000, // Use location no older than 5 seconds
-    });
+async function sendLocationFromPosition(config: TrackingConfig, position: GeolocationPosition): Promise<void> {
+  const coords = position.coords;
+  const RETENTION_DAYS = 60;
+  const ttlSeconds = Math.floor(Date.now() / 1000) + RETENTION_DAYS * 24 * 60 * 60;
 
-    // Create vehicle location record (ttl = 60 days from now for DynamoDB TTL retention)
-    const RETENTION_DAYS = 60;
-    const ttlSeconds = Math.floor(Date.now() / 1000) + RETENTION_DAYS * 24 * 60 * 60;
+  const vehicleLocationData: Record<string, unknown> = {
+    companyId: config.companyId,
+    tripId: config.tripId,
+    driverId: config.driverId,
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    timestamp: new Date().toISOString(),
+    ttl: ttlSeconds,
+  };
 
-    const vehicleLocationData: any = {
-      companyId: config.companyId,
-      tripId: config.tripId,
-      driverId: config.driverId,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      timestamp: new Date().toISOString(),
-      ttl: ttlSeconds,
-    };
-
-    // Add optional fields if available
-    if (config.vehicleId) {
-      vehicleLocationData.vehicleId = config.vehicleId;
-    }
-
-    if (location.accuracy !== undefined) {
-      vehicleLocationData.accuracy = location.accuracy;
-    }
-
-    // Try to get speed and heading from the position if available
-    // Note: These may not be available in all browsers/devices
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000,
-      });
-    });
-
-    if (position.coords.speed !== null && position.coords.speed !== undefined) {
-      vehicleLocationData.speed = position.coords.speed; // meters per second
-    }
-
-    if (position.coords.heading !== null && position.coords.heading !== undefined) {
-      vehicleLocationData.heading = position.coords.heading; // degrees
-    }
-
-    // Save location to database
-    // @ts-ignore - Complex union type from Amplify Data
-    await client.models.VehicleLocation.create(vehicleLocationData);
-
-    // Geofence check: update actualPickupTime/actualDropoffTime when driver is within radius
-    checkGeofenceAndUpdateTrip(config.tripId, location.latitude, location.longitude).catch((err) =>
-      console.warn('Geofence check failed:', err)
-    );
-
-    if (config.onSuccess) {
-      config.onSuccess();
-    }
-  } catch (error) {
-    console.error('Error sending GPS location update:', error);
-    if (config.onError) {
-      config.onError(error instanceof Error ? error : new Error('Failed to send location update'));
-    }
+  if (config.vehicleId) {
+    vehicleLocationData.vehicleId = config.vehicleId;
   }
+  if (coords.accuracy != null) {
+    vehicleLocationData.accuracy = coords.accuracy;
+  }
+  if (coords.speed != null && coords.speed !== undefined) {
+    vehicleLocationData.speed = coords.speed;
+  }
+  if (coords.heading != null && coords.heading !== undefined) {
+    vehicleLocationData.heading = coords.heading;
+  }
+
+  // @ts-ignore - Complex union type from Amplify Data
+  await client.models.VehicleLocation.create(vehicleLocationData);
+
+  checkGeofenceAndUpdateTrip(config.tripId, coords.latitude, coords.longitude).catch((err) =>
+    console.warn('Geofence check failed:', err)
+  );
+
+  config.onSuccess?.();
 }
 
 /**

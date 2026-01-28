@@ -566,6 +566,23 @@ function DriverDashboard() {
           </p>
         </div>
       )}
+      {isTrackingActive() && (
+        <div
+          className="tracking-active-banner"
+          style={{
+            marginBottom: '1rem',
+            padding: '0.5rem 0.75rem',
+            backgroundColor: '#ecfdf5',
+            border: '1px solid #a7f3d0',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem',
+            color: '#065f46',
+          }}
+          role="status"
+        >
+          <strong>Tracking active.</strong> Works best with app in foreground.
+        </div>
+      )}
 
       <div className="trips-grid">
         {trips.map((trip) => (

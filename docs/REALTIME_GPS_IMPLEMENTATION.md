@@ -81,6 +81,8 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 2. On `startGPSTracking`, call `navigator.geolocation.watchPosition`; on `stopGPSTracking`, call `navigator.geolocation.clearWatch`.
 3. Update docs to say tracking works best with app in foreground; background behavior is best-effort on PWA.
 
+**Implemented (Step 5):** `gpsTracking.ts` now uses `watchPosition` with a throttle (config.updateInterval, default 30s). Initial location is sent via `getCurrentPosition`, then `watchPosition` drives updates; `stopGPSTracking` calls `clearWatch`. Tracking works best with the app in the foreground; when the app is in the background, the browser may throttle or pause updates (PWA limitation; true background tracking would require a native app).
+
 ---
 
 ### 3. Geofencing (arrival at pickup/dropoff) (medium impact)
@@ -181,7 +183,7 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 | VehicleLocation model | Done | — |
 | Driver sends location every 30s | Done | Optional: switch to watchPosition + throttle |
 | Dispatcher map | Done (10s poll) | Add Amplify subscription for real-time updates |
-| Background tracking | Partial (foreground only) | Document; optional watchPosition; native app for true background |
+| Background tracking | Done (Step 5: watchPosition + throttle) | Best with app in foreground; native app for true background |
 | Geofencing | Missing | Add coordinates to trip + check on each update; trigger “arrived” |
 | Live ETA | Done (Step 4) | Set VITE_ETA_FUNCTION_URL; see docs/ETA_FUNCTION_URL_SETUP.md |
 | Retention | Missing | Add TTL or scheduled Lambda delete |
