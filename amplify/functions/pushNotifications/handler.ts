@@ -6,15 +6,7 @@
 
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { createHmac, createHash } from 'crypto';
-
-// Dynamic import for web-push (CommonJS module)
-let webpush: any = null;
-async function getWebPush() {
-  if (!webpush) {
-    webpush = (await import('web-push')).default;
-  }
-  return webpush;
-}
+import webpush from 'web-push';
 
 // Note: The Lambda function needs IAM permissions to access the Data API
 // These permissions are automatically granted when the function is defined in backend.ts
@@ -143,7 +135,7 @@ async function graphqlRequest(query: string, variables: Record<string, any> = {}
 /**
  * Initialize web-push with VAPID keys
  */
-async function initializeWebPush(): Promise<void> {
+function initializeWebPush(): void {
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
   const vapidEmail = process.env.VAPID_EMAIL || 'noreply@onyxdispatch.us';
@@ -153,8 +145,7 @@ async function initializeWebPush(): Promise<void> {
     return;
   }
 
-  const wp = await getWebPush();
-  wp.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
+  webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
   console.log('[PushNotifications] Web-push initialized with VAPID keys');
 }
 
@@ -329,7 +320,7 @@ async function handleUnsubscribe(request: UnsubscribeRequest): Promise<LambdaRes
  */
 async function handleSend(request: SendNotificationRequest): Promise<LambdaResponse> {
   try {
-    await initializeWebPush();
+    initializeWebPush();
 
     const { userId, companyId, payload } = request;
 
@@ -396,8 +387,7 @@ async function handleSend(request: SendNotificationRequest): Promise<LambdaRespo
             },
           };
 
-          const wp = await getWebPush();
-          await wp.sendNotification(pushSubscription, JSON.stringify(payload));
+          await webpush.sendNotification(pushSubscription, JSON.stringify(payload));
 
           // Update lastUsed timestamp
           const updateMutation = `
