@@ -1,6 +1,8 @@
 .vehicle-management {
   max-width: 1200px;
   max-height: 90vh;
+  background-color: #ffffff;
+  color: #111827;
 }
 
 .modal-header {
@@ -142,55 +144,65 @@
   color: #ef4444;
 }
 
-/* Dark mode styles */
-@media (prefers-color-scheme: dark) {
-  .vehicle-management {
-    background-color: #1f2937;
-    color: #f9fafb;
-  }
+/* Dark mode: follow app theme (.dark on root) */
+.dark .vehicle-management {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
 
-  .vehicle-form {
-    background-color: #374151;
-  }
+.dark .vehicle-management .vehicle-form {
+  background-color: hsl(var(--muted));
+}
 
-  .vehicles-list h4 {
-    color: #f9fafb;
-  }
+.dark .vehicles-list h4 {
+  color: hsl(var(--foreground));
+}
 
-  .vehicles-table th {
-    background-color: #374151;
-    color: #f9fafb;
-    border-bottom-color: #4b5563;
-  }
+.dark .vehicle-management .vehicles-table th {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--border));
+}
 
-  .vehicles-table td {
-    border-bottom-color: #4b5563;
-    color: #f9fafb;
-  }
+.dark .vehicle-management .vehicles-table td {
+  border-bottom-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
 
-  .vehicles-table tr:hover {
-    background-color: #374151;
-  }
+.dark .vehicle-management .vehicles-table tr:hover {
+  background-color: hsl(var(--muted));
+}
 
-  .vehicles-table tr.selected {
-    background-color: #1e3a8a;
-  }
+.dark .vehicle-management .vehicles-table tr.selected {
+  background-color: #1e3a8a;
+}
 
-  .vehicles-table tr.selected:hover {
-    background-color: #1e40af;
-  }
+.dark .vehicle-management .vehicles-table tr.selected:hover {
+  background-color: #1e40af;
+}
 
-  .close-btn {
-    color: #9ca3af;
-  }
+.dark .vehicle-management .close-btn {
+  color: hsl(var(--muted-foreground));
+}
 
-  .close-btn:hover {
-    color: #f9fafb;
-  }
+.dark .vehicle-management .close-btn:hover {
+  color: hsl(var(--foreground));
+}
 
-  .empty-message {
-    color: #9ca3af;
-  }
+.dark .vehicle-management .empty-message {
+  color: hsl(var(--muted-foreground));
+}
+
+.vehicle-management .vehicle-form input,
+.vehicle-management .vehicle-form select,
+.vehicle-management .vehicle-form textarea {
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+.vehicle-management .vehicle-form input::placeholder,
+.vehicle-management .vehicle-form textarea::placeholder {
+  color: #6b7280;
 }
 
 /* Mobile Responsive Styles */

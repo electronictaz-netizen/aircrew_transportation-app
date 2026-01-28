@@ -1,6 +1,8 @@
 .customer-management {
   max-width: 1200px;
   max-height: 90vh;
+  background-color: #ffffff;
+  color: #111827;
 }
 
 .modal-header {
@@ -41,6 +43,9 @@
   padding: 1.5rem;
   border-radius: 6px;
   margin-bottom: 2rem;
+}
+.customer-form label {
+  color: #374151;
 }
 
 .form-row {
@@ -236,103 +241,113 @@
   margin-top: 0.5rem;
 }
 
-/* Dark mode styles */
-@media (prefers-color-scheme: dark) {
-  .customer-management {
-    background-color: #1f2937;
-    color: #f9fafb;
-  }
+/* Dark mode styles: follow app theme (.dark on root), not system preference */
+.dark .customer-management {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
 
-  .customer-form {
-    background-color: #374151;
-  }
+.dark .customer-management .customer-form {
+  background-color: hsl(var(--muted));
+}
 
-  .customers-list h4 {
-    color: #f9fafb;
-  }
+.dark .customers-list h4 {
+  color: hsl(var(--foreground));
+}
 
-  .customers-table th {
-    background-color: #374151;
-    color: #f9fafb;
-    border-bottom-color: #4b5563;
-  }
+.dark .customer-management .customers-table th {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--border));
+}
 
-  .customers-table td {
-    border-bottom-color: #4b5563;
-    color: #f9fafb;
-  }
+.dark .customer-management .customers-table td {
+  border-bottom-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
 
-  .customers-table tr:hover {
-    background-color: #374151;
-  }
+.dark .customer-management .customers-table tr:hover {
+  background-color: hsl(var(--muted));
+}
 
-  .customers-table tr.selected {
-    background-color: #1e3a8a;
-  }
+.dark .customer-management .customers-table tr.selected {
+  background-color: #1e3a8a;
+}
 
-  .customers-table tr.selected:hover {
-    background-color: #1e40af;
-  }
+.dark .customer-management .customers-table tr.selected:hover {
+  background-color: #1e40af;
+}
 
-  .close-btn {
-    color: #9ca3af;
-  }
+.dark .customer-management .close-btn {
+  color: hsl(var(--muted-foreground));
+}
 
-  .close-btn:hover {
-    color: #f9fafb;
-  }
+.dark .customer-management .close-btn:hover {
+  color: hsl(var(--foreground));
+}
 
-  .empty-message {
-    color: #9ca3af;
-  }
+.dark .customer-management .empty-message {
+  color: hsl(var(--muted-foreground));
+}
 
-  .customer-trips-modal {
-    background-color: #1f2937;
-    color: #f9fafb;
-  }
+.dark .customer-trips-modal {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
 
-  .trips-table th {
-    background-color: #374151;
-    color: #f9fafb;
-    border-bottom-color: #4b5563;
-  }
+.dark .customer-trips-modal .trips-table th {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--border));
+}
 
-  .trips-table td {
-    border-bottom-color: #4b5563;
-    color: #f9fafb;
-  }
+.dark .customer-trips-modal .trips-table td {
+  border-bottom-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
 
-  .trips-table tr:hover {
-    background-color: #374151;
-  }
+.dark .customer-trips-modal .trips-table tr:hover {
+  background-color: hsl(var(--muted));
+}
 
-  .status-badge.status-completed {
-    background-color: #065f46;
-    color: #d1fae5;
-  }
+.dark .status-badge.status-completed {
+  background-color: #065f46;
+  color: #d1fae5;
+}
 
-  .status-badge.status-assigned {
-    background-color: #1e40af;
-    color: #dbeafe;
-  }
+.dark .status-badge.status-assigned {
+  background-color: #1e40af;
+  color: #dbeafe;
+}
 
-  .status-badge.status-in-progress {
-    background-color: #92400e;
-    color: #fef3c7;
-  }
+.dark .status-badge.status-in-progress {
+  background-color: #92400e;
+  color: #fef3c7;
+}
 
-  .status-badge.status-unassigned {
-    background-color: #374151;
-    color: #f3f4f6;
-  }
+.dark .status-badge.status-unassigned {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
 
-  .trips-count {
-    color: #9ca3af;
-  }
+.dark .customer-management .trips-count {
+  color: hsl(var(--muted-foreground));
+}
 
-  .loading-message {
-    color: #9ca3af;
-  }
+.dark .customer-management .loading-message {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Light mode: explicit styles so modal and form are always light when app is light */
+.customer-management .customer-form input,
+.customer-management .customer-form textarea {
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+.customer-management .customer-form input::placeholder,
+.customer-management .customer-form textarea::placeholder {
+  color: #6b7280;
 }
 
 /* Mobile Responsive Styles */

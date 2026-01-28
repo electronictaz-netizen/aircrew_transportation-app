@@ -108,59 +108,57 @@
   margin: 16px;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .vehicle-tracking-map-container {
-    border-color: #333;
-    background: #1a1a1a;
-  }
+/* Dark mode: follow app theme (.dark on root) */
+.dark .vehicle-tracking-map-container {
+  border-color: hsl(var(--border));
+  background: hsl(var(--background));
+}
 
-  .map-header {
-    background: #2a2a2a;
-    border-bottom-color: #333;
-  }
+.dark .map-header {
+  background: hsl(var(--muted));
+  border-bottom-color: hsl(var(--border));
+}
 
-  .map-header h3 {
-    color: #fff;
-  }
+.dark .map-header h3 {
+  color: hsl(var(--foreground));
+}
 
-  .map-stats {
-    color: #aaa;
-  }
+.dark .map-stats {
+  color: hsl(var(--muted-foreground));
+}
 
-  .map-loading,
-  .map-error {
-    color: #aaa;
-  }
+.dark .map-loading,
+.dark .map-error {
+  color: hsl(var(--muted-foreground));
+}
 
-  .map-empty-state {
-    background: #2a2a2a;
-    color: #fff;
-  }
+.dark .map-empty-state {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
 
-  .map-empty-state p {
-    color: #aaa;
-  }
+.dark .map-empty-state p {
+  color: hsl(var(--muted-foreground));
+}
 
-  .vehicle-popup {
-    color: #fff;
-  }
+.dark .vehicle-popup {
+  color: hsl(var(--foreground));
+}
 
-  .vehicle-popup h4 {
-    color: #fff;
-    border-bottom-color: #444;
-  }
+.dark .vehicle-popup h4 {
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--border));
+}
 
-  .vehicle-popup p {
-    color: #ccc;
-  }
+.dark .vehicle-popup p {
+  color: hsl(var(--muted-foreground));
+}
 
-  .vehicle-popup strong {
-    color: #fff;
-  }
+.dark .vehicle-popup strong {
+  color: hsl(var(--foreground));
+}
 
-  .location-timestamp {
-    color: #999;
-    border-top-color: #444;
-  }
+.dark .vehicle-popup .location-timestamp {
+  color: hsl(var(--muted-foreground));
+  border-top-color: hsl(var(--border));
 }

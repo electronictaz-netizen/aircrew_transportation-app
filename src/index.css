@@ -76,6 +76,30 @@
   }
 }
 
+/* Global modal theme: follow app theme so modals are visible in light and dark */
+.modal-content {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+/* Placeholder visibility: readable in both themes */
+.modal-content input::placeholder,
+.modal-content textarea::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: 1;
+}
+/* Light theme: ensure placeholder is dark enough on light inputs */
+:root .modal-content input::placeholder,
+:root .modal-content textarea::placeholder {
+  color: #6b7280;
+}
+
 /* Global mobile optimizations */
 @media (max-width: 768px) {
   body {

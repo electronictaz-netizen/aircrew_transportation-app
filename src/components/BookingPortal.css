@@ -297,44 +297,47 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .booking-form {
-    background: #2a2a2a;
-    color: #fff;
-  }
+/* Dark mode: follow app theme (.dark on root) */
+.dark .booking-form {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
 
-  .form-section h2 {
-    color: #fff;
-  }
+.dark .form-section h2 {
+  color: hsl(var(--foreground));
+}
 
-  .form-group label {
-    color: #fff;
-  }
+.dark .form-group label {
+  color: hsl(var(--foreground));
+}
 
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    background: #333;
-    border-color: #444;
-    color: #fff;
-  }
+.dark .form-group input,
+.dark .form-group select,
+.dark .form-group textarea {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
 
-  .pricing-section {
-    background: #333;
-    border-color: #444;
-  }
+.dark .form-group input::placeholder,
+.dark .form-group textarea::placeholder {
+  color: hsl(var(--muted-foreground));
+}
 
-  .booking-confirmation {
-    background: #2a2a2a;
-    color: #fff;
-  }
+.dark .pricing-section {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
 
-  .booking-confirmation h2 {
-    color: #fff;
-  }
+.dark .booking-confirmation {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
 
-  .booking-confirmation p {
-    color: #ccc;
-  }
+.dark .booking-confirmation h2 {
+  color: hsl(var(--foreground));
+}
+
+.dark .booking-confirmation p {
+  color: hsl(var(--muted-foreground));
 }
