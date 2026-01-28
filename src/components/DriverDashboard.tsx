@@ -6,7 +6,7 @@ import { useCompany } from '../contexts/CompanyContext';
 import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
 import { fetchFlightStatus } from '../utils/flightStatus';
 import { getCurrentLocation, getLocationErrorMessage, formatCoordinates, isGeolocationAvailable } from '../utils/gpsLocation';
-import { startGPSTracking, stopGPSTracking, isTrackingActive, getCurrentTrackingConfig } from '../utils/gpsTracking';
+import { startGPSTracking, stopGPSTracking, isTrackingActive, getCurrentTrackingConfig, GPS_CONSECUTIVE_FAILURE_MESSAGE } from '../utils/gpsTracking';
 import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
 import { logger } from '../utils/logger';
@@ -77,7 +77,12 @@ function DriverDashboard() {
           updateInterval: 30000, // 30 seconds
           onError: (error) => {
             logger.warn('GPS tracking error:', error);
-            // Don't show error to user for every failed update, just log it
+            const msg = error?.message ?? '';
+            if (msg.toLowerCase().includes('denied') || msg.toLowerCase().includes('permission')) {
+              showError('Location access denied. Enable location in your device or browser settings to share your position.');
+            } else if (msg === GPS_CONSECUTIVE_FAILURE_MESSAGE) {
+              showWarning(msg);
+            }
           },
         });
       }
@@ -580,7 +585,7 @@ function DriverDashboard() {
           }}
           role="status"
         >
-          <strong>Tracking active.</strong> Works best with app in foreground.
+          <strong>Tracking active.</strong> Works best with app in foreground. Tracking uses GPS; keep device charged on long shifts.
         </div>
       )}
 

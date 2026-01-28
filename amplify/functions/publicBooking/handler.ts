@@ -39,6 +39,7 @@ interface CreateBookingRequest {
   returnDate?: string;
   returnTime?: string;
   specialInstructions?: string;
+  smsOptIn?: boolean;
 }
 
 interface LambdaResponse {
@@ -580,10 +581,8 @@ export const handler = async (event: { body?: string | object; queryStringParame
         console.error('Error sending booking confirmation emails (non-critical):', emailError);
       });
 
-      // Send SMS confirmation if customer provided phone number
-      // TODO: In production, check if customer has opted in to SMS before sending
-      // For now, we'll send with opt-out instructions (TCPA compliant)
-      if (bookingRequest.customerPhone) {
+      // Send SMS confirmation only if customer opted in (TCPA compliant)
+      if (bookingRequest.customerPhone && bookingRequest.smsOptIn === true) {
         const pickupDate = new Date(bookingRequest.pickupDate);
         const dateStr = pickupDate.toLocaleDateString('en-US', { 
           month: 'short', 

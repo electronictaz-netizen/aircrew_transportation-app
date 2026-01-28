@@ -242,6 +242,7 @@ const schema = a.schema({
       returnDate: a.datetime(),
       returnTime: a.string(),
       specialInstructions: a.string(),
+      smsOptIn: a.boolean().default(false), // Customer opted in to SMS at booking (TCPA)
       receivedAt: a.datetime(), // When the request was received (portal or API)
       tripId: a.id(), // Set when accepted; created Trip
       trip: a.belongsTo('Trip', 'tripId'),

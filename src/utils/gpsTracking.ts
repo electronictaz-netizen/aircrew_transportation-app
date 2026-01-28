@@ -33,6 +33,11 @@ let watchId: number | null = null;
 let currentTrackingConfig: TrackingConfig | null = null;
 let isTracking = false;
 let lastSentTime = 0;
+let consecutiveFailures = 0;
+let consecutiveFailureNotified = false;
+
+/** Message used when multiple location updates fail in a row (Step 7: driver UX) */
+export const GPS_CONSECUTIVE_FAILURE_MESSAGE = 'Location updates paused – check GPS';
 
 /**
  * Start continuous GPS tracking for an active trip.
@@ -54,10 +59,7 @@ export async function startGPSTracking(config: TrackingConfig): Promise<void> {
   // Send initial location, then start watchPosition
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      sendLocationFromPosition(config, position).catch((e) => {
-        console.error('Initial GPS send failed:', e);
-        config.onError?.(e instanceof Error ? e : new Error('Initial send failed'));
-      });
+      sendLocationFromPosition(config, position).catch(handleSendError);
       lastSentTime = Date.now();
 
       watchId = navigator.geolocation.watchPosition(
@@ -65,10 +67,7 @@ export async function startGPSTracking(config: TrackingConfig): Promise<void> {
           if (!currentTrackingConfig || !isTracking) return;
           if (Date.now() - lastSentTime < updateInterval) return;
           lastSentTime = Date.now();
-          sendLocationFromPosition(currentTrackingConfig, pos).catch((e) => {
-            console.warn('GPS update failed:', e);
-            currentTrackingConfig?.onError?.(e instanceof Error ? e : new Error('Location update failed'));
-          });
+          sendLocationFromPosition(currentTrackingConfig, pos).catch(handleSendError);
         },
         (err) => {
           console.warn('GPS watch error:', err.message);
@@ -79,23 +78,36 @@ export async function startGPSTracking(config: TrackingConfig): Promise<void> {
     },
     (err) => {
       console.warn('Initial GPS get failed:', err.message);
-      config.onError?.(new Error(err.message));
-      // Still start watch so we recover when fix is available
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          if (!currentTrackingConfig || !isTracking) return;
-          if (Date.now() - lastSentTime < updateInterval) return;
-          lastSentTime = Date.now();
-          sendLocationFromPosition(currentTrackingConfig, pos).catch((e) =>
-            console.warn('GPS update failed:', e)
-          );
-        },
-        (e) => config.onError?.(new Error(e.message)),
-        WATCH_OPTIONS
-      );
+      const msg = err.code === 1 ? 'Location permission denied. Please enable location in your browser or device settings.' : err.message;
+      config.onError?.(new Error(msg));
+      // Still start watch so we recover when fix is available (unless permission denied)
+      if (err.code !== 1) {
+        watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            if (!currentTrackingConfig || !isTracking) return;
+            if (Date.now() - lastSentTime < updateInterval) return;
+            lastSentTime = Date.now();
+            sendLocationFromPosition(currentTrackingConfig, pos).catch(handleSendError);
+          },
+          (e) => config.onError?.(new Error(e.message)),
+          WATCH_OPTIONS
+        );
+      }
     },
     WATCH_OPTIONS
   );
+}
+
+function handleSendError(e: unknown): void {
+  const err = e instanceof Error ? e : new Error('Location update failed');
+  console.warn('GPS update failed:', err);
+  consecutiveFailures += 1;
+  if (consecutiveFailures >= 3 && !consecutiveFailureNotified) {
+    consecutiveFailureNotified = true;
+    currentTrackingConfig?.onError?.(new Error(GPS_CONSECUTIVE_FAILURE_MESSAGE));
+  } else if (consecutiveFailures < 3) {
+    currentTrackingConfig?.onError?.(err);
+  }
 }
 
 /**
@@ -143,6 +155,10 @@ async function sendLocationFromPosition(config: TrackingConfig, position: Geoloc
 
   // @ts-ignore - Complex union type from Amplify Data
   await client.models.VehicleLocation.create(vehicleLocationData);
+
+  // Reset consecutive failure count on success (Step 7: driver UX)
+  consecutiveFailures = 0;
+  consecutiveFailureNotified = false;
 
   checkGeofenceAndUpdateTrip(config.tripId, coords.latitude, coords.longitude).catch((err) =>
     console.warn('Geofence check failed:', err)

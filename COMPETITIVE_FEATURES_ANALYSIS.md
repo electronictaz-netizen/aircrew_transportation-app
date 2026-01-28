@@ -1,348 +1,257 @@
 # Competitive Features Analysis: Limo Anywhere vs. Onyx Transportation App
 
-Based on analysis of [Limo Anywhere](https://www.limoanywhere.com/), here are key capabilities that could be added to enhance competitiveness:
+**Last Updated:** January 2026
+
+This document compares Onyx Transportation App to competitors (e.g. Limo Anywhere) and reflects **current product capabilities** including features added since the original analysis (booking portal, customer portal, SMS, push notifications, trip templates, bulk operations, trip notes, advanced filtering, subscriptions, and more).
+
+---
 
 ## Current Feature Comparison
 
-### ✅ Features We Already Have
+### ✅ Features We Have (Including Recently Added)
+
+#### Dispatch & Operations
 - **Dispatch Software**: Trip scheduling, driver assignment, reservation management
 - **Driver Dashboard**: Driver app for viewing assignments and recording trip completion
 - **Fleet Management**: Vehicle tracking, assignment, and management
-- **Customer Management**: Basic customer records and trip assignment
-- **Location Management**: Saved locations with categories
-- **Flight Integration**: Flight status tracking for airport trips
-- **Reporting**: Driver and trip analytics
-- **Mobile Ready**: Responsive web design
-- **Subscription Management**: Tiered plans with Stripe integration
-- **Custom Fields**: Flexible data capture
+- **Bulk Trip Operations**: Select multiple trips; bulk status update, bulk assign to driver, bulk delete, export selected or all trips to CSV
+- **Trip Templates** (Premium): Reusable trip templates; create trip from template; duplicate trip with one click
+- **Trip Notes & Internal Comments**: Manager notes, driver notes, internal-only comments; @mentions; full note history per trip
+- **Advanced Trip Filtering**: Search across flight number, locations, customers, and trip notes; filter presets (save/load); sort by multiple fields
+- **Recurring Trips**: Recurring job support (parent/child trips)
 
-### ❌ Key Missing Features from Limo Anywhere
+#### Passenger-Facing & Booking
+- **Public Booking Portal**: Public-facing booking form at `/booking/{code}`; real-time price estimates from company pricing rules; trip details (pickup/dropoff, passengers, vehicle type, flight info); booking confirmation emails; booking requests visible in Management Dashboard (Booking Requests tab)
+- **Customer Portal**: Passenger self-service at `/portal/{code}`; access via email or phone + one-time access code (sent by email and/or SMS); view upcoming trips and trip history; download receipts/invoices; request changes; rate/review trips
+- **Booking Confirmation Emails**: Automatic confirmation emails for new bookings (sendBookingEmail Lambda)
+- **Receipts & Invoices**: Receipt generator; customers can download receipts from the Customer Portal
 
-## 1. **Passenger-Facing Booking Portal** (High Priority)
-**Limo Anywhere Feature**: "Booking Software - Give your passengers the power to get pricing, book round trips, and enter flight information from their computer or phone."
+#### Notifications & Communication
+- **SMS Notifications** (Telnyx): Outbound SMS (Telnyx API); driver assignment and unassignment SMS; booking and customer portal notifications (e.g. access code delivery); inbound webhook for delivery status and opt-in/opt-out (STOP/START); TCPA-compliant opt-in workflows (e.g. Telnyx campaign guides)
+- **Email Notifications**: Booking confirmations; driver notifications (mailto or integrated); daily assignment emails; invitation emails (sendInvitationEmail)
+- **Push Notifications**: Backend (pushNotifications Lambda, VAPID); PWA support for push; drivers and users can subscribe to push for trip updates
 
-**What to Add**:
-- Public-facing booking form accessible via website
-- Real-time pricing calculator based on distance, vehicle type, and trip type
-- Round trip booking capability (outbound + return)
-- Flight information entry for automatic scheduling
-- Guest booking (no account required) vs. registered customer booking
-- Booking confirmation emails/SMS
-- Booking modification/cancellation portal
+#### Location, Mapping & GPS
+- **Location Management**: Saved locations with categories; address and airport autocomplete
+- **Vehicle Tracking Map**: Map view of active vehicle locations; GPS data at trip start/completion; display of drivers/vehicles on map (VehicleTrackingMap)
+- **Flight Integration**: Flight status tracking for airport trips; “Check Status” button; integration with flight APIs (e.g. premium tier)
 
-**Implementation Priority**: ⭐⭐⭐⭐⭐ (Critical for competitiveness)
+#### Customer, Company & Multi-Tenant
+- **Customer Management**: Customer records; trip assignment; customer filter and search
+- **Multi-Tenant / Company Onboarding**: Multiple companies; company-level settings; per-company booking code and customer portal; admin company override
+- **Subscription & Billing**: Tiered plans (Free, Basic, Premium) with Stripe; 14-day free trial; Stripe Checkout and Customer Portal; subscription gating (e.g. trip templates, flight API, premium SMS)
 
----
-
-## 2. **Passenger Web/Mobile App** (High Priority)
-**Limo Anywhere Feature**: "Passenger Web App - Book rides, manage accounts, and track in-progress rides with status updates and driver GPS location."
-
-**What to Add**:
-- Passenger login/registration system
-- View upcoming bookings
-- Real-time trip tracking (see driver location on map)
-- Trip status updates (Driver Assigned, En Route, Arrived, In Progress, Completed)
-- Push notifications for trip updates
-- Trip history and receipts
-- Rebook favorite trips
-- Rate/review driver after trip
-- Contact driver/dispatcher via in-app messaging
-
-**Implementation Priority**: ⭐⭐⭐⭐⭐ (Differentiator feature)
+#### Reporting, UX & Technical
+- **Reporting**: Driver and trip analytics; Driver Reports; Trip Reports; export to CSV (bulk export with full trip details)
+- **Mobile Ready**: Responsive web design; PWA (installable, offline-capable, push)
+- **Custom Fields**: Flexible custom data fields for trips and drivers
+- **Theme**: Light/Dark mode
+- **Accessibility**: Skip links, ARIA, keyboard support
 
 ---
 
-## 3. **Real-Time GPS Vehicle Tracking** (High Priority)
-**Limo Anywhere Feature**: "Professional Driver App - Real-time GPS, track ride progress, track and send jobs to drivers."
+## Key Gaps vs. Limo Anywhere (Still Missing or Partial)
 
-**Current State**: We record GPS at trip start/completion, but don't have continuous tracking.
+### 1. **Real-Time Continuous GPS Tracking** (High Priority)
 
-**What to Add**:
-- Continuous GPS tracking during active trips (every 30-60 seconds)
-- Real-time vehicle location on map for dispatchers
-- Live ETA calculations based on current location
-- Route optimization suggestions
-- Geofencing alerts (driver arrives at pickup/dropoff)
-- Historical route playback for completed trips
-- Integration with Google Maps/Mapbox for turn-by-turn navigation
+**Limo Anywhere:** Continuous GPS during active trips; live vehicle location for dispatchers; live ETA; geofencing (arrival at pickup/dropoff).
 
-**Implementation Priority**: ⭐⭐⭐⭐⭐ (Core feature for modern transportation apps)
+**Current State:** We have vehicle locations at trip start/completion and a vehicle tracking map. We do **not** yet have:
+- Continuous GPS polling every 30–60 seconds during active trips
+- Live ETA from current position
+- Geofencing alerts (driver arrived at pickup/dropoff)
+- Historical route playback
 
----
+**What to Add:** Continuous location updates during active trips; dispatcher live map; ETA and geofencing; optional route replay.
 
-## 4. **Integrated Payment Processing for Passengers** (High Priority)
-**Limo Anywhere Feature**: "Limo Anywhere Pay - Single payment solution to solve all your business needs."
-
-**Current State**: We have Stripe for subscription payments, but not passenger trip payments.
-
-**What to Add**:
-- Passenger payment at booking (pre-payment)
-- Payment on completion (post-payment)
-- Saved payment methods for registered customers
-- Split payment capability (multiple passengers)
-- Automatic invoicing and receipts
-- Payment reminders for unpaid trips
-- Refund processing
-- Payment method management in passenger app
-
-**Implementation Priority**: ⭐⭐⭐⭐ (Revenue driver)
+**Priority:** ⭐⭐⭐⭐⭐
 
 ---
 
-## 5. **SMS Notifications** (Medium Priority)
-**Limo Anywhere Feature**: SMS alerts for bookings, confirmations, and updates.
+### 2. **Integrated Payment Processing for Passengers** (High Priority)
 
-**What to Add**:
-- SMS booking confirmations
-- SMS trip reminders (24 hours, 1 hour before)
-- SMS driver assignment notifications
-- SMS "Driver En Route" alerts
-- SMS "Driver Arrived" notifications
-- SMS trip completion confirmations
-- SMS payment receipts
-- Two-way SMS for customer support
-- SMS opt-in/opt-out management
+**Limo Anywhere:** Passenger payment at booking or on completion; saved payment methods; invoicing and receipts; refunds.
 
-**Implementation Priority**: ⭐⭐⭐⭐ (Improves customer experience)
+**Current State:** Stripe is used for **subscription** billing only. We do **not** yet have:
+- Passenger payment at booking (pre-pay) or on completion (post-pay)
+- Saved payment methods for customers
+- Automatic trip invoicing and payment collection
+- Refund workflow
+
+**What to Add:** Stripe Payment Intents (or Connect) for trip payments; optional pre-pay at booking; post-trip invoicing; saved cards in customer portal; refund handling.
+
+**Priority:** ⭐⭐⭐⭐
 
 ---
 
-## 6. **CRM / Lead Management** (Medium Priority)
-**Limo Anywhere Feature**: "Lead Quote Close (CRM)" - Customer relationship management.
+### 3. **Passenger Real-Time Trip Tracking** (Medium–High)
 
-**Current State**: Basic customer management exists, but lacks CRM features.
+**Limo Anywhere:** Passenger sees driver location on map; status updates (En Route, Arrived, In Progress, Completed); push notifications for status changes.
 
-**What to Add**:
-- Lead capture from website inquiries
-- Quote generation and tracking
-- Lead scoring and prioritization
-- Follow-up task management
-- Email campaign integration
-- Customer communication history
-- Sales pipeline tracking
-- Quote-to-booking conversion tracking
-- Customer lifetime value analytics
+**Current State:** Customer portal shows trip status and history. We do **not** yet have:
+- Live driver/vehicle position on a map for the passenger during the trip
+- Real-time status push (e.g. “Driver en route”) with map update
+- In-app messaging with driver/dispatcher
 
-**Implementation Priority**: ⭐⭐⭐ (Business growth tool)
+**What to Add:** Live trip view with driver location; status push notifications; optional in-app messaging.
+
+**Priority:** ⭐⭐⭐⭐
 
 ---
 
-## 7. **Online Pricing/Quote System** (Medium Priority)
-**Limo Anywhere Feature**: "Get pricing, book round trips" - Dynamic pricing engine.
+### 4. **Online Pricing/Quote System** (Medium)
 
-**What to Add**:
-- Distance-based pricing calculator
-- Vehicle type pricing (sedan, SUV, limo, van, etc.)
-- Time-of-day pricing (peak hours, off-peak)
-- Round trip pricing (discount for round trips)
-- Multi-stop trip pricing
-- Wait time pricing
-- Surge pricing for high-demand periods
-- Custom pricing rules per company
-- Quote generation with expiration dates
-- Quote acceptance tracking
+**Limo Anywhere:** Distance-based pricing; vehicle-type pricing; round-trip and multi-stop pricing; quote generation with expiration.
 
-**Implementation Priority**: ⭐⭐⭐⭐ (Competitive necessity)
+**Current State:** We have company-level pricing rules and real-time price estimates on the booking portal. Gaps may include:
+- Full distance-based calculator (e.g. integrated maps API for distance)
+- Round-trip discount rules and multi-stop pricing
+- Formal “quote” object with expiration and acceptance tracking
+- Surge or time-of-day pricing
+
+**What to Add:** Richer pricing engine (distance, vehicle, round-trip, multi-stop); quote workflow (generate → send → accept/expire).
+
+**Priority:** ⭐⭐⭐⭐
 
 ---
 
-## 8. **Affiliate Network** (Low Priority)
-**Limo Anywhere Feature**: "Affiliate Network - Find & work with other Limo Anywhere customers."
+### 5. **CRM / Lead Management** (Medium)
 
-**What to Add**:
-- Network of transportation companies
-- Referral system for overflow trips
-- Commission tracking
-- Partner company directory
-- Automated trip forwarding
-- Revenue sharing management
-- Partner rating/review system
+**Limo Anywhere:** Lead capture; quote tracking; lead scoring; follow-up tasks; communication history; pipeline and conversion tracking.
 
-**Implementation Priority**: ⭐⭐ (Nice-to-have, complex to implement)
+**Current State:** We have customer records and trip history. We do **not** have:
+- Dedicated lead/quote objects and pipeline
+- Lead scoring or follow-up task management
+- Email/SMS campaign integration for leads
+- Quote-to-booking conversion analytics
 
----
+**What to Add:** Lead and quote entities; pipeline stages; tasks and reminders; basic campaign tracking.
 
-## 9. **Route Optimization** (Medium Priority)
-**Limo Anywhere Feature**: Implied through dispatch software capabilities.
-
-**What to Add**:
-- Multi-stop route optimization
-- Driver assignment optimization (closest driver)
-- Batch trip assignment
-- Estimated time calculations
-- Traffic-aware routing
-- Fuel cost optimization
-- Driver workload balancing
-
-**Implementation Priority**: ⭐⭐⭐ (Operational efficiency)
+**Priority:** ⭐⭐⭐
 
 ---
 
-## 10. **Automated Dispatch** (Medium Priority)
-**Limo Anywhere Feature**: Advanced dispatch automation.
+### 6. **Route Optimization & Automated Dispatch** (Medium)
 
-**What to Add**:
-- Auto-assign drivers based on proximity, availability, and workload
-- Auto-assign vehicles based on passenger count and vehicle capacity
-- Smart scheduling conflict detection
-- Automatic trip reminders
-- Automatic status updates
-- Auto-complete trips after dropoff
-- Automated follow-up communications
+**Limo Anywhere:** Multi-stop optimization; auto-assign by proximity/workload; batch assignment; traffic-aware routing.
 
-**Implementation Priority**: ⭐⭐⭐ (Time saver for dispatchers)
+**Current State:** Manual driver assignment; no route optimization or auto-dispatch.
+
+**What to Add:** Closest-driver suggestions; multi-stop route ordering; optional auto-assign rules; traffic-aware ETA (if maps API integrated).
+
+**Priority:** ⭐⭐⭐
 
 ---
 
-## 11. **Digital Marketing Tools** (Low Priority)
-**Limo Anywhere Feature**: "Digital Marketing Solutions"
+### 7. **Affiliate Network** (Low)
 
-**What to Add**:
-- Email marketing campaigns
-- SMS marketing campaigns
-- Promotional code system
-- Referral program
-- Customer retention campaigns
-- Abandoned booking recovery
-- Review request automation
+**Limo Anywhere:** Partner network; referral/overflow trips; commission and revenue sharing.
 
-**Implementation Priority**: ⭐⭐ (Can be handled externally)
+**Current State:** Not implemented.
+
+**Priority:** ⭐⭐
 
 ---
 
-## 12. **Advanced Reporting & Analytics** (Medium Priority)
-**Enhancement to Existing Feature**
+### 8. **Digital Marketing Tools** (Low)
 
-**What to Add**:
-- Revenue analytics (by driver, vehicle, customer, route)
-- Profit margin analysis
-- Customer acquisition cost
-- Customer lifetime value
-- Peak time analysis
-- Route profitability
-- Driver performance metrics
-- Vehicle utilization rates
-- Booking source tracking
-- Conversion funnel analysis
-- Custom report builder
-- Scheduled report delivery
+**Limo Anywhere:** Email/SMS campaigns; promo codes; referral program; abandoned booking recovery; review requests.
 
-**Implementation Priority**: ⭐⭐⭐ (Business intelligence)
+**Current State:** We have transactional SMS and email (bookings, drivers, portal). No marketing campaigns or promo codes.
+
+**Priority:** ⭐⭐
 
 ---
 
-## 13. **Multi-Language Support** (Low Priority)
-**What to Add**:
-- Internationalization (i18n) support
-- Multiple language options
-- Currency conversion
-- Timezone management
+### 9. **Advanced Reporting & Analytics** (Medium)
 
-**Implementation Priority**: ⭐⭐ (If targeting international market)
+**Limo Anywhere:** Revenue by driver/vehicle/customer/route; profit margin; CAC; LTV; peak-time analysis; custom report builder; scheduled reports.
 
----
+**Current State:** Driver and trip reports; CSV export. We do **not** have:
+- Revenue/profit analytics
+- CAC/LTV or booking funnel analytics
+- Custom report builder or scheduled report delivery
 
-## 14. **Mobile Apps (Native)** (Medium Priority)
-**Current State**: Progressive Web App (PWA) - works on mobile but not native apps.
+**What to Add:** Revenue and margin reports; key business metrics; optional custom builder and scheduled emails.
 
-**What to Add**:
-- Native iOS app for drivers
-- Native Android app for drivers
-- Native iOS app for passengers
-- Native Android app for passengers
-- Push notifications
-- Offline mode
-- Better GPS tracking in background
-
-**Implementation Priority**: ⭐⭐⭐ (Better user experience than PWA)
+**Priority:** ⭐⭐⭐
 
 ---
 
-## 15. **Website CMS Integration** (Low Priority)
-**Limo Anywhere Feature**: "Website CMS - Mobile-responsive website templates and easy-to-use content management system."
+### 10. **Native Mobile Apps** (Medium)
 
-**What to Add**:
-- Integrated booking widget for company websites
-- White-label booking pages
-- Customizable booking forms
-- Company branding options
-- SEO optimization tools
+**Current State:** PWA (installable, offline, push). No native iOS/Android apps.
 
-**Implementation Priority**: ⭐⭐ (Can use existing marketing site)
+**What to Add:** Native driver and/or passenger apps if needed for background GPS, app-store presence, or platform-specific UX.
+
+**Priority:** ⭐⭐⭐
 
 ---
 
-## Recommended Implementation Roadmap
+### 11. **Multi-Language & International** (Low)
 
-### Phase 1: Core Competitive Features (Months 1-3)
-1. **Passenger-Facing Booking Portal** - Critical for customer acquisition
-2. **Real-Time GPS Tracking** - Core differentiator
-3. **SMS Notifications** - Improves customer experience
-4. **Online Pricing Calculator** - Competitive necessity
+**What to Add:** i18n; multiple languages; currency/timezone handling.
 
-### Phase 2: Enhanced Experience (Months 4-6)
-5. **Passenger Web/Mobile App** - Customer retention tool
-6. **Integrated Payment Processing** - Revenue driver
-7. **Route Optimization** - Operational efficiency
-8. **Automated Dispatch** - Time saver
-
-### Phase 3: Business Growth (Months 7-9)
-9. **CRM / Lead Management** - Sales growth
-10. **Advanced Reporting & Analytics** - Business intelligence
-11. **Native Mobile Apps** - Better UX
-
-### Phase 4: Advanced Features (Months 10-12)
-12. **Affiliate Network** - Market expansion
-13. **Digital Marketing Tools** - Customer acquisition
-14. **Multi-Language Support** - International expansion
+**Priority:** ⭐⭐
 
 ---
 
-## Technical Considerations
+## Summary: What We Added Since the Original Analysis
 
-### For Real-Time GPS Tracking:
-- **AWS Location Services** (Amazon Location) for mapping and geofencing
-- **WebSocket connections** (AWS API Gateway WebSocket) for real-time updates
-- **Background location tracking** in mobile apps
-- **Battery optimization** for continuous tracking
+| Area | Added |
+|------|--------|
+| **Booking** | Public booking portal with pricing, confirmation emails, booking requests in dashboard |
+| **Passenger app** | Customer portal with access code (email/SMS), trip history, receipts, change requests, ratings |
+| **SMS** | Telnyx outbound/inbound, driver and booking/portal SMS, opt-in/opt-out, TCPA-aware workflows |
+| **Notifications** | Push notifications backend; PWA push; daily assignment emails |
+| **Operations** | Trip templates (Premium); bulk status/assign/delete; CSV export; trip notes and internal comments; advanced filters and presets |
+| **Subscriptions** | Free / Basic / Premium with Stripe; trial; feature gating |
+| **Multi-tenant** | Company-level settings; per-company booking and portal; admin override |
+| **Map/GPS** | Vehicle tracking map; GPS at trip start/end (no continuous live tracking yet) |
+| **Receipts** | Receipt generator; download from customer portal |
 
-### For Passenger Booking Portal:
-- **Public API endpoints** (no authentication required for initial booking)
-- **Rate limiting** to prevent abuse
-- **CAPTCHA** for spam protection
-- **Email verification** for bookings
+---
 
-### For SMS Notifications:
-- **AWS SNS** (Simple Notification Service) or **Twilio** integration
-- **SMS templates** for different notification types
-- **Opt-in/opt-out management** (TCPA compliance)
-- **Delivery status tracking**
+## Recommended Implementation Roadmap (Updated)
 
-### For Payment Processing:
-- **Stripe Connect** for marketplace payments
-- **Stripe Payment Intents** for secure payment handling
-- **Webhook handling** for payment status updates
-- **PCI compliance** considerations
+### Phase 1: Core Gaps (Next 3–6 months)
+1. **Real-time continuous GPS** – Live vehicle position and optional ETA/geofencing
+2. **Passenger trip payments** – Stripe-based trip pay (pre/post); saved methods; receipts
+3. **Passenger live trip view** – Driver location on map for passenger + status push
+
+### Phase 2: Growth & Efficiency (6–12 months)
+4. **Richer pricing & quotes** – Distance/vehicle/round-trip; quote lifecycle
+5. **Route optimization / auto-dispatch** – Closest driver, batch assign, multi-stop order
+6. **Advanced reporting** – Revenue, margin, funnel, optional custom/scheduled reports
+
+### Phase 3: Sales & Scale (12+ months)
+7. **CRM / Lead management** – Leads, quotes, pipeline, follow-ups
+8. **Native mobile apps** – If required for market
+9. **Marketing tools** – Promo codes, campaigns, review requests (or integrate with external tools)
 
 ---
 
 ## Competitive Advantages to Maintain
 
-1. **Flight Integration** - We already have this, Limo Anywhere may not emphasize it as much
-2. **Custom Fields** - Flexibility for different business models
-3. **Multi-Vehicle Assignment** - Advanced feature for large groups
-4. **AWS Infrastructure** - Enterprise-grade reliability
-5. **Modern Tech Stack** - React, TypeScript, AWS Amplify Gen 2
+1. **Flight integration** – Flight status and airport-focused workflow
+2. **Customer portal with access codes** – No passenger login required; email/SMS code
+3. **Trip notes and internal comments** – Strong operational communication
+4. **Bulk operations and CSV export** – Efficient for large fleets
+5. **Trip templates and duplicate trip** – Fast repeat and template-based creation
+6. **Multi-tenant and company onboarding** – Clear separation and branding per company
+7. **Modern stack** – React, TypeScript, AWS Amplify Gen 2, Stripe, Telnyx
+8. **PWA** – Installable, offline-capable, push without native apps
 
 ---
 
 ## Conclusion
 
-To compete effectively with Limo Anywhere, the highest priority additions are:
-1. **Passenger booking portal** (critical for customer acquisition)
-2. **Real-time GPS tracking** (core differentiator)
-3. **Passenger app** (customer retention)
-4. **SMS notifications** (improves experience)
-5. **Payment processing** (revenue driver)
+Since the original competitive analysis, Onyx has added a **public booking portal**, **customer portal** (with access codes and receipts), **SMS (Telnyx)** for drivers and passengers, **push notifications**, **trip templates**, **bulk operations**, **trip notes**, **advanced filtering**, **tiered subscriptions**, and **vehicle map display**. These close many of the earlier gaps vs. Limo Anywhere.
 
-Focusing on these five features would significantly improve competitiveness while maintaining the app's current strengths in flight integration and flexibility.
+**Highest-impact remaining gaps:**
+1. **Real-time continuous GPS** – Live tracking and ETA/geofencing
+2. **Passenger trip payments** – Pay per trip (pre/post) and saved payment methods
+3. **Passenger live trip view** – See driver on map and get status updates in real time
+4. **Richer pricing and quotes** – Distance, round-trip, and quote workflow
+
+Focusing on these four areas will further align Onyx with competitor offerings while keeping our strengths in flight integration, customer portal, operations (bulk, notes, templates), and multi-tenant subscription model.

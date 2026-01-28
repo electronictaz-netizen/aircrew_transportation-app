@@ -101,6 +101,7 @@ export async function createBookingViaAPI(bookingData: {
   returnDate?: string;
   returnTime?: string;
   specialInstructions?: string;
+  smsOptIn?: boolean;
 }): Promise<BookingResponse> {
   if (!BOOKING_API_URL) {
     return {

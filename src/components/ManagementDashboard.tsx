@@ -465,8 +465,18 @@ function ManagementDashboard() {
       const { data: existing } = await client.models.Customer.list({
         filter: { companyId: { eq: companyId }, email: { eq: email } },
       });
+      const bookingSmsOptIn = r.smsOptIn === true;
+      const smsOptInAt = bookingSmsOptIn ? new Date().toISOString() : undefined;
       if (existing?.length) {
         customerId = existing[0].id;
+        // Copy SMS opt-in from booking to customer so future trip SMS can use it
+        if (bookingSmsOptIn) {
+          await client.models.Customer.update({
+            id: existing[0].id,
+            smsOptIn: true,
+            smsOptInAt: smsOptInAt ?? null,
+          });
+        }
       } else {
         const { data: created } = await client.models.Customer.create({
           companyId,
@@ -475,6 +485,8 @@ function ManagementDashboard() {
           phone: r.customerPhone,
           companyName: r.customerCompany,
           isActive: true,
+          smsOptIn: bookingSmsOptIn,
+          smsOptInAt: smsOptInAt ?? undefined,
         });
         customerId = created?.id;
       }

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { BookOpen, FileText, Users, CreditCard, Globe } from 'lucide-react';
+import { BookOpen, FileText, Users, CreditCard, Globe, MapPin, User } from 'lucide-react';
 import './HelpDialog.css';
 
 interface HelpDialogProps {
@@ -217,6 +217,18 @@ function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
       icon: <Globe className="w-5 h-5" />,
       content: '',
     },
+    {
+      id: 'customer-portal',
+      title: 'Customer Portal & Trip Tracking',
+      icon: <MapPin className="w-5 h-5" />,
+      content: '',
+    },
+    {
+      id: 'book-a-trip',
+      title: 'How to Book a Trip (For Customers)',
+      icon: <User className="w-5 h-5" />,
+      content: '',
+    },
   ];
 
   useEffect(() => {
@@ -297,12 +309,12 @@ function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
               <div className="help-external-links">
                 <p className="help-link-text">For more documentation, visit:</p>
                 <a
-                  href="https://tazsoftware.biz"
+                  href="https://onyxdispatch.us"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="help-external-link"
                 >
-                  tazsoftware.biz
+                  onyxdispatch.us
                 </a>
               </div>
               <div className="help-support-section">

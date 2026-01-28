@@ -1,6 +1,6 @@
 # Customer Portal User Guide
 
-Welcome to the Customer Portal! This guide will help you access and use the portal to view your trips, download receipts, request changes, and provide feedback.
+Welcome to the Customer Portal! This guide will help you access and use the portal to view your trips, track your driver in real time, download receipts, request changes, and provide feedback.
 
 ## Table of Contents
 
@@ -22,6 +22,7 @@ Welcome to the Customer Portal! This guide will help you access and use the port
 The Customer Portal is a secure, self-service website where you can:
 - ✅ View your upcoming trips
 - ✅ See your trip history
+- ✅ Track your driver's location when your trip is in progress
 - ✅ Download receipts and invoices
 - ✅ Request changes to upcoming trips
 - ✅ Rate and review completed trips
@@ -30,7 +31,7 @@ The Customer Portal is a secure, self-service website where you can:
 
 1. **Get Your Portal Link**
    - Your transportation provider will send you a link
-   - Or visit: `https://onyxdispatch.us/portal/[CODE]`
+   - Or visit: **https://onyxdispatch.us/portal/[CODE]**
    - Replace `[CODE]` with your provider's booking code
 
 2. **Bookmark the Link**
@@ -102,7 +103,7 @@ The Customer Portal is a secure, self-service website where you can:
 
 - **Unassigned**: Trip created but no driver assigned yet
 - **Assigned**: Driver has been assigned
-- **In Progress**: Trip is currently happening
+- **In Progress**: Trip is currently happening (live tracking available)
 - **Completed**: Trip has been finished
 
 ---
@@ -237,7 +238,7 @@ Your receipt includes:
 
 **Check:**
 - Internet connection
-- Portal link is correct
+- Portal link is correct (e.g. **https://onyxdispatch.us/portal/YOURCODE**)
 - Browser is up to date
 - Try a different browser
 
@@ -316,7 +317,7 @@ If you need assistance:
 - 📧 Email: Contact your provider's support email
 - 📞 Phone: Call your provider's customer service line
 - 🌐 Website: Visit your provider's website for support
-- 💬 Portal: Access the portal at https://onyxdispatch.us/portal/{BOOKING_CODE}
+- 💬 Portal: Access the portal at **https://onyxdispatch.us/portal/[YOUR_CODE]**
 
 ### Common Questions
 
@@ -330,7 +331,7 @@ A: Access codes expire after use. Request a new one if needed.
 A: No, contact your provider directly to cancel trips.
 
 **Q: Can I book new trips through the portal?**
-A: No, the portal is for viewing existing trips only. Use the booking portal or contact your provider for new bookings.
+A: No, the portal is for viewing existing trips only. Use your provider's booking link (e.g. **https://onyxdispatch.us/booking/[CODE]**) or contact your provider for new bookings.
 
 ---
 

@@ -28,6 +28,7 @@ interface BookingFormData {
   
   // Additional
   specialInstructions?: string;
+  smsOptIn: boolean;
 }
 
 export default function BookingPortal() {
@@ -59,6 +60,7 @@ export default function BookingPortal() {
     returnDate: '',
     returnTime: '',
     specialInstructions: '',
+    smsOptIn: false,
   });
 
   const [pricing, setPricing] = useState<PricingResult | null>(null);
@@ -174,6 +176,7 @@ export default function BookingPortal() {
         returnDate: formData.returnDate,
         returnTime: formData.returnTime,
         specialInstructions: formData.specialInstructions,
+        smsOptIn: formData.smsOptIn,
       });
 
       if (!result.success || !result.bookingId) {
@@ -321,6 +324,20 @@ export default function BookingPortal() {
                 value={formData.customerCompany}
                 onChange={(e) => handleInputChange('customerCompany', e.target.value)}
               />
+            </div>
+            <div className="form-group form-group-full">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.smsOptIn}
+                  onChange={(e) => handleInputChange('smsOptIn', e.target.checked)}
+                  aria-describedby="sms-opt-in-desc"
+                />
+                <span className="checkbox-text">
+                  I agree to receive SMS notifications about my trip (booking confirmations, reminders, driver updates). Reply STOP to opt out at any time.
+                </span>
+              </label>
+              <span id="sms-opt-in-desc" className="form-hint">Optional. We'll send a text to your phone when your booking is received and for trip updates.</span>
             </div>
           </div>
         </section>
