@@ -213,7 +213,7 @@ export const handler = async (event: {
         if (!email && !phone) {
           return {
             statusCode: 400,
-            headers,
+            headers: responseHeaders,
             body: JSON.stringify({ error: 'Email or phone is required' }),
           };
         }
