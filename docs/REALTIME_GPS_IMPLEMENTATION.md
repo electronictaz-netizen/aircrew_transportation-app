@@ -138,6 +138,8 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 2. If no TTL, add a scheduled Lambda that deletes (or moves to cold storage) `VehicleLocation` rows with `timestamp` older than 30–60 days.
 3. Document retention policy for customers.
 
+**Implemented (Step 3):** VehicleLocation schema has optional `ttl` (integer, Unix seconds). Each location create sets `ttl = now + 60 days`. In `amplify/backend.ts`, TTL is enabled on the VehicleLocation DynamoDB table with attribute name `ttl`. DynamoDB will automatically delete items after expiration (typically within a few days of the TTL time).
+
 ---
 
 ### 6. Driver UX and reliability (low–medium)

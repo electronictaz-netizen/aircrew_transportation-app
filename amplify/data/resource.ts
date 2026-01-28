@@ -364,6 +364,7 @@ const schema = a.schema({
       speed: a.float(), // Speed in meters per second (if available)
       heading: a.float(), // Heading/bearing in degrees (0-360, if available)
       timestamp: a.datetime().required(), // When this location was recorded
+      ttl: a.integer(), // DynamoDB TTL: Unix seconds when item expires (e.g. 60 days for retention)
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),

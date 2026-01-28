@@ -74,7 +74,10 @@ async function sendLocationUpdate(config: TrackingConfig): Promise<void> {
       maximumAge: 5000, // Use location no older than 5 seconds
     });
 
-    // Create vehicle location record
+    // Create vehicle location record (ttl = 60 days from now for DynamoDB TTL retention)
+    const RETENTION_DAYS = 60;
+    const ttlSeconds = Math.floor(Date.now() / 1000) + RETENTION_DAYS * 24 * 60 * 60;
+
     const vehicleLocationData: any = {
       companyId: config.companyId,
       tripId: config.tripId,
@@ -82,6 +85,7 @@ async function sendLocationUpdate(config: TrackingConfig): Promise<void> {
       latitude: location.latitude,
       longitude: location.longitude,
       timestamp: new Date().toISOString(),
+      ttl: ttlSeconds,
     };
 
     // Add optional fields if available

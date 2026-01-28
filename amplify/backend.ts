@@ -181,8 +181,11 @@ backend.pushNotifications.addEnvironment('VAPID_PUBLIC_KEY', process.env.VAPID_P
 backend.pushNotifications.addEnvironment('VAPID_PRIVATE_KEY', process.env.VAPID_PRIVATE_KEY || '');
 backend.pushNotifications.addEnvironment('VAPID_EMAIL', process.env.VAPID_EMAIL || 'noreply@onyxdispatch.us');
 
-// Note: In Amplify Gen 2, functions defined in the backend automatically get
-// IAM permissions to access the data resource. No additional configuration needed.
+// VehicleLocation data retention: enable DynamoDB TTL so items expire after 60 days
+const amplifyTables = (backend.data.resources as { cfnResources?: { amplifyDynamoDbTables?: Record<string, { timeToLiveAttribute?: { attributeName: string; enabled: boolean } } } } }).cfnResources?.amplifyDynamoDbTables;
+if (amplifyTables?.['VehicleLocation']) {
+  amplifyTables['VehicleLocation'].timeToLiveAttribute = { attributeName: 'ttl', enabled: true };
+}
 
 // Add Function URL for sendInvitationEmail
 // Note: Function URLs need to be created manually in AWS Lambda Console
