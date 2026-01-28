@@ -40,6 +40,7 @@ const schema = a.schema({
       tripNotes: a.hasMany('TripNote', 'companyId'),
       modificationRequests: a.hasMany('TripModificationRequest', 'companyId'),
       tripRatings: a.hasMany('TripRating', 'companyId'),
+      pushSubscriptions: a.hasMany('PushSubscription', 'companyId'),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
