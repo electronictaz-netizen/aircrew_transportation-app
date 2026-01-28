@@ -6,7 +6,15 @@
 
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { createHmac, createHash } from 'crypto';
-import webpush from 'web-push';
+
+// Dynamic import for web-push (CommonJS module)
+let webpush: any = null;
+async function getWebPush() {
+  if (!webpush) {
+    webpush = (await import('web-push')).default;
+  }
+  return webpush;
+}
 
 // Note: The Lambda function needs IAM permissions to access the Data API
 // These permissions are automatically granted when the function is defined in backend.ts
@@ -135,7 +143,7 @@ async function graphqlRequest(query: string, variables: Record<string, any> = {}
 /**
  * Initialize web-push with VAPID keys
  */
-function initializeWebPush(): void {
+async function initializeWebPush(): Promise<void> {
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
   const vapidEmail = process.env.VAPID_EMAIL || 'noreply@onyxdispatch.us';
@@ -145,7 +153,8 @@ function initializeWebPush(): void {
     return;
   }
 
-  webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
+  const wp = await getWebPush();
+  wp.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
   console.log('[PushNotifications] Web-push initialized with VAPID keys');
 }
 
@@ -320,7 +329,7 @@ async function handleUnsubscribe(request: UnsubscribeRequest): Promise<LambdaRes
  */
 async function handleSend(request: SendNotificationRequest): Promise<LambdaResponse> {
   try {
-    initializeWebPush();
+    await initializeWebPush();
 
     const { userId, companyId, payload } = request;
 
@@ -387,7 +396,8 @@ async function handleSend(request: SendNotificationRequest): Promise<LambdaRespo
             },
           };
 
-          await webpush.sendNotification(pushSubscription, JSON.stringify(payload));
+          const wp = await getWebPush();
+          await wp.sendNotification(pushSubscription, JSON.stringify(payload));
 
           // Update lastUsed timestamp
           const updateMutation = `
