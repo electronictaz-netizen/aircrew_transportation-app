@@ -119,36 +119,30 @@ export async function clearAllCaches(): Promise<void> {
 }
 
 /**
- * Enhanced sign out function that clears caches before signing out
+ * Enhanced sign out function: signs out immediately, then clears caches in the background.
+ * Sign-out is never blocked by cache clearing (e.g. IndexedDB can hang in some browsers).
  */
 export async function signOutWithCacheClear(
   signOutFn: () => void | Promise<void>
 ): Promise<void> {
-  try {
-    // Clear all caches first
-    await clearAllCaches();
-    
-    // Wait a moment to ensure cache clearing completes
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Call the original sign out function
-    if (typeof signOutFn === 'function') {
-      await signOutFn();
-    }
-    
-    // After sign out, force a hard reload to ensure clean state
-    // Note: This may not execute if signOut redirects, but it's a safety measure
-    setTimeout(() => {
-      if (window.location.href.includes('sign-in') || !document.querySelector('[data-amplify-authenticator]')) {
-        // If we're on sign-in page or authenticator is gone, do a hard reload
-        window.location.href = window.location.origin;
-      }
-    }, 1000);
-  } catch (error) {
-    console.error('Error during sign out with cache clear:', error);
-    // Still try to sign out even if cache clearing failed
-    if (typeof signOutFn === 'function') {
-      await signOutFn();
-    }
+  const doSignOut = typeof signOutFn === 'function' ? signOutFn : null;
+  if (!doSignOut) {
+    // No sign-out function: still clear caches and redirect
+    clearAllCaches().catch((err) => console.error('Cache clear error:', err));
+    window.location.href = window.location.origin;
+    return;
   }
+
+  try {
+    // Sign out first so the UI updates immediately and is never blocked by cache clearing
+    await Promise.resolve(doSignOut());
+  } catch (error) {
+    console.error('Error during sign out:', error);
+  }
+
+  // Redirect to show sign-in screen (Amplify may not always replace the view)
+  window.location.href = window.location.origin;
+
+  // Clear caches in the background so next load is clean
+  clearAllCaches().catch((err) => console.error('Cache clear error:', err));
 }

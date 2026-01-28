@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { signOut as amplifySignOut } from 'aws-amplify/auth';
+import { useAuthenticator } from '@aws-amplify/ui-react';
 import { signOutWithCacheClear } from '../utils/cacheClear';
 import { useAdminAccess } from '../utils/adminAccess';
 import { useCompany } from '../contexts/CompanyContext';
@@ -12,11 +14,17 @@ import { HelpCircle, Bell } from 'lucide-react';
 import './Navigation.css';
 
 interface NavigationProps {
-  signOut: () => void;
-  user: any;
+  signOut?: () => void;
+  user?: any;
 }
 
-function Navigation({ signOut, user }: NavigationProps) {
+function Navigation({ signOut: signOutProp, user: userProp }: NavigationProps) {
+  const { user: userFromAuth } = useAuthenticator((context) => [context.user]);
+  const user = userProp ?? userFromAuth;
+
+  // Use Amplify auth signOut directly so Sign Out always works (not dependent on Authenticator prop)
+  const signOut = signOutProp ?? (() => amplifySignOut());
+
   const location = useLocation();
   const hasAdminAccess = useAdminAccess();
   const { company, userRole } = useCompany();
@@ -24,8 +32,8 @@ function Navigation({ signOut, user }: NavigationProps) {
   const [showPushNotificationSetup, setShowPushNotificationSetup] = useState(false);
   const canAccessManagementView = canAccessManagement(userRole);
 
-  const handleSignOut = async () => {
-    await signOutWithCacheClear(signOut);
+  const handleSignOut = () => {
+    signOutWithCacheClear(signOut);
   };
 
   // Get display name - use displayName if set, otherwise use name, otherwise default
