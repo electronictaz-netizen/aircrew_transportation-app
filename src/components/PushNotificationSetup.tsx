@@ -14,6 +14,8 @@ import {
   getPushSubscription,
   setupPushNotificationListener,
 } from '../utils/pushNotifications';
+import { useCompany } from '../contexts/CompanyContext';
+import { getCurrentUser } from 'aws-amplify/auth';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import './PushNotificationSetup.css';
@@ -29,17 +31,29 @@ export default function PushNotificationSetup({
   onOpenChange,
   onSubscribed,
 }: PushNotificationSetupProps) {
+  const { companyId } = useCompany();
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
+      loadCurrentUser();
       checkSupport();
     }
   }, [open]);
+
+  const loadCurrentUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setUserId(user.userId);
+    } catch (error) {
+      console.error('Error loading current user:', error);
+    }
+  };
 
   const checkSupport = async () => {
     const supported = isPushNotificationSupported();
@@ -80,12 +94,17 @@ export default function PushNotificationSetup({
   };
 
   const handleSubscribe = async () => {
+    if (!userId || !companyId) {
+      setError('User ID or Company ID not available. Please refresh and try again.');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
 
       const registration = await registerServiceWorkerForPush();
-      const subscription = await subscribeToPushNotifications(registration);
+      const subscription = await subscribeToPushNotifications(registration, userId, companyId);
 
       if (subscription) {
         setIsSubscribed(true);
@@ -108,12 +127,17 @@ export default function PushNotificationSetup({
   };
 
   const handleUnsubscribe = async () => {
+    if (!userId || !companyId) {
+      setError('User ID or Company ID not available. Please refresh and try again.');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
 
       const registration = await registerServiceWorkerForPush();
-      await unsubscribeFromPushNotifications(registration);
+      await unsubscribeFromPushNotifications(registration, userId, companyId);
       setIsSubscribed(false);
     } catch (err) {
       console.error('Error unsubscribing:', err);

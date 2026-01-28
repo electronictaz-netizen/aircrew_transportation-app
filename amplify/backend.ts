@@ -13,6 +13,7 @@ import { sendSms } from './functions/sendSms/resource';
 import { sendTelnyxSms } from './functions/sendTelnyxSms/resource';
 import { telnyxWebhook } from './functions/telnyxWebhook/resource';
 import { customerPortal } from './functions/customerPortal/resource';
+import { pushNotifications } from './functions/pushNotifications/resource';
 
 export const backend = defineBackend({
   auth,
@@ -27,6 +28,7 @@ export const backend = defineBackend({
   sendTelnyxSms,
   telnyxWebhook,
   customerPortal,
+  pushNotifications,
 });
 
 // Pass GraphQL endpoint to publicBooking function. Use the L1 CfnGraphqlApi.attrGraphQlUrl
@@ -152,6 +154,25 @@ backend.customerPortal.resources.lambda.addToRolePolicy(
     resources: [`${cfn.cfnGraphqlApi.attrArn}/*`],
   })
 );
+
+// Push Notifications: Pass GraphQL endpoint and region
+backend.pushNotifications.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
+backend.pushNotifications.addEnvironment('AMPLIFY_DATA_REGION', region);
+
+// Grant AppSync permissions to pushNotifications
+backend.pushNotifications.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    sid: 'AllowAppSyncGraphQL',
+    effect: iam.Effect.ALLOW,
+    actions: ['appsync:GraphQL'],
+    resources: [`${cfn.cfnGraphqlApi.attrArn}/*`],
+  })
+);
+
+// VAPID keys for push notifications
+backend.pushNotifications.addEnvironment('VAPID_PUBLIC_KEY', process.env.VAPID_PUBLIC_KEY || '');
+backend.pushNotifications.addEnvironment('VAPID_PRIVATE_KEY', process.env.VAPID_PRIVATE_KEY || '');
+backend.pushNotifications.addEnvironment('VAPID_EMAIL', process.env.VAPID_EMAIL || 'noreply@onyxdispatch.us');
 
 // Note: In Amplify Gen 2, functions defined in the backend automatically get
 // IAM permissions to access the data resource. No additional configuration needed.

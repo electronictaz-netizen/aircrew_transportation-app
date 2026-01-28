@@ -428,6 +428,22 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['read', 'create', 'update', 'delete']),
     ]),
+
+  PushSubscription: a
+    .model({
+      companyId: a.id().required(),
+      company: a.belongsTo('Company', 'companyId'),
+      userId: a.string().required(), // Cognito User ID
+      endpoint: a.string().required(), // Push subscription endpoint URL
+      keys: a.string().required(), // JSON string with p256dh and auth keys
+      userAgent: a.string(), // Browser user agent
+      createdAt: a.datetime().required(),
+      updatedAt: a.datetime(),
+      lastUsed: a.datetime(), // Last time this subscription was used
+    })
+    .authorization((allow) => [
+      allow.authenticated().to(['read', 'create', 'update', 'delete']),
+    ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

@@ -5,6 +5,7 @@
  */
 
 const VAPID_PUBLIC_KEY = process.env.VITE_VAPID_PUBLIC_KEY || '';
+const PUSH_NOTIFICATIONS_API_URL = process.env.VITE_PUSH_NOTIFICATIONS_API_URL || '';
 
 export interface PushNotificationPayload {
   title: string;
@@ -73,7 +74,9 @@ export async function registerServiceWorkerForPush(): Promise<ServiceWorkerRegis
  * Subscribe to push notifications
  */
 export async function subscribeToPushNotifications(
-  registration: ServiceWorkerRegistration
+  registration: ServiceWorkerRegistration,
+  userId: string,
+  companyId: string
 ): Promise<PushSubscription | null> {
   if (!VAPID_PUBLIC_KEY) {
     console.warn('[PushNotifications] VAPID_PUBLIC_KEY not configured');
@@ -84,7 +87,9 @@ export async function subscribeToPushNotifications(
     // Check if already subscribed
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
-      console.log('[PushNotifications] Already subscribed');
+      console.log('[PushNotifications] Already subscribed, updating backend...');
+      // Still send to backend to update/verify
+      await sendSubscriptionToBackend(existingSubscription, userId, companyId);
       return existingSubscription;
     }
 
@@ -95,6 +100,10 @@ export async function subscribeToPushNotifications(
     });
 
     console.log('[PushNotifications] Subscribed to push notifications');
+    
+    // Send subscription to backend
+    await sendSubscriptionToBackend(subscription, userId, companyId);
+    
     return subscription;
   } catch (error) {
     console.error('[PushNotifications] Failed to subscribe:', error);
@@ -103,14 +112,80 @@ export async function subscribeToPushNotifications(
 }
 
 /**
+ * Send subscription to backend for storage
+ */
+async function sendSubscriptionToBackend(
+  subscription: PushSubscription,
+  userId: string,
+  companyId: string
+): Promise<void> {
+  if (!PUSH_NOTIFICATIONS_API_URL) {
+    console.warn('[PushNotifications] PUSH_NOTIFICATIONS_API_URL not configured, subscription not saved to backend');
+    return;
+  }
+
+  try {
+    const subscriptionJson = subscription.toJSON();
+    const response = await fetch(PUSH_NOTIFICATIONS_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'subscribe',
+        userId,
+        companyId,
+        subscription: {
+          endpoint: subscriptionJson.endpoint,
+          keys: subscriptionJson.keys,
+        },
+        userAgent: navigator.userAgent,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend subscription failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('[PushNotifications] Subscription saved to backend:', result);
+  } catch (error) {
+    console.error('[PushNotifications] Failed to save subscription to backend:', error);
+    // Don't throw - subscription is still valid locally
+  }
+}
+
+/**
  * Unsubscribe from push notifications
  */
 export async function unsubscribeFromPushNotifications(
-  registration: ServiceWorkerRegistration
+  registration: ServiceWorkerRegistration,
+  userId: string,
+  companyId: string
 ): Promise<boolean> {
   try {
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
+      // Notify backend
+      if (PUSH_NOTIFICATIONS_API_URL) {
+        try {
+          await fetch(PUSH_NOTIFICATIONS_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'unsubscribe',
+              userId,
+              companyId,
+              endpoint: subscription.endpoint,
+            }),
+          });
+        } catch (error) {
+          console.error('[PushNotifications] Failed to notify backend of unsubscribe:', error);
+        }
+      }
+
       await subscription.unsubscribe();
       console.log('[PushNotifications] Unsubscribed from push notifications');
       return true;
@@ -192,6 +267,52 @@ export function setupPushNotificationListener(
       }
     }
   });
+}
+
+/**
+ * Send push notification via backend API
+ */
+export async function sendPushNotification(
+  options: {
+    userId?: string;
+    companyId?: string;
+    payload: PushNotificationPayload;
+  }
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  const { userId, companyId, payload } = options;
+  if (!PUSH_NOTIFICATIONS_API_URL) {
+    console.warn('[PushNotifications] PUSH_NOTIFICATIONS_API_URL not configured');
+    return { success: false, error: 'Push notifications API URL not configured' };
+  }
+
+  if (!userId && !companyId) {
+    return { success: false, error: 'Either userId or companyId must be provided' };
+  }
+
+  try {
+    const response = await fetch(PUSH_NOTIFICATIONS_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'send',
+        userId,
+        companyId,
+        payload,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send notification: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return { success: result.success, message: result.message };
+  } catch (error) {
+    console.error('[PushNotifications] Error sending notification:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to send notification' };
+  }
 }
 
 /**
