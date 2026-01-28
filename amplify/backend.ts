@@ -184,7 +184,9 @@ backend.pushNotifications.addEnvironment('VAPID_PRIVATE_KEY', process.env.VAPID_
 backend.pushNotifications.addEnvironment('VAPID_EMAIL', process.env.VAPID_EMAIL || 'noreply@onyxdispatch.us');
 
 // VehicleLocation data retention: enable DynamoDB TTL so items expire after 60 days
-const amplifyTables = (backend.data.resources as { cfnResources?: { amplifyDynamoDbTables?: Record<string, { timeToLiveAttribute?: { attributeName: string; enabled: boolean } }> } } }).cfnResources?.amplifyDynamoDbTables;
+// CDK assembly transform fails on complex type assertions; use any for TTL access
+const dataResources = backend.data.resources as any;
+const amplifyTables = dataResources.cfnResources?.amplifyDynamoDbTables;
 if (amplifyTables?.['VehicleLocation']) {
   amplifyTables['VehicleLocation'].timeToLiveAttribute = { attributeName: 'ttl', enabled: true };
 }
