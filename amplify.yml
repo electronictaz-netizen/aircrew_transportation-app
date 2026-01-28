@@ -31,9 +31,6 @@ backend:
             --outputs-out-dir . \
             --outputs-version "1.4" \
             --outputs-format "json"
-        # Check Lambda runtimes after deployment (non-blocking)
-        - echo "Checking Lambda function runtimes..."
-        - npm run check-lambda || echo "Lambda runtime check completed (warnings may exist)"
 frontend:
   phases:
     preBuild:
