@@ -198,7 +198,7 @@ export const handler = async (event: {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { action, companyId, email, phone, accessCode, customerId, view } = body;
+    const { action, companyId, email, phone, accessCode, customerId, view, tripId } = body;
 
     if (!companyId) {
       return {
@@ -567,6 +567,109 @@ export const handler = async (event: {
             statusCode: 500,
             headers: responseHeaders,
             body: JSON.stringify({ error: 'Failed to create modification request' }),
+          };
+        }
+      }
+
+      case 'getTripLocation': {
+        if (!customerId || !tripId) {
+          return {
+            statusCode: 400,
+            headers: responseHeaders,
+            body: JSON.stringify({ error: 'Customer ID and Trip ID are required' }),
+          };
+        }
+
+        try {
+          const customerQuery = `
+            query GetCustomer {
+              getCustomer(id: "${customerId}") {
+                id
+                companyId
+              }
+            }
+          `;
+          const customerResponse = await graphqlRequest(customerQuery);
+          const customer = customerResponse?.getCustomer;
+
+          if (!customer || customer.companyId !== companyId) {
+            return {
+              statusCode: 403,
+              headers: responseHeaders,
+              body: JSON.stringify({ error: 'Access denied' }),
+            };
+          }
+
+          const tripQuery = `
+            query GetTrip {
+              getTrip(id: "${tripId}") {
+                id
+                companyId
+                customerId
+              }
+            }
+          `;
+          const tripResponse = await graphqlRequest(tripQuery);
+          const trip = tripResponse?.getTrip;
+
+          if (!trip || trip.companyId !== companyId || trip.customerId !== customerId) {
+            return {
+              statusCode: 404,
+              headers: responseHeaders,
+              body: JSON.stringify({ error: 'Trip not found or access denied' }),
+            };
+          }
+
+          const locationsQuery = `
+            query ListVehicleLocations {
+              listVehicleLocations(filter: { tripId: { eq: "${tripId}" } }, limit: 100) {
+                items {
+                  latitude
+                  longitude
+                  timestamp
+                }
+              }
+            }
+          `;
+          const locationsResponse = await graphqlRequest(locationsQuery);
+          const items = locationsResponse?.listVehicleLocations?.items || [];
+
+          if (items.length === 0) {
+            return {
+              statusCode: 200,
+              headers: responseHeaders,
+              body: JSON.stringify({
+                success: true,
+                location: null,
+              }),
+            };
+          }
+
+          const sorted = [...items].sort((a: { timestamp?: string }, b: { timestamp?: string }) => {
+            const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return tB - tA;
+          });
+          const latest = sorted[0] as { latitude: number; longitude: number; timestamp: string };
+
+          return {
+            statusCode: 200,
+            headers: responseHeaders,
+            body: JSON.stringify({
+              success: true,
+              location: {
+                latitude: latest.latitude,
+                longitude: latest.longitude,
+                timestamp: latest.timestamp,
+              },
+            }),
+          };
+        } catch (error: any) {
+          console.error('Error getting trip location:', error);
+          return {
+            statusCode: 500,
+            headers: responseHeaders,
+            body: JSON.stringify({ error: 'Failed to get trip location' }),
           };
         }
       }

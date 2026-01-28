@@ -163,6 +163,8 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 - **Authz:** Ensure only the customer (or trip owner) can read the current position for that trip (e.g. API that takes `tripId` + auth and returns latest `VehicleLocation` for that trip, or a subscription scoped to that trip).
 - **UI:** A small map or “driver location” view in the customer portal when the trip is In Progress, fed by the same real-time source (subscription or short polling) as above.
 
+**Implemented (Step 6):** Customer portal Lambda has a `getTripLocation` action: it accepts `companyId`, `customerId`, and `tripId`, verifies the customer belongs to the company and the trip belongs to that customer, then returns the latest `VehicleLocation` for that trip (or null). Frontend: `customerPortalApi.getTripLocation()` and a `PassengerLiveTracking` component that polls every 12 seconds and shows a small Leaflet map with the driver marker when the trip status is In Progress. The live-tracking block is shown on each In Progress trip card in the customer portal. Requires `VITE_CUSTOMER_PORTAL_API_URL` to be set.
+
 ---
 
 ## Suggested order of implementation
@@ -186,7 +188,7 @@ So today we already have **periodic GPS** (every 30s from driver) and **near rea
 | Background tracking | Done (Step 5: watchPosition + throttle) | Best with app in foreground; native app for true background |
 | Geofencing | Missing | Add coordinates to trip + check on each update; trigger “arrived” |
 | Live ETA | Done (Step 4) | Set VITE_ETA_FUNCTION_URL; see docs/ETA_FUNCTION_URL_SETUP.md |
-| Retention | Missing | Add TTL or scheduled Lambda delete |
-| Passenger live map | Missing | Authz + UI after dispatcher real-time is in place |
+| Retention | Done (Step 3: TTL) | — |
+| Passenger live map | Done (Step 6) | Customer portal: getTripLocation Lambda + PassengerLiveTracking UI |
 
 Implementing **real-time delivery (subscriptions)** and **geofencing** gives the biggest improvement for “real-time continuous GPS” with the current architecture; the rest can be added in the order above.

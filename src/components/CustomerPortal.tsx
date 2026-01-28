@@ -25,6 +25,7 @@ import { useNotification } from './Notification';
 import NotificationComponent from './Notification';
 import { generateReceipt } from '../utils/receiptGenerator';
 import { findCustomer, verifyAccessCode, getCustomerTrips, createModificationRequest, createTripRating } from '../utils/customerPortalApi';
+import PassengerLiveTracking from './PassengerLiveTracking';
 import './CustomerPortal.css';
 
 interface CustomerPortalProps {
@@ -439,6 +440,14 @@ function CustomerPortal({ companyId, customerId: initialCustomerId }: CustomerPo
                   </div>
                 )}
               </div>
+
+              {(trip.status === 'InProgress' || trip.status === 'In Progress') && customer && (
+                <PassengerLiveTracking
+                  companyId={companyId}
+                  customerId={customer.id}
+                  tripId={trip.id}
+                />
+              )}
 
               <div className="trip-card-actions">
                 {view === 'history' && (

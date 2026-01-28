@@ -30,6 +30,7 @@ export interface CustomerPortalResponse {
     actualDropoffTime?: string | null;
     notes?: string | null;
   }>;
+  location?: { latitude: number; longitude: number; timestamp: string } | null;
   error?: string;
   hint?: string;
   message?: string;
@@ -224,5 +225,41 @@ export async function createTripRating(
   } catch (error) {
     console.error('Error creating rating:', error);
     return { success: false, error: (error as Error)?.message || 'Failed to create rating' };
+  }
+}
+
+/**
+ * Get latest driver location for a trip (passenger live tracking).
+ * Only returns location if the trip belongs to the customer.
+ */
+export async function getTripLocation(
+  companyId: string,
+  customerId: string,
+  tripId: string
+): Promise<CustomerPortalResponse> {
+  if (!CUSTOMER_PORTAL_API_URL) {
+    return { success: false, error: 'Customer Portal API URL not configured' };
+  }
+
+  try {
+    const response = await fetch(CUSTOMER_PORTAL_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'getTripLocation',
+        companyId,
+        customerId,
+        tripId,
+      }),
+    });
+
+    const data = (await response.json()) as CustomerPortalResponse;
+    if (!response.ok) {
+      return { success: false, error: data.error };
+    }
+    return data;
+  } catch (error) {
+    console.error('Error getting trip location:', error);
+    return { success: false, error: (error as Error)?.message || 'Failed to get trip location' };
   }
 }

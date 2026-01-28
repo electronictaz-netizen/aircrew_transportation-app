@@ -266,3 +266,50 @@
     width: 100%;
   }
 }
+
+/* Passenger live tracking (Step 6 GPS) */
+.passenger-live-tracking {
+  margin-top: 1rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--background, #fff);
+}
+
+.passenger-live-tracking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground, #1f2937);
+  background: var(--muted, #f3f4f6);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.passenger-live-tracking-updated {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted-foreground, #6b7280);
+}
+
+.passenger-live-tracking-placeholder {
+  padding: 1.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground, #6b7280);
+  text-align: center;
+}
+
+.passenger-live-tracking-map-wrap {
+  height: 200px;
+  min-height: 200px;
+}
+
+.passenger-live-tracking-map {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
