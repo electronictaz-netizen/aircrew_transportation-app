@@ -145,6 +145,13 @@ backend.telnyxWebhook.resources.lambda.addToRolePolicy(
 backend.customerPortal.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', graphqlEndpoint);
 backend.customerPortal.addEnvironment('AMPLIFY_DATA_REGION', region);
 
+// Pass Function URLs for email and SMS sending (set after Function URLs are created)
+// Set SEND_BOOKING_EMAIL_FUNCTION_URL and SEND_TELNYX_SMS_FUNCTION_URL in Amplify env
+backend.customerPortal.addEnvironment('SEND_BOOKING_EMAIL_FUNCTION_URL', process.env.SEND_BOOKING_EMAIL_FUNCTION_URL || '');
+backend.customerPortal.addEnvironment('SEND_TELNYX_SMS_FUNCTION_URL', process.env.SEND_TELNYX_SMS_FUNCTION_URL || '');
+backend.customerPortal.addEnvironment('SEND_SMS_FUNCTION_URL', process.env.SEND_SMS_FUNCTION_URL || ''); // Fallback to AWS SMS
+backend.customerPortal.addEnvironment('PORTAL_BASE_URL', process.env.PORTAL_BASE_URL || 'https://onyxdispatch.us/portal');
+
 // Grant AppSync permissions to customerPortal
 backend.customerPortal.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({

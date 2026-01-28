@@ -87,6 +87,95 @@ const responseHeaders = {
   'Content-Type': 'application/json',
 };
 
+/**
+ * Send access code via email
+ */
+async function sendAccessCodeEmail(
+  email: string,
+  customerName: string,
+  accessCode: string,
+  companyName: string
+): Promise<void> {
+  const emailFunctionUrl = process.env.SEND_BOOKING_EMAIL_FUNCTION_URL;
+  if (!emailFunctionUrl) {
+    console.warn('SEND_BOOKING_EMAIL_FUNCTION_URL not configured. Skipping email send.');
+    return;
+  }
+
+  try {
+    const portalUrl = process.env.PORTAL_BASE_URL || 'https://onyxdispatch.us/portal';
+    const emailBody = {
+      type: 'customer_confirmation',
+      to: email,
+      customerName,
+      customerEmail: email,
+      customerPhone: '',
+      companyName,
+      bookingId: 'portal-access',
+      pickupDate: new Date().toISOString(),
+      pickupLocation: '',
+      dropoffLocation: '',
+      numberOfPassengers: 0,
+      specialInstructions: `Your Customer Portal access code is: ${accessCode}\n\nUse this code to log in to your portal at: ${portalUrl}\n\nThis code will expire after use.`,
+    };
+
+    const response = await fetch(emailFunctionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(emailBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to send access code email:', errorText);
+    } else {
+      console.log('Access code email sent successfully');
+    }
+  } catch (error) {
+    console.error('Error sending access code email:', error);
+    // Don't throw - email failure shouldn't block portal access
+  }
+}
+
+/**
+ * Send access code via SMS
+ */
+async function sendAccessCodeSms(
+  phone: string,
+  accessCode: string,
+  companyName: string
+): Promise<void> {
+  const smsFunctionUrl = process.env.SEND_TELNYX_SMS_FUNCTION_URL || process.env.SEND_SMS_FUNCTION_URL;
+  if (!smsFunctionUrl) {
+    console.warn('SMS Function URL not configured. Skipping SMS send.');
+    return;
+  }
+
+  try {
+    const portalUrl = process.env.PORTAL_BASE_URL || 'https://onyxdispatch.us/portal';
+    const message = `${companyName}: Your Customer Portal access code is ${accessCode}. Use it to log in at ${portalUrl}. This code expires after use.`;
+
+    const response = await fetch(smsFunctionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone,
+        message,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to send access code SMS:', errorText);
+    } else {
+      console.log('Access code SMS sent successfully');
+    }
+  } catch (error) {
+    console.error('Error sending access code SMS:', error);
+    // Don't throw - SMS failure shouldn't block portal access
+  }
+}
+
 export const handler = async (event: {
   httpMethod: string;
   body?: string;
@@ -190,15 +279,50 @@ export const handler = async (event: {
           `;
           await graphqlRequest(updateQuery);
 
-          // In production, send code via email/SMS
+          // Send access code via email and/or SMS
+          const sendPromises: Promise<void>[] = [];
+          
+          if (customer.email) {
+            sendPromises.push(
+              sendAccessCodeEmail(
+                customer.email,
+                customer.name || 'Customer',
+                code,
+                customer.companyName || 'Your Transportation Provider'
+              )
+            );
+          }
+          
+          if (customer.phone) {
+            sendPromises.push(
+              sendAccessCodeSms(
+                customer.phone,
+                code,
+                customer.companyName || 'Your Transportation Provider'
+              )
+            );
+          }
+
+          // Send codes asynchronously (don't wait for completion)
+          Promise.all(sendPromises).catch((error) => {
+            console.error('Error sending access codes:', error);
+            // Continue even if sending fails
+          });
+
+          // Return success (don't include access code in response for security)
           return {
             statusCode: 200,
             headers: responseHeaders,
             body: JSON.stringify({
               success: true,
               customerId: customer.id,
-              accessCode: code, // Remove in production - send via email/SMS instead
-              message: 'Access code generated. Check your email or phone.',
+              message: customer.email && customer.phone
+                ? 'Access code sent to your email and phone. Please check both.'
+                : customer.email
+                ? 'Access code sent to your email. Please check your inbox.'
+                : customer.phone
+                ? 'Access code sent to your phone. Please check your messages.'
+                : 'Access code generated. Please contact support.',
             }),
           };
         } catch (error: any) {
