@@ -46,7 +46,7 @@
     "react-router-dom": "^6.28.0",
     "stripe": "^14.0.0",
     "tailwind-merge": "^3.4.0",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -59,7 +59,6 @@
     "@eslint/js": "^9.18.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@types/xlsx": "^0.0.36",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
     "@vitejs/plugin-react": "^4.3.4",

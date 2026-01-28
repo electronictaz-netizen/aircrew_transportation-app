@@ -184,7 +184,7 @@ backend.pushNotifications.addEnvironment('VAPID_PRIVATE_KEY', process.env.VAPID_
 backend.pushNotifications.addEnvironment('VAPID_EMAIL', process.env.VAPID_EMAIL || 'noreply@onyxdispatch.us');
 
 // VehicleLocation data retention: enable DynamoDB TTL so items expire after 60 days
-const amplifyTables = (backend.data.resources as { cfnResources?: { amplifyDynamoDbTables?: Record<string, { timeToLiveAttribute?: { attributeName: string; enabled: boolean } } } } }).cfnResources?.amplifyDynamoDbTables;
+const amplifyTables = (backend.data.resources as { cfnResources?: { amplifyDynamoDbTables?: Record<string, { timeToLiveAttribute?: { attributeName: string; enabled: boolean } }> } } }).cfnResources?.amplifyDynamoDbTables;
 if (amplifyTables?.['VehicleLocation']) {
   amplifyTables['VehicleLocation'].timeToLiveAttribute = { attributeName: 'ttl', enabled: true };
 }
