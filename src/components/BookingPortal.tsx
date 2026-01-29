@@ -253,6 +253,7 @@ export default function BookingPortal() {
                 returnDate: '',
                 returnTime: '',
                 specialInstructions: '',
+                smsOptIn: false,
               });
               setBookingId(null);
             }}
